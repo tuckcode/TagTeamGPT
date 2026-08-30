@@ -1,0 +1,19 @@
+{
+  "name": "codexgpt-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only CodexGPT workspace MCP (Streamable HTTP) for ChatGPT Chat connectors",
+  "scripts": {
+    "start": "node src/http.mjs",
+    "dev": "node --watch src/http.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "express": "^5.2.1",
+    "zod": "^4.5.4"
+  }
+}

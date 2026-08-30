@@ -8,27 +8,52 @@ description: >
   Do not automate chatgpt.com in a nested browser. Do not use Work as the planner.
 ---
 
-# CodexGPT (v0 — semi-auto)
+# CodexGPT (v0 paste-back · v1 keystroke driver)
 
 Chat plans. Codex ships. One ChatGPT desktop app.
 
 You (Codex) own execution: editing, shell, git, tests, recovery.
-Chat owns planning and review. The human moves messages between tabs.
+Chat owns planning and review.
 
 ## Golden rules
 
-1. **v0 is paste-back.** You draft `[C2C]` stubs. The user copies them into the
-   **Chat** tab, then pastes Chat’s reply back here (or says “continue” and
-   includes the reply). You do **not** drive mode keybinds with Computer Use.
-2. **Never** open nested `chatgpt.com`, hunt connector settings, or automate
+1. Prefer the **v1 driver** when available (macOS): hotkeys + clipboard + Enter,
+   no screenshots. Fall back to v0 paste-back (user copies) if the driver fails
+   or Accessibility is denied.
+2. **Never** open nested `chatgpt.com`, hunt connector settings, or mouse-hunt
    the web ChatGPT UI. That is upstream C2C’s path, not this skill.
-3. **Never** invent `c2c setup`, tunnels, OAuth, or MCP wiring in v0. Optional
-   MCP is later — out of scope here.
+3. **Connector is optional.** Default is paste-back `[C2C]` only. Do not require
+   tunnels/OAuth for v0/v1. Read-only workspace MCP (`mcp/`, v3) is for when
+   Chat should pull diffs/files itself. Rhizome mailbox is v2.
 4. **Never** use **Work** as the planning brain. Chat only.
 5. Keep every Codex→Chat control message under ~1 KB. No full diffs or file dumps.
-6. Read `references/protocol.md` for boot prompt and message templates.
+6. Prefer the keyboard workflow in `references/keyboard.md` (⌃1 / ⌃3 + clipboard).
+   Do not require CUA/screenshots for the happy path.
+7. Read `references/protocol.md` for boot prompt and message templates.
+8. **Local folder projects do not support Chat.** Keep Chat as a plain cloud
+   thread (no local folder). Mount the repo only in **Codex** for execution.
+   Banner to watch for: “Local projects don't support Chat.”
+9. **Codex cwd trap:** sidebar project `codexgpt` ≠ guarantee of writable git
+   root. If Codex `pwd` is under `~/Documents/Codex/…`, it is a conversation
+   snapshot — green tests there do not update the real checkout. Handoffs must
+   preflight `pwd` against the expected repo path.
 
-## Mode keybinds (remind the user — they press them)
+## When to use the connector (v3)
+
+Same desktop app + keybinds either way. Decide at start (or when review gets thin):
+
+**Use connector** when Chat must independently check real code after `EXECUTED`
+(multi-file edits, risky logic, SUCCESS_CRITERIA that need `git_diff` /
+`read_file`). Then: ensure MCP + HTTPS tunnel are up, connector attached in
+Chat Developer Mode, and tell Chat to prefer those tools over asking for pastes.
+
+**Skip connector** when short `RESULT` / `CHANGED_FILES` / `TESTS` stubs are
+enough, or the user does not want background MCP/tunnel processes.
+
+Never dump whole files into Chat “just in case.” If the connector is off and
+Chat needs evidence, paste one short targeted snippet only.
+
+## Mode keybinds
 
 | Platform | Chat | Work | Codex |
 | --- | --- | --- | --- |
@@ -36,6 +61,56 @@ Chat owns planning and review. The human moves messages between tabs.
 | Windows / Linux | `Alt+1` | `Alt+2` | `Alt+3` |
 
 Remappable in Settings → Keyboard Shortcuts. If flaky, tell the user to remap.
+
+## v1 driver (macOS)
+
+From the repo root (needs ChatGPT desktop running + Accessibility for the shell):
+
+```bash
+node tools/codexgpt-driver.mjs to chat
+node tools/codexgpt-driver.mjs chat-send "$(cat <<'EOF'
+[C2C]
+STATE: INIT
+...
+EOF
+)"
+node tools/codexgpt-driver.mjs to codex
+```
+
+Other commands: `mode`, `to work`, `send "…"`, `codex-send "…"`. Add `--verify`
+only when you need an AX mode read-back (often unavailable via osascript on
+Electron — hotkeys still work).
+
+## Auto-loop (macOS)
+
+```bash
+```bash
+# Full workflow by default: Chat (⌃1) + Codex (⌃3) + Rhizome mailbox/memory
+node tools/codexgpt-loop.mjs --goal "…"
+```
+
+Overrides: `--no-codex` `--no-mailbox` `--no-memory` `--boot`. Config:
+`codexgpt.config.json` or `.codexgpt/config.json`.
+
+Polls Chat for PLAN / DONE / BLOCKED. On PLAN writes `.codexgpt/last-plan.md`
+and (by default) pastes into **Codex**. Waits for `.codexgpt/executed.json`,
+then EXECUTED back to the **same** Chat. DONE/BLOCKED → vault mailbox + memory.
+
+MCP tunnel helper: `node tools/codexgpt-mcp-up.mjs start|stop|status`
+(idle auto-stop after `mcp_idle_minutes`, default 60). Mailbox skim nudge after
+DONE when 10 new notes **or** 14 days: `node tools/codexgpt-mailbox-nudge.mjs`
+(`--ack` after you skim).
+
+Do **not** open New chat between turns — one thread per goal.
+
+If osascript cannot see Chat text, dump replies yourself:
+
+```bash
+# copy Chat’s [C2C] reply, then:
+node tools/codexgpt-write-reply.mjs --from-clipboard
+```
+
+Or write `.codexgpt/last-reply.json` with `{ "ok": true, "state": "PLAN", "task_id": "…", "snippet": "…" }`.
 
 ## Workflow
 
@@ -100,15 +175,15 @@ Parse the pasted text for `STATE:`:
 On the next pasted reply: `PLAN` (another iteration), `DONE`, or `BLOCKED` as above.
 At iteration 12 without `DONE`, ask: “12 iterations done — continue?”
 
-## Forbidden in v0
+## Forbidden
 
-- Computer Use / accessibility automation to press mode keybinds or type into Chat
-- Nested in-app browser to `chatgpt.com`
-- Creating ChatGPT connectors, pairing codes, or Cloudflare tunnels
-- Calling or installing upstream `c2c` / MCP bridge
+- Nested in-app browser to `chatgpt.com` / mouse Computer Use on the web UI
+- Treating tunnels/connectors as required for every CodexGPT run
+- Calling or installing upstream `c2c` / MCP bridge as if it were v0/v1
 - Treating Work mode as the planner
+- Vision / screenshot loops for the happy-path mode switch (use hotkeys; optional `--verify`)
 
-## After v0 (do not implement here)
+## After v1
 
-- v1: thin Computer Use for keybind + paste only
-- Later: optional upstream read-only MCP so Chat can `git_diff` itself
+- **v2:** Rhizome **mailbox** (`[C2C]` inbox/outbox) + optional **memory** notes — not written by the Chat MCP
+- **v3:** optional `mcp/` read-only Streamable HTTP — tunnel + Chat connector for selective `git_diff` / `read_file` (see above); no vault writes through that connector

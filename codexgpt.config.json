@@ -1,0 +1,10 @@
+{
+  "codex": true,
+  "mailbox": true,
+  "memory": true,
+  "boot": false,
+  "mailbox_nudge_count": 10,
+  "mailbox_nudge_days": 14,
+  "mcp_idle_minutes": 60,
+  "_comment": "Chat (Control+1) always on. codex=Control+3. mailbox/memory=vault. Nudge at 10 notes OR 14 days. MCP idle stop after 60m with no /mcp traffic."
+}

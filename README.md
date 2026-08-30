@@ -2,17 +2,21 @@
 
 Chat plans. Codex ships. One desktop app.
 
+The v0 desktop paste-back skill was smoke-tested on 2026-08-30.
+The v1 keystroke driver was smoke-tested on 2026-08-30.
+
 This is my take on the split-brain idea from
 [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-with-chatgpt):
 use **Chat** in the ChatGPT desktop app as the planning and review brain, and
 **Codex** in the same app as the hands — without nesting `chatgpt.com` inside
 a browser and hunting UI with the mouse.
 
-## Status: v0 Skill shipped (semi-auto)
+## Status: v1 keystroke driver (macOS)
 
 A Codex Skill lives at [`.agents/skills/codexgpt/`](.agents/skills/codexgpt/).
-Codex drafts `[C2C]` stubs; **you** switch to Chat, paste, and paste the reply
-back. No Computer Use keybind automation yet. No MCP / `c2c` bridge yet.
+The macOS driver at [`tools/codexgpt-driver.mjs`](tools/codexgpt-driver.mjs)
+flips Chat/Codex with hotkeys and pastes `[C2C]` stubs — no vision, no nested
+`chatgpt.com`. Fall back to manual paste-back if Accessibility is denied.
 
 ## Install
 
@@ -29,7 +33,33 @@ cp -R .agents/skills/codexgpt ~/.agents/skills/codexgpt
 Restart Codex if the skill does not appear. Invoke with `$codexgpt` or say
 “Use CodexGPT to …”.
 
-## Usage (v0 paste-back loop)
+## Usage (v1 driver)
+
+```bash
+# Switch modes (macOS Control+1/2/3)
+node tools/codexgpt-driver.mjs to chat
+node tools/codexgpt-driver.mjs to codex
+
+# Paste + Enter into the current mode
+node tools/codexgpt-driver.mjs send "hello"
+
+# Switch to Chat, paste a stub, send
+node tools/codexgpt-driver.mjs chat-send "$(cat <<'EOF'
+[C2C]
+STATE: INIT
+TASK_ID: c2c_demo
+ITERATION: 0
+
+GOAL:
+…
+EOF
+)"
+```
+
+Needs the ChatGPT desktop app running. Grant Accessibility to your terminal /
+Cursor if macOS blocks keystrokes.
+
+## Usage (v0 paste-back fallback)
 
 1. In **Codex**, run `$codexgpt` (or “Use CodexGPT to implement X”).
 2. Copy the boot prompt (first time) into a pinned **Chat** thread.
@@ -46,10 +76,27 @@ Restart Codex if the skill does not appear. Invoke with `$codexgpt` or say
 Stay on **Chat**, not Work. Work follows Codex-style usage; the quota win only
 holds if the planner is Chat.
 
-## What’s deferred
+## Roadmap
 
-- **v1:** Computer Use for mode keybind + paste only (still no nested web UI)
-- **Later:** optional upstream `c2c` read-only MCP so Chat can pull diffs itself
+- **v0:** paste-back skill (done)
+- **v1:** keystroke driver (done) — hotkeys + clipboard, no vision
+- **v2:** Rhizome mailbox for token-efficient `[C2C]` notes
+- **v3:** read-only workspace MCP ([`mcp/`](mcp/)) so Chat pulls diffs over a HTTPS connector
+
+## MCP connector (v3, optional)
+
+Default loop is paste-back only. Turn the connector on when Chat should pull
+selective diffs/files itself (see skill “When to use the connector”).
+
+```bash
+cd mcp && npm install
+export CODEXGPT_ROOT="$(cd .. && pwd)"
+export CODEXGPT_MCP_TOKEN="$(openssl rand -hex 24)"
+npm start
+# tunnel http://127.0.0.1:8743 → HTTPS, connector URL …/mcp, Bearer token
+```
+
+See [`mcp/README.md`](mcp/README.md).
 
 ## Explainer site
 
