@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { UPSTREAM_REPO } from "@/lib/facts";
 
 export function Hero() {
   return (
@@ -9,36 +10,36 @@ export function Hero() {
       />
       <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">Unofficial community project</Badge>
-          <Badge variant="outline">MIT · TypeScript</Badge>
+          <Badge variant="secondary">CodexGPT</Badge>
+          <Badge variant="outline">Desktop app take</Badge>
         </div>
         <h1 className="font-heading mt-6 max-w-3xl text-5xl leading-[1.05] tracking-tight sm:text-7xl">
-          ChatGPT thinks.
+          Chat plans.
           <br />
-          <span className="italic text-primary">Codex works.</span>
+          <span className="italic text-primary">Codex ships.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+          My take on the split-brain idea from{" "}
           <a
-            href="https://github.com/XiaoDuoYa/codex-with-chatgpt"
+            href={UPSTREAM_REPO}
             className="text-foreground underline-offset-4 hover:underline"
           >
-            XiaoDuoYa/codex-with-chatgpt
-          </a>{" "}
-          is a local bridge plus a Codex skill. It makes the ChatGPT web app
-          the planning and review brain of a Codex coding session, while Codex
-          keeps every write, shell, git, and test.
+            Codex with ChatGPT
+          </a>
+          : keep Chat as the planning brain and Codex as the hands — inside
+          the unified ChatGPT desktop app, glued with keybinds and clipboard,
+          not a nested browser and mouse Computer Use.
         </p>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-          No ChatGPT API key. No reverse proxy of chatgpt.com. The official
-          web UI talks to your machine through a read-only MCP connector that
-          you authorize with a one-time pairing code.
+          Same division of labor. Different transport. Stay on Chat for the
+          quota win; never use Work as the planner.
         </p>
         <div className="mt-10 flex flex-wrap gap-3">
           <a
             href="#how"
             className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground no-underline"
           >
-            See the machinery
+            See the approach
           </a>
           <a
             href="#loop"

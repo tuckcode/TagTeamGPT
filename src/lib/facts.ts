@@ -1,12 +1,18 @@
-export const SOURCE_REPO = "https://github.com/XiaoDuoYa/codex-with-chatgpt";
+export const UPSTREAM_REPO = "https://github.com/XiaoDuoYa/codex-with-chatgpt";
+export const THIS_REPO = "https://cursor.com/codebase/knispo/CodexGPT";
 
 export const NAV = [
   { href: "#problem", label: "The problem" },
   { href: "#how", label: "How it works" },
   { href: "#loop", label: "The loop" },
-  { href: "#security", label: "Security" },
+  { href: "#desktop", label: "Desktop glue" },
   { href: "#benefit", label: "The benefit" },
   { href: "#caveats", label: "Caveats" },
+] as const;
+
+export const SHORTCUTS = [
+  { platform: "macOS", chat: "⌃1", work: "⌃2", codex: "⌃3" },
+  { platform: "Windows / Linux", chat: "Alt+1", work: "Alt+2", codex: "Alt+3" },
 ] as const;
 
 export const MCP_TOOLS = [
@@ -38,12 +44,12 @@ export const MCP_TOOLS = [
   {
     name: "git_diff",
     scope: "git.read",
-    what: "Paginated diff (unstaged / staged / vs HEAD). The independent review tool.",
+    what: "Paginated diff. The independent review tool after EXECUTED.",
   },
   {
     name: "test_status",
     scope: "execution.read",
-    what: "Does not run tests. Reads the latest record Codex wrote with c2c record.",
+    what: "Reads the latest record Codex wrote — does not run tests.",
   },
   {
     name: "execution_summary",
@@ -56,9 +62,9 @@ export const PROTOCOL_STEPS = [
   {
     state: "INIT",
     sender: "Codex",
-    title: "Ask ChatGPT to inspect and plan",
+    title: "Switch to Chat, paste the goal",
     detail:
-      "Codex types a tiny [C2C] message into the ChatGPT web UI. No files, no diffs. Just the goal.",
+      "From Codex: copy a tiny [C2C] INIT to the clipboard, hit the Chat keybind, paste, send. No mouse hunting on chatgpt.com.",
     message: `[C2C]
 STATE: INIT
 TASK_ID: c2c_f81a
@@ -68,15 +74,15 @@ GOAL:
 Implement dark mode.
 
 INSTRUCTION:
-Inspect the connected workspace through MCP.
-Create an implementation plan for Codex.`,
+Inspect the workspace (MCP if connected).
+Reply with a C2C PLAN for Codex.`,
   },
   {
     state: "PLAN",
-    sender: "ChatGPT",
-    title: "Pull code, then write a finite plan",
+    sender: "Chat",
+    title: "Chat replies with a finite plan",
     detail:
-      "ChatGPT uses the eight MCP tools to read what it needs, then replies with ACTIONS, FILES, TESTS, and SUCCESS_CRITERIA — not a 40-step epic.",
+      "Chat (not Work) owns reasoning. If MCP is connected it pulls code itself; otherwise it plans from the brief you pasted.",
     message: `[C2C]
 STATE: PLAN
 TASK_ID: c2c_f81a
@@ -103,19 +109,19 @@ User preference persists; default follows system.`,
   {
     state: "EXECUTE",
     sender: "Codex",
-    title: "Codex executes with its own harness",
+    title: "Keybind back to Codex — then ship",
     detail:
-      "ChatGPT does not micro-manage tool calls. Codex edits, shells, tests, and commits using the same Codex agent you already use.",
-    message: `c2c record --task c2c_f81a --iteration 1 \\
-  --changed-files "src/theme/ThemeProvider.tsx,src/components/Header.tsx" \\
-  --tests "27 passed" --exit-status ok`,
+      "⌃3 / Alt+3 returns to Codex. Chat does not micro-manage tool calls. Codex edits, shells, tests with its own harness.",
+    message: `# back in Codex
+execute the PLAN
+optionally: c2c record --task c2c_f81a --iteration 1 ...`,
   },
   {
     state: "EXECUTED",
     sender: "Codex",
     title: "Report metadata only",
     detail:
-      "Codex never pastes the diff. It tells ChatGPT to inspect the workspace itself.",
+      "Clipboard the EXECUTED stub, switch to Chat again. Still no full diff in the composer if MCP can read it.",
     message: `[C2C]
 STATE: EXECUTED
 TASK_ID: c2c_f81a
@@ -130,28 +136,28 @@ CHANGED_FILES:
 TESTS:
 27 passed
 
-Please independently inspect the git diff through MCP.`,
+Please independently inspect the git diff
+(MCP) or ask for the paths you need.`,
   },
   {
     state: "REVIEW",
-    sender: "ChatGPT",
-    title: "Independent review via MCP",
+    sender: "Chat",
+    title: "Independent review",
     detail:
-      "ChatGPT calls git_diff, read_file, and test_status. It is instructed not to trust “all tests passed” at face value.",
-    message: `MCP calls this turn
-• git_diff mode=head
-• read_file src/theme/ThemeProvider.tsx
-• test_status
+      "Chat inspects via MCP when available, or asks for targeted snippets. It should not rubber-stamp “27 passed.”",
+    message: `Review this turn
+• git_diff / read_file (if MCP)
+• or request ThemeProvider.tsx only
 
-Finding: toggle flashes on load because
-preference is applied after first paint.`,
+Finding: toggle flashes on load —
+preference applied after first paint.`,
   },
   {
     state: "DONE",
-    sender: "ChatGPT",
+    sender: "Chat",
     title: "Done, another plan, or blocked",
     detail:
-      "If success criteria are met → DONE. If not → PLAN for the next iteration. If a human decision is required → BLOCKED. Default cap is 12 iterations.",
+      "DONE ends the loop. PLAN starts another iteration. BLOCKED surfaces one human decision. Cap iterations so it cannot spin forever.",
     message: `[C2C]
 STATE: DONE
 TASK_ID: c2c_f81a

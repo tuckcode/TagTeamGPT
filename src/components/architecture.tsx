@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { MCP_TOOLS } from "@/lib/facts";
+import { MCP_TOOLS, SHORTCUTS } from "@/lib/facts";
 
 export function Architecture() {
   return (
@@ -9,65 +9,79 @@ export function Architecture() {
           How it works
         </p>
         <h2 className="font-heading mt-3 max-w-2xl text-4xl tracking-tight sm:text-5xl">
-          Two planes, one workspace, zero write tools.
+          Two planes. One window. Keybinds, not menus.
         </h2>
         <p className="mt-5 max-w-2xl text-muted-foreground">
-          The project is not a coding agent. It is a{" "}
-          <strong className="font-medium text-foreground">C2C Bridge</strong>{" "}
-          (a loopback HTTP server) plus a Codex Skill that tells Codex how to
-          drive ChatGPT’s built-in browser. ChatGPT never gets a shell.
+          Keep the upstream protocol. Change the transport so it fits the
+          ChatGPT desktop app.
         </p>
 
         <div className="mt-12 grid gap-3">
           <Plane
-            label="ChatGPT web"
+            label="Chat tab"
             role="Reason · Plan · Review"
             tone="think"
-            note="Uses your Plus/Pro subscription. Reads the workspace only through MCP."
+            note="Use ChatGPT conversation quota. Never use Work as the planner — Work is Codex-like usage."
           />
           <div className="grid gap-3 md:grid-cols-2">
             <ArrowCard
-              title="Control plane · Computer Use"
-              body="Codex types [C2C] state messages into the ChatGPT composer. INIT, PLAN, EXECUTED, DONE. Under 1 KB. No diffs, no logs, no file bodies."
+              title="Control plane · keybind + clipboard"
+              body="Codex copies a [C2C] stub, switches to Chat, pastes, waits for STATE: PLAN|DONE|BLOCKED, switches back. Prefer keyboard over mouse Computer Use."
             />
             <ArrowCard
-              title="Data plane · MCP"
-              body="ChatGPT pulls files itself. Traffic: ChatGPT → Cloudflare Quick Tunnel (HTTPS) → 127.0.0.1:48765 /mcp → eight read-only tools."
+              title="Data plane · optional MCP"
+              body="Same idea as upstream: Chat pulls files through a read-only bridge when a custom connector is available. Or skip MCP and paste short briefs only."
             />
           </div>
           <Plane
-            label="C2C Bridge"
-            role="Read-only MCP · OAuth 2.1 · pairing · tunnel"
+            label="Codex tab"
+            role="Edit · shell · git · tests"
             tone="work"
-            note="Binds 127.0.0.1 only. Public URL is useless without a bearer token bound to this workspace."
+            note="Execution stays in the coding harness. Chat never gets write/shell tools from this design."
           />
-          <div className="grid gap-3 md:grid-cols-2">
-            <Plane
-              label="Local workspace"
-              role="Your repo"
-              tone="muted"
-              note="Never uploaded as a zip. ChatGPT reads the exact lines it asks for."
-            />
-            <Plane
-              label="Codex harness"
-              role="Edit · shell · git · tests"
-              tone="muted"
-              note="Execution stays here. The bridge has no write, delete, shell, or commit tools at all."
-            />
-          </div>
         </div>
 
         <h3 className="font-heading mt-16 text-3xl tracking-tight">
-          What ChatGPT is allowed to call
+          Mode shortcuts
         </h3>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          Registered in{" "}
+          Documented in ChatGPT desktop → Settings → Keyboard Shortcuts.
+          Remap if needed; verify on your build (some reports of flaky mode
+          switches).
+        </p>
+        <div className="mt-6 overflow-x-auto rounded-xl border border-border">
+          <table className="w-full min-w-[28rem] text-left text-sm">
+            <thead className="bg-muted/50 text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 font-medium">Platform</th>
+                <th className="px-4 py-3 font-medium">Chat</th>
+                <th className="px-4 py-3 font-medium">Work</th>
+                <th className="px-4 py-3 font-medium">Codex</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SHORTCUTS.map((row) => (
+                <tr key={row.platform} className="border-t border-border">
+                  <td className="px-4 py-3">{row.platform}</td>
+                  <td className="px-4 py-3 font-mono text-primary">{row.chat}</td>
+                  <td className="px-4 py-3 font-mono">{row.work}</td>
+                  <td className="px-4 py-3 font-mono text-accent">{row.codex}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h3 className="font-heading mt-16 text-3xl tracking-tight">
+          Optional MCP tools (upstream bridge)
+        </h3>
+        <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+          If you wire{" "}
           <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-            src/mcp/server.ts
-          </code>
-          . Every tool is annotated <code>readOnlyHint: true</code> and
-          checks an OAuth scope. Prompt injection in a README cannot invent
-          a write tool that does not exist.
+            c2c
+          </code>{" "}
+          as the data plane, Chat gets these eight read-only tools — same as
+          the original project.
         </p>
         <ul className="mt-8 grid gap-3 sm:grid-cols-2">
           {MCP_TOOLS.map((tool) => (

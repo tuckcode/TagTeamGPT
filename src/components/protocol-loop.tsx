@@ -13,15 +13,14 @@ export function ProtocolLoop() {
     <section id="loop" className="border-t border-border/70">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <p className="text-xs font-medium tracking-[0.2em] text-accent uppercase">
-          A real task loop
+          A task loop
         </p>
         <h2 className="font-heading mt-3 max-w-2xl text-4xl tracking-tight sm:text-5xl">
           INIT → PLAN → execute → EXECUTED → review → DONE
         </h2>
         <p className="mt-5 max-w-2xl text-muted-foreground">
-          Codex drives ChatGPT through the in-app browser. It never pastes
-          source. ChatGPT never runs the plan. Step through one dark-mode
-          task the way the protocol actually specifies it.
+          Same states as upstream C2C. The difference is how messages move:
+          keybind to Chat, paste, keybind back to Codex.
         </p>
 
         <ol className="mt-8 flex flex-wrap gap-2">
@@ -44,7 +43,7 @@ export function ProtocolLoop() {
 
         <div className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.2fr]">
           <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            <p className="text-xs tracking-wider text-muted-foreground uppercase">
               {step.sender} · {step.state}
             </p>
             <h3 className="mt-2 text-lg font-medium">{step.title}</h3>
