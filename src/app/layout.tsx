@@ -20,9 +20,9 @@ const instrument = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Codex with ChatGPT — how it actually works",
+  title: "CodexGPT — Chat plans, Codex ships",
   description:
-    "ChatGPT thinks. Codex works. An explainer of XiaoDuoYa/codex-with-chatgpt: the split-brain coding loop, the read-only MCP bridge, and why it exists.",
+    "A desktop-app take on the ChatGPT + Codex split: keybind control plane, optional MCP data plane, inspired by Codex with ChatGPT.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

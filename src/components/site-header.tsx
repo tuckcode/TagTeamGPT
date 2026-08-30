@@ -1,13 +1,13 @@
-import { NAV, SOURCE_REPO } from "@/lib/facts";
+import { NAV, THIS_REPO } from "@/lib/facts";
 
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <a href="#top" className="flex items-baseline gap-2 no-underline">
-          <span className="font-heading text-xl tracking-tight">C2C</span>
+          <span className="font-heading text-xl tracking-tight">CodexGPT</span>
           <span className="hidden text-xs text-muted-foreground sm:inline">
-            Codex with ChatGPT
+            Chat plans · Codex ships
           </span>
         </a>
         <nav className="hidden items-center gap-4 text-sm md:flex">
@@ -22,15 +22,15 @@ export function SiteHeader() {
           ))}
         </nav>
         <a
-          href={SOURCE_REPO}
+          href={THIS_REPO}
           target="_blank"
           rel="noreferrer"
           className="rounded-md border border-border bg-secondary px-2.5 py-1 text-xs no-underline hover:bg-muted"
         >
-          GitHub
+          Repo
         </a>
       </div>
-      <nav className="flex gap-3 overflow-x-auto px-4 pb-2 text-xs md:hidden sm:px-6">
+      <nav className="flex gap-3 overflow-x-auto px-4 pb-2 text-xs sm:px-6 md:hidden">
         {NAV.map((item) => (
           <a
             key={item.href}
