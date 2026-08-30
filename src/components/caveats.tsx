@@ -6,13 +6,17 @@ export function Caveats() {
           Honest limits
         </p>
         <h2 className="font-heading mt-3 max-w-2xl text-4xl tracking-tight sm:text-5xl">
-          Design notes, not a shipped Skill yet.
+          v0 is paste-back. Automation comes later.
         </h2>
         <ul className="mt-8 max-w-3xl space-y-4 text-muted-foreground">
           <li>
             <strong className="font-medium text-foreground">Inspired, not a fork.</strong>{" "}
-            Upstream bridge/Skill remain theirs. This repo documents a
-            desktop-app control plane and hosts the explainer.
+            Upstream bridge/Skill remain theirs. This repo ships a desktop
+            Skill at{" "}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+              .agents/skills/codexgpt
+            </code>
+            .
           </li>
           <li>
             <strong className="font-medium text-foreground">Mode shortcuts can be flaky.</strong>{" "}

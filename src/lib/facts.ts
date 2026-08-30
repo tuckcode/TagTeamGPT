@@ -1,5 +1,7 @@
 export const UPSTREAM_REPO = "https://github.com/XiaoDuoYa/codex-with-chatgpt";
 export const THIS_REPO = "https://cursor.com/codebase/knispo/CodexGPT";
+export const SKILL_PATH = ".agents/skills/codexgpt";
+export const SKILL_INVOKE = "$codexgpt";
 
 export const NAV = [
   { href: "#problem", label: "The problem" },
