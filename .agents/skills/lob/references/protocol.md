@@ -1,4 +1,4 @@
-# Lob protocol (v0)
+# Lob protocol
 
 Control messages are tiny `[C2C]` stubs. The user copies them into the ChatGPT
 desktop **Chat** tab and pastes Chat’s reply back into **Codex**. No nested

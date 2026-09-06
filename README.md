@@ -2,10 +2,6 @@
 
 **Chat lobs. Codex dunks.** One ChatGPT desktop app.
 
-![Lob loop](docs/lob-loop-diagram.png)
-
-*Placeholder diagram. Real dunk art later.*
-
 **Lob** is the product name. Invoke it in Codex with **`$lob`**. GitHub: `tuckcode/lob`.
 
 Use **Chat** as the planning and review brain, and **Codex** as the hands — without nesting `chatgpt.com` or mouse-hunting a browser UI.
@@ -29,7 +25,6 @@ cp -R .agents/skills/lob ~/.agents/skills/lob
 ```
 
 1. Open **your** project folder in ChatGPT desktop **Codex** (once).
-   ChatGPT desktop names the Codex project from the mounted folder, so this checkout still shows CodexGPT until that folder is renamed.
 2. Open a **cloud Chat** thread with **no** local folder (once).
 3. Run the loop with your **goal** and that folder **path**:
 
@@ -52,15 +47,6 @@ Full walkthrough: **[docs/install.md](docs/install.md)** → **[docs/usage.md](d
 | [Troubleshooting](docs/troubleshooting.md) | Folder banner, Work mode, cwd trap |
 | [Approach](docs/approach.md) | Design notes |
 | [MCP](mcp/README.md) | Optional read-only repo connector |
-
-## Status
-
-| Piece | State |
-| --- | --- |
-| v0 paste-back skill | Shipped |
-| v1 keystroke driver (macOS + Windows) | Shipped |
-| v2 mailbox / memory helpers | Started (optional vault notes) |
-| v3 workspace MCP | Optional; paste-back works without it |
 
 ## Hard rules
 

@@ -52,10 +52,7 @@ and leave the pinned thread. Prefer `send` / `chat-send` / `codex-send` without
 Timing defaults: `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`,
 `LOB_PASTE_MS=120`, `LOB_ENTER_MS=250` (or `.lob/config.json`).
 
-Optional `--verify` for mode read-back — often opaque on Electron; Windows UIA is
-best-effort. **OCR/vision is off by default** (`LOB_OCR=1` or
-`--verify-vision` only when `--verify` fails twice / mode unknown; one mode-chip
-crop; abort if OCR says Work).
+`--verify`, OCR, and CUA: `docs/troubleshooting.md` (stuck path only).
 
 **Work contamination:** if the UI shows “Continued in Work” after a handoff,
 that is a **failure**. Work is not the planner and not the executor. Retry in
