@@ -29,7 +29,21 @@ export function resolveRoot(cwd = process.env.LOB_ROOT || process.cwd()) {
   return path.resolve(cwd);
 }
 
-export function assertSafeRel(root, rel = ".") {
+function deniedAbs(abs) {
+  const base = path.basename(abs);
+  if (DENY_NAME.has(base) || base.startsWith(".env")) return true;
+  const norm = `${abs.replace(/\\/g, "/")}/`;
+  return DENY_PART.some((part) => norm.includes(part));
+}
+
+function rgDenyGlobs() {
+  const globs = ["--glob", "!.env*"];
+  for (const name of DENY_NAME) globs.push("--glob", `!${name}`);
+  for (const part of DENY_PART) globs.push("--glob", `!${part.replace(/^\/|\/$/g, "")}`);
+  return globs;
+}
+
+function assertSafeRel(root, rel = ".") {
   const cleaned = String(rel || ".").replace(/\\/g, "/");
   if (cleaned.includes("\0")) throw new Error("invalid path");
   const abs = path.resolve(root, cleaned);
@@ -37,13 +51,12 @@ export function assertSafeRel(root, rel = ".") {
   if (abs !== path.resolve(root) && !abs.startsWith(rootN)) {
     throw new Error("path escapes workspace");
   }
-  const base = path.basename(abs);
-  if (DENY_NAME.has(base) || base.startsWith(".env")) {
-    throw new Error("sensitive file denied");
-  }
-  const norm = abs.replace(/\\/g, "/");
-  for (const part of DENY_PART) {
-    if (norm.includes(part)) throw new Error("path denied");
+  if (deniedAbs(abs)) {
+    throw new Error(
+      DENY_NAME.has(path.basename(abs)) || path.basename(abs).startsWith(".env")
+        ? "sensitive file denied"
+        : "path denied"
+    );
   }
   return abs;
 }
@@ -75,13 +88,7 @@ export function workspaceInfo(root) {
   } catch {
     /* not a git repo */
   }
-  return {
-    root,
-    languages: ["TypeScript", "JavaScript", "Markdown"],
-    project_type: "Lob (Next.js explainer + Codex skill + desktop driver)",
-    git_branch: branch,
-    dirty,
-  };
+  return { root, git_branch: branch, dirty };
 }
 
 export function listDirectory(root, rel = ".", page = 0, pageSize = 50) {
@@ -125,7 +132,7 @@ export function searchWorkspace(root, query, page = 0, pageSize = 30) {
   try {
     out = execFileSync(
       "rg",
-      ["-n", "--hidden", "--glob", "!node_modules", "--glob", "!.git", "-m", "200", query, "."],
+      ["-n", "--hidden", ...rgDenyGlobs(), "-m", "200", query, "."],
       { cwd: root, encoding: "utf8", maxBuffer: 2_000_000 }
     );
   } catch (e) {
@@ -135,7 +142,10 @@ export function searchWorkspace(root, query, page = 0, pageSize = 30) {
       out = naiveSearch(root, query).join("\n");
     }
   }
-  const lines = out.split("\n").filter(Boolean);
+  const lines = out.split("\n").filter((line) => {
+    if (!line) return false;
+    return !deniedAbs(path.resolve(root, line.split(":")[0] || ""));
+  });
   const start = Math.max(0, page) * pageSize;
   return {
     query,
@@ -151,8 +161,8 @@ function naiveSearch(root, query) {
   const walk = (dir) => {
     if (hits.length >= 200) return;
     for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (ent.name === "node_modules" || ent.name === ".git") continue;
       const p = path.join(dir, ent.name);
+      if (deniedAbs(p)) continue;
       if (ent.isDirectory()) walk(p);
       else if (ent.isFile()) {
         try {

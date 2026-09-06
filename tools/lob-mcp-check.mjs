@@ -190,7 +190,7 @@ async function main() {
   {
     const r = await callTool(10, "workspace_info", {});
     const text = toolText(r.msg);
-    mark(r.ok && /lob|branch|dirty/i.test(text), "workspace_info", {
+    mark(r.ok && /"root"|"git_branch"|"dirty"/.test(text) && !/project_type|languages/i.test(text), "workspace_info", {
       ms: r.ms,
       preview: text.slice(0, 200),
       error: r.error,

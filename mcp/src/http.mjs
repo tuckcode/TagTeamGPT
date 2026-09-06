@@ -13,7 +13,6 @@ import express from "express";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomBytes } from "node:crypto";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer } from "./create-server.mjs";
 import { resolveRoot } from "./workspace.mjs";
@@ -24,10 +23,14 @@ const defaultRoot = path.resolve(__dirname, "../..");
 const PORT = Number(process.env.PORT || process.env.LOB_MCP_PORT || 8743);
 const HOST = process.env.LOB_MCP_HOST || "127.0.0.1";
 const ROOT = resolveRoot(process.env.LOB_ROOT || defaultRoot);
-const TOKEN =
-  process.env.LOB_MCP_TOKEN ||
-  process.env.MCP_BEARER_TOKEN ||
-  randomBytes(24).toString("hex");
+const ALLOW_NO_AUTH =
+  process.env.LOB_MCP_ALLOW_NO_AUTH === "1" ||
+  process.env.LOB_MCP_ALLOW_NO_AUTH === "true";
+const TOKEN = process.env.LOB_MCP_TOKEN || "";
+if (!TOKEN && !ALLOW_NO_AUTH) {
+  console.error(JSON.stringify({ ok: false, error: "LOB_MCP_TOKEN is required" }));
+  process.exit(1);
+}
 
 const ACTIVITY = path.join(ROOT, ".lob", "mcp.last-activity");
 
@@ -46,10 +49,6 @@ app.use(express.json({ limit: "2mb" }));
 app.get("/health", (_req, res) => {
   res.json({ ok: true, root: ROOT, name: "lob-workspace" });
 });
-
-const ALLOW_NO_AUTH =
-  process.env.LOB_MCP_ALLOW_NO_AUTH === "1" ||
-  process.env.LOB_MCP_ALLOW_NO_AUTH === "true";
 
 app.use((req, res, next) => {
   if (req.path === "/health") return next();
@@ -90,18 +89,8 @@ app.listen(PORT, HOST, () => {
       listen: `http://${HOST}:${PORT}/mcp`,
       health: `http://${HOST}:${PORT}/health`,
       root: ROOT,
-      token_set: true,
-      token_preview: `${TOKEN.slice(0, 4)}…${TOKEN.slice(-4)}`,
-      hint: "Tunnel this URL over HTTPS, then add as a ChatGPT custom MCP connector (Developer Mode). Send Authorization: Bearer <token>.",
+      token_set: Boolean(TOKEN),
+      hint: "Tunnel this URL over HTTPS, then add as a ChatGPT custom MCP connector (Developer Mode). Send Authorization: Bearer <LOB_MCP_TOKEN>.",
     })
   );
-  if (!process.env.LOB_MCP_TOKEN && !process.env.MCP_BEARER_TOKEN) {
-    console.error(
-      JSON.stringify({
-        warning:
-          "LOB_MCP_TOKEN was not set; generated an ephemeral token for this process (not printed — read .lob/mcp.token or set the env)",
-        token_set: true,
-      })
-    );
-  }
 });
