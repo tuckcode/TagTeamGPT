@@ -18,7 +18,7 @@ Inspired by [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-wi
 ## Quick start
 
 ```bash
-git clone https://github.com/knispo/CodexGPT.git
+git clone https://github.com/tuckcode/CodexGPT.git
 cd CodexGPT
 mkdir -p ~/.agents/skills
 cp -R .agents/skills/codexgpt ~/.agents/skills/codexgpt
