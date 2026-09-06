@@ -1,5 +1,8 @@
 export const UPSTREAM_REPO = "https://github.com/XiaoDuoYa/codex-with-chatgpt";
-export const THIS_REPO = "https://cursor.com/codebase/knispo/CodexGPT";
+export const GITHUB_REPO = "https://github.com/tuckcode/CodexGPT";
+export const THIS_REPO = GITHUB_REPO;
+export const PRODUCT_NAME = "Lob";
+export const TAGLINE = "Chat lobs. Codex dunks.";
 export const SKILL_PATH = ".agents/skills/codexgpt";
 export const SKILL_INVOKE = "$codexgpt";
 

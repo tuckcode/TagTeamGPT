@@ -15,7 +15,10 @@ Driver: `tools/codexgpt-driver.mjs` — macOS (`Control+1/2/3`, ⌘V) and Window
 One **pinned Chat thread** per goal. Do not open New chat between INIT / PLAN / EXECUTED / DONE.
 
 **Local folder projects do not support Chat.** Chat = cloud thread (no folder).
-Mount the repo only under **Codex**. Banner: “Local projects don't support Chat.”
+Mount the **goal repo** only under **Codex**. Banner: “Local projects don't support Chat.”
+
+**Mode ≠ project.** `⌃3` / `Alt+3` only flips the tab. Click the mounted folder
+for this goal before `codex-send` — do not assume the last sidebar project.
 
 ## Send (blind keystrokes)
 

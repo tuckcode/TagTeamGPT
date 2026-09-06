@@ -1,7 +1,12 @@
-# CodexGPT — desktop-app approach
+# Lob — desktop-app approach
 
 Personal take on the “ChatGPT thinks, Codex works” split, adapted for the
 unified ChatGPT desktop app (Chat · Work · Codex in one window).
+
+**Chat lobs. Codex dunks.**
+
+The product is **Lob**. The GitHub repo and skill id are still `CodexGPT` /
+`$codexgpt`.
 
 Upstream inspiration:
 [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-with-chatgpt).
@@ -26,7 +31,7 @@ Upstream inspiration:
 
 ## What we change
 
-| Original C2C | CodexGPT (desktop take) |
+| Original C2C | Lob (desktop take) |
 | --- | --- |
 | Codex drives nested `chatgpt.com` via in-app browser | Codex and Chat are modes in the same desktop app |
 | Mouse / DOM automation for connectors and chat | Mode keybinds + clipboard paste (human or driver) |
@@ -39,6 +44,9 @@ Documented desktop shortcuts (Settings → Keyboard Shortcuts; remappable):
 
 - macOS: `⌃1` Chat · `⌃2` Work · `⌃3` Codex
 - Windows / Linux: `Alt+1` · `Alt+2` · `Alt+3`
+
+Mode keys only flip the tab. The Codex sidebar keeps the last project — click
+the **mounted folder for this goal** before sending work.
 
 Loop:
 
@@ -70,7 +78,7 @@ See [install.md](install.md) and [usage.md](usage.md).
 
 - Open this repo as a Codex project → skill auto-loads from `.agents/skills`.
 - Or copy to `~/.agents/skills/codexgpt` for all projects.
-- Invoke: `$codexgpt` or “Use CodexGPT to …”.
+- Invoke: `$codexgpt` or “Use Lob to …”.
 
 ## Credit
 

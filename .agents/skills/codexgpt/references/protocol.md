@@ -1,4 +1,4 @@
-# CodexGPT protocol (v0)
+# Lob protocol (v0)
 
 Control messages are tiny `[C2C]` stubs. The user copies them into the ChatGPT
 desktop **Chat** tab and pastes Chat’s reply back into **Codex**. No nested
@@ -39,7 +39,7 @@ Rules:
 1. Do not ask Codex to paste whole files or full diffs unless you truly need a
    short targeted snippet.
 2. Produce concise, finite, executable plans — not 40-step epics.
-3. After Codex reports EXECUTED, review independently. If the CodexGPT workspace
+3. After Codex reports EXECUTED, review independently. If the workspace
    connector is enabled, prefer git_diff / read_file over asking for pastes.
    If it is not, do not trust “all tests passed” at face value; ask for a short
    path list or one targeted snippet only when unclear.

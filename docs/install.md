@@ -1,6 +1,8 @@
-# Install CodexGPT
+# Install Lob
 
 Goal: get the skill into **ChatGPT desktop Codex**, then set up Chat and Codex the right way.
+
+The product is **Lob**. Clone URL and skill id are still `CodexGPT` / `$codexgpt`.
 
 ## What you need
 
@@ -44,7 +46,7 @@ In a **Codex** composer, type:
 $codexgpt
 ```
 
-or say: `Use CodexGPT to …`
+or say: `Use Lob to …`
 
 > Note: `$` is ChatGPT **Codex** skill syntax. Cursor’s `/` picker is a different system.
 
@@ -75,6 +77,8 @@ Remap in Settings → Keyboard Shortcuts if needed.
 
 **Do not re-press Chat’s shortcut when you are already in Chat** — on macOS `Control+1` can open **New chat** and abandon your pinned planner thread.
 
+**Mode ≠ project.** `Control+3` / `Alt+3` only flips the Codex tab. The sidebar keeps the last project. Before you send work to Codex, click the **mounted folder for this goal** — not a hardcoded name.
+
 ## 4. Optional: keystroke driver (macOS + Windows)
 
 From the repo root, with ChatGPT desktop running:
@@ -102,7 +106,7 @@ See [mcp/README.md](../mcp/README.md) and `node tools/codexgpt-mcp-up.mjs start`
 
 1. Codex: `$codexgpt` is recognized.
 2. Chat: cloud thread, no folder banner.
-3. Codex: `pwd` is your real git root (not `~/Documents/Codex/…` snapshot).
+3. Codex: sidebar shows **this goal’s** mounted folder; `pwd` is your real git root (not `~/Documents/Codex/…` snapshot).
 4. Hotkeys flip Chat ↔ Codex.
 
 Next: [Usage](usage.md).

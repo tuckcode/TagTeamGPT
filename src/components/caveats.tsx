@@ -6,7 +6,7 @@ export function Caveats() {
           Honest limits
         </p>
         <h2 className="font-heading mt-3 max-w-2xl text-4xl tracking-tight sm:text-5xl">
-          v0 is paste-back. Automation comes later.
+          v0 is paste-back. The driver is optional.
         </h2>
         <ul className="mt-8 max-w-3xl space-y-4 text-muted-foreground">
           <li>

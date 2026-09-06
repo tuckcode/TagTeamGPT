@@ -10,7 +10,7 @@
 
 **Cause:** Work mode was used as planner/executor.
 
-**Fix:** Treat that as a failed handoff. Go back to **Codex** under the mounted project thread. Never use Work for CodexGPT planning.
+**Fix:** Treat that as a failed handoff. Go back to **Codex** under the mounted project thread. Never use Work for Lob planning.
 
 ## `$codexgpt` does nothing / skill missing
 
@@ -23,7 +23,7 @@
 
 ## Codex says tests passed but files did not change in my repo
 
-**Cause:** Codex cwd trap. The sidebar can show project `codexgpt` while the shell is under a conversation snapshot like `~/Documents/Codex/YYYY-MM-DD/<thread>/`.
+**Cause:** Codex cwd trap. The sidebar can show your project name while the shell is under a conversation snapshot like `~/Documents/Codex/YYYY-MM-DD/<thread>/`. Mode hotkeys also do **not** pick the project — the last sidebar folder stays selected.
 
 **Fix:** In Codex, run `pwd` and confirm it matches your real git root before trusting `EXECUTED`.
 

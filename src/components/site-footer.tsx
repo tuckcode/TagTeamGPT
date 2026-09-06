@@ -1,4 +1,4 @@
-import { THIS_REPO, UPSTREAM_REPO } from "@/lib/facts";
+import { PRODUCT_NAME, THIS_REPO, UPSTREAM_REPO } from "@/lib/facts";
 
 export function SiteFooter() {
   return (
@@ -9,7 +9,7 @@ export function SiteFooter() {
             href={THIS_REPO}
             className="text-foreground underline-offset-4 hover:underline"
           >
-            CodexGPT
+            {PRODUCT_NAME}
           </a>{" "}
           — desktop-app take on the C2C split. Inspired by{" "}
           <a

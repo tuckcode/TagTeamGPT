@@ -20,9 +20,9 @@ const instrument = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "CodexGPT — Chat plans, Codex ships",
+  title: "Lob — Chat lobs. Codex dunks.",
   description:
-    "A desktop-app take on the ChatGPT + Codex split: keybind control plane, optional MCP data plane, inspired by Codex with ChatGPT.",
+    "A desktop-app take on the ChatGPT + Codex split: Chat lobs the plan, Codex dunks the code. Keybind control plane, optional MCP data plane. Not affiliated with OpenAI.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

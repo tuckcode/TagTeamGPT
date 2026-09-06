@@ -1,13 +1,13 @@
-import { NAV, THIS_REPO } from "@/lib/facts";
+import { NAV, PRODUCT_NAME, TAGLINE, THIS_REPO } from "@/lib/facts";
 
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <a href="#top" className="flex items-baseline gap-2 no-underline">
-          <span className="font-heading text-xl tracking-tight">CodexGPT</span>
+          <span className="font-heading text-xl tracking-tight">{PRODUCT_NAME}</span>
           <span className="hidden text-xs text-muted-foreground sm:inline">
-            Chat plans · Codex ships
+            {TAGLINE}
           </span>
         </a>
         <nav className="hidden items-center gap-4 text-sm md:flex">

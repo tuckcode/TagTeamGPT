@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { UPSTREAM_REPO } from "@/lib/facts";
+import { PRODUCT_NAME, UPSTREAM_REPO } from "@/lib/facts";
 
 export function Hero() {
   return (
@@ -10,13 +10,13 @@ export function Hero() {
       />
       <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">CodexGPT</Badge>
+          <Badge variant="secondary">{PRODUCT_NAME}</Badge>
           <Badge variant="outline">Desktop app take</Badge>
         </div>
         <h1 className="font-heading mt-6 max-w-3xl text-5xl leading-[1.05] tracking-tight sm:text-7xl">
-          Chat plans.
+          Chat lobs.
           <br />
-          <span className="italic text-primary">Codex ships.</span>
+          <span className="italic text-primary">Codex dunks.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
           My take on the split-brain idea from{" "}
