@@ -8,7 +8,7 @@ description: >
   Do not automate chatgpt.com in a nested browser. Do not use Work as the planner.
 ---
 
-# Lob (v0 paste-back · v1 keystroke driver)
+# Lob
 
 Chat lobs. Codex dunks. One ChatGPT desktop app.
 
@@ -17,16 +17,19 @@ Chat owns planning and review.
 
 Invoke in ChatGPT desktop **Codex** with **`$lob`** — not Cursor’s `/` picker.
 
+CLI: `docs/usage.md`. Stuck path (`--verify`, OCR, CUA): `docs/troubleshooting.md`.
+Keybinds: `references/keyboard.md`. Templates: `references/protocol.md`.
+
 ## Golden rules
 
-1. Prefer the **v1 driver** when available (macOS + Windows): hotkeys + clipboard
-   + Enter, no screenshots. macOS uses Control+1/2/3; Windows uses Alt+1/2/3.
-   Fall back to v0 paste-back if the driver fails or OS blocks keystrokes.
+1. Prefer the keystroke driver when available (macOS + Windows): hotkeys +
+   clipboard + Enter, no screenshots. macOS uses Control+1/2/3; Windows uses
+   Alt+1/2/3. Fall back to paste-back if the driver fails or OS blocks keystrokes.
 2. **Never** open nested `chatgpt.com`, hunt connector settings, or mouse-hunt
    the web ChatGPT UI. That is upstream C2C’s path, not this skill.
 3. **Connector is optional.** Default is paste-back `[C2C]` only. Do not require
-   tunnels/OAuth for v0/v1. Read-only workspace MCP (`mcp/`, v3) is for when
-   Chat should pull diffs/files itself. Rhizome mailbox is v2.
+   tunnels/OAuth. Read-only workspace MCP (`mcp/`) is for when Chat should pull
+   diffs/files itself. Rhizome mailbox is separate from the Chat MCP.
 4. **Never** use **Work** as the planning brain. Chat only.
 5. Keep every Codex→Chat control message under ~1 KB. No full diffs or file dumps.
 6. Prefer the keyboard workflow in `references/keyboard.md` (⌃1 / ⌃3 + clipboard).
@@ -41,95 +44,8 @@ Invoke in ChatGPT desktop **Codex** with **`$lob`** — not Cursor’s `/` picke
    sidebar on every hop. The folder must already exist as a Codex project
    (install once). Public users run Lob *inside their own repo*.
 10. **Codex cwd trap:** sidebar project name ≠ guarantee of writable git root.
-   If Codex `pwd` is under `~/Documents/Codex/…`, it is a conversation snapshot
-   — green tests there do not update the real checkout. Preflight `pwd`.
-
-## When to use the connector (v3)
-
-Same desktop app + keybinds either way. Decide at start (or when review gets thin):
-
-**Use connector** when Chat must independently check real code after `EXECUTED`
-(multi-file edits, risky logic, SUCCESS_CRITERIA that need `git_diff` /
-`read_file`). Then: ensure MCP + HTTPS tunnel are up, connector attached in
-Chat Developer Mode, and tell Chat to prefer those tools over asking for pastes.
-
-**Skip connector** when short `RESULT` / `CHANGED_FILES` / `TESTS` stubs are
-enough, or the user does not want background MCP/tunnel processes.
-
-Never dump whole files into Chat “just in case.” If the connector is off and
-Chat needs evidence, paste one short targeted snippet only.
-
-## Mode keybinds
-
-| Platform | Chat | Work | Codex |
-| --- | --- | --- | --- |
-| macOS | `⌃1` | `⌃2` | `⌃3` |
-| Windows / Linux | `Alt+1` | `Alt+2` | `Alt+3` |
-
-Remappable in Settings → Keyboard Shortcuts. If flaky, tell the user to remap.
-
-## v1 driver (macOS + Windows)
-
-From the repo root (ChatGPT desktop running). macOS needs Accessibility for the
-shell; Windows focuses the ChatGPT window via PowerShell SendKeys.
-
-```bash
-node tools/lob-driver.mjs chat-send "$(cat <<'EOF'
-[C2C]
-STATE: INIT
-...
-EOF
-)"
-node tools/lob-driver.mjs send --mode codex "execute this PLAN"
-```
-
-`codex-send` / `send --mode codex` fire Control+3 / Alt+3 and paste in **one**
-step. Do not `to codex` then `send` later — that restores Cursor in between and
-can paste into Chat. `chat-send` / `codex-send` require `[C2C]`. `ok: true` =
-keys fired, not accepted. Do not re-press ⌃1 / Alt+1 when already in Chat.
-
-Timing defaults: `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`,
-`LOB_PASTE_MS=120`, `LOB_ENTER_MS=250` (or `.lob/config.json`).
-
-Add `--verify` only for optional mode read-back (Electron often opaque; Windows
-UIA best-effort). OCR/vision off by default — `LOB_OCR=1` or
-`--verify-vision` only when `--verify` fails twice / mode unknown; abort if OCR
-says Work. No nested `chatgpt.com` / CUA on the happy path.
-
-## Auto-loop (macOS + Windows)
-
-```bash
-node tools/lob-loop.mjs --goal "…" --path /path/to/repo --boot
-```
-
-Give **goal** and **path** once. The loop hops Chat ↔ Codex after that.
-`--path` defaults to this repo if omitted. Overrides: `--no-codex` `--no-mailbox` `--no-memory`. Config: `lob.config.json` or `.lob/config.json`.
-
-Polls Chat for PLAN / DONE / BLOCKED. On PLAN writes `.lob/last-plan.md`
-and (by default) pastes into **Codex**. Waits for `.lob/executed.json`,
-then EXECUTED back to the **same** Chat. DONE/BLOCKED → vault mailbox + memory.
-
-MCP tunnel helper: `node tools/lob-mcp-up.mjs start|stop|status`
-(idle auto-stop after `mcp_idle_minutes`, default 60). Mailbox skim nudge after
-DONE when 10 new notes **or** 14 days: `node tools/lob-mailbox-nudge.mjs`
-(`--ack` after you skim).
-
-Do **not** open New chat between turns — one thread per goal.
-
-On Chat wait miss the loop tries one extra Enter, then `NO_REPLY`. Windows:
-if scrape is empty, copy reply → `Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard`.
-
-If the loop cannot see Chat text, dump replies yourself:
-
-```bash
-# copy Chat’s [C2C] reply, then:
-# macOS:
-pbpaste | node tools/lob-write-reply.mjs --from-clipboard
-# Windows (PowerShell):
-Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
-```
-
-Or write `.lob/last-reply.json` with `{ "ok": true, "state": "PLAN", "task_id": "…", "snippet": "…" }`.
+    If Codex `pwd` is under `~/Documents/Codex/…`, it is a conversation snapshot
+    — green tests there do not update the real checkout. Preflight `pwd`.
 
 ## Workflow
 
@@ -198,11 +114,6 @@ At iteration 12 without `DONE`, ask: “12 iterations done — continue?”
 
 - Nested in-app browser to `chatgpt.com` / mouse Computer Use on the web UI
 - Treating tunnels/connectors as required for every Lob run
-- Calling or installing upstream `c2c` / MCP bridge as if it were v0/v1
+- Calling or installing upstream `c2c` / MCP bridge as if it were this skill
 - Treating Work mode as the planner
-- Vision / OCR / screenshot loops on the happy path (hotkeys first; OCR only when stuck)
-
-## After v1
-
-- **v2:** Rhizome **mailbox** (`[C2C]` inbox/outbox) + optional **memory** notes — not written by the Chat MCP
-- **v3:** optional `mcp/` read-only Streamable HTTP — tunnel + Chat connector for selective `git_diff` / `read_file` (see above); no vault writes through that connector
+- Vision / OCR / screenshot loops on the happy path (hotkeys first)
