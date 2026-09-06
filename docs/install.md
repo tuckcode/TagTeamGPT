@@ -79,7 +79,7 @@ Remap in Settings → Keyboard Shortcuts if needed.
 
 **Do not re-press Chat’s shortcut when you are already in Chat** — on macOS `Control+1` can open **New chat** and abandon your pinned planner thread.
 
-**Mode ≠ project.** `Control+3` / `Alt+3` only flips the Codex tab. The sidebar keeps the last project. Before you send work to Codex, click the **mounted folder for this goal** — not a hardcoded name.
+**Mode ≠ project.** `Control+3` / `Alt+3` only flips the Codex tab. Bind the folder with `--path` (or `$lob` path + goal). Do not click the sidebar every hop. The folder must already be a Codex project from install.
 
 ## 4. Optional: keystroke driver (macOS + Windows)
 
@@ -87,7 +87,7 @@ From the repo root, with ChatGPT desktop running:
 
 ```bash
 node tools/lob-driver.mjs to chat
-node tools/lob-driver.mjs to codex
+node tools/lob-loop.mjs --goal "…" --path /path/to/your/repo --boot
 ```
 
 - **macOS:** grant **Accessibility** to your terminal (or Cursor) if keystrokes are blocked. Uses `Control+1/2/3`.

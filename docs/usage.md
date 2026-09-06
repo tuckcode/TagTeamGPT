@@ -4,6 +4,8 @@ ChatGPT **Chat** plans and reviews. **Codex** edits, runs shells, and tests. You
 
 ![Lob loop](lob-loop-diagram.png)
 
+*Placeholder diagram. Real dunk art later.*
+
 `[C2C]` is the Chat-to-Codex handshake tag from upstream, not “clipboard-to-clipboard.”
 
 ## The idea in one loop
@@ -12,23 +14,22 @@ ChatGPT **Chat** plans and reviews. **Codex** edits, runs shells, and tests. You
 INIT → PLAN → EXECUTING → EXECUTED → REVIEW → PLAN | DONE | BLOCKED
 ```
 
-1. Codex starts with `$lob` and emits a tiny **INIT** stub.
-2. You paste that into a pinned **Chat** thread.
-3. Chat replies with a substantive **PLAN**.
-4. You paste the PLAN into **Codex**. Codex implements.
-5. Codex sends **EXECUTED** back to the **same** Chat thread.
-6. Chat replies **DONE**, another **PLAN**, or **BLOCKED**.
+Give a **goal** and a **repo path**. The driver hops those states: Chat plans, Codex edits, Chat reviews.
+
+```bash
+node tools/lob-loop.mjs --goal "…" --path /path/to/repo --boot
+```
 
 Keep control messages under ~1 KB. Do not dump full diffs into Chat unless Chat asks for one short snippet (or the optional MCP connector can `git_diff` / `read_file`).
 
-## Manual paste-back (any OS)
+## Manual paste-back (fallback)
 
-Best first path — no Accessibility, no tunnels.
+Use this when the driver cannot run — no Accessibility, no tunnels.
 
-1. In **Codex**, run `$lob` (or “Use Lob to implement X”).
+1. In **Codex**, run `$lob` and give the repo path plus the goal.
 2. First time: paste the **boot prompt** from [protocol.md](../.agents/skills/lob/references/protocol.md) into your pinned Chat thread.
 3. Copy each `INIT` / `EXECUTED` stub → `Control+1` / `Alt+1` → paste → send.
-4. Copy Chat’s `PLAN` / `DONE` / `BLOCKED` → click the **mounted project for this goal** → `Control+3` / `Alt+3` if you are not already in Codex → paste into that live thread → send.
+4. Copy Chat’s `PLAN` / `DONE` / `BLOCKED` → `Control+3` / `Alt+3` into the Codex thread for that path → paste → send.
 5. Repeat until Chat says **DONE**.
 
 ### What a good PLAN looks like

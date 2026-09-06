@@ -39,7 +39,7 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 ## Capabilities and Constraints
 
 - **v0 (shipped):** Skill + protocol; human (or agent-driven) paste-back between Chat and Codex.
-- **v1 (shipped):** keystroke driver — mode hotkeys + clipboard + Enter with light accessibility read-back; no vision screenshots in the happy path. No nested `chatgpt.com`.
+- **v1 (shipped):** keystroke driver + auto-loop — `--goal` and `--path` once, then Chat ↔ Codex hops with ~1s focus bursts. No nested `chatgpt.com`.
 - **v2 (started):** Rhizome **mailbox** + **memory** — loop defaults write DONE/BLOCKED
   receipts to `projects/lob/mailbox/` and goal notes to `projects/lob/memory/`.
   Chat + Codex handoff are also **on by default** (`lob.config.json`). Vault writes
