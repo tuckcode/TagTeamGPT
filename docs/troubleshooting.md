@@ -42,9 +42,9 @@
 
 ## Auto-loop returns `NO_REPLY` or never sees Chat’s PLAN
 
-**Cause:** Accessibility scrape of Electron UI often returns empty. The loop may try one extra Enter on a Chat wait miss, then give up with `NO_REPLY`.
+**Cause:** Accessibility scrape of Electron UI often returns empty. The loop now copies the Chat thread twice (about 2s and 8s after send) instead of waiting 30s.
 
-**Fix:** Manually copy Chat’s `[C2C]` reply, then:
+**Fix:** If that still misses, copy Chat’s `[C2C]` reply, then:
 
 ```bash
 # macOS

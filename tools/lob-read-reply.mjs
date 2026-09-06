@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Best-effort read of the latest [C2C] STATE from ChatGPT desktop.
-// Uses Accessibility / UIA text only — no screenshots.
+// Happy path: --grab (brief focus + copy). AX scrape is slow and often empty.
 //
+//   node tools/lob-read-reply.mjs --grab
 //   node tools/lob-read-reply.mjs
 //   → {"ok":true,"state":"PLAN","task_id":"c2c_…","snippet":"…"}
 //
@@ -13,6 +14,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { STATE_DIR } from "./lib/lob-config.mjs";
 
 const APP = "ChatGPT";
 const PLATFORM = process.platform;
@@ -22,6 +24,42 @@ function jxa(body) {
     encoding: "utf8",
     timeout: 45_000,
   }).trim();
+}
+
+function grabMac() {
+  return jxa(`
+    const se = Application('System Events');
+    const procs = se.processes.whose({ name: ${JSON.stringify(APP)} });
+    if (procs.length === 0) throw new Error('APP_NOT_RUNNING');
+    const p = procs[0];
+    let prev = '';
+    try {
+      const fp = se.applicationProcesses.whose({ frontmost: true });
+      if (fp.length) prev = String(fp[0].name());
+    } catch (e) {}
+    p.frontmost = true;
+    delay(0.15);
+    se.keystroke('a', { using: ['command down'] });
+    delay(0.05);
+    se.keystroke('c', { using: ['command down'] });
+    delay(0.12);
+    if (prev && prev !== ${JSON.stringify(APP)}) {
+      try { Application(prev).activate(); } catch (e) {}
+    }
+    const app = Application.currentApplication();
+    app.includeStandardAdditions = true;
+    String(app.theClipboard());
+  `);
+}
+
+function persistReply(parsed) {
+  if (!parsed.ok) return;
+  fs.mkdirSync(STATE_DIR, { recursive: true });
+  fs.writeFileSync(
+    path.join(STATE_DIR, "last-reply.json"),
+    JSON.stringify({ ok: true, state: parsed.state, task_id: parsed.task_id, snippet: parsed.snippet }, null, 2) +
+      "\n"
+  );
 }
 
 function classifyMac(e) {
@@ -45,7 +83,7 @@ function scrapeMac() {
       try { t = String(el.value() || ''); } catch (e) {}
       if (!t) { try { t = String(el.description() || ''); } catch (e) {} }
       if (!t) { try { t = String(el.name() || ''); } catch (e) {} }
-      if (t && t.length < 2000) chunks.push(t);
+      if (t && t.length < 20000) chunks.push(t);
       let kids = [];
       try { kids = el.uiElements(); } catch (e) {}
       for (let i = 0; i < kids.length; i++) walk(kids[i], d + 1);
@@ -80,7 +118,7 @@ try {
     $t = ''
     try { $t = [string]$el.Current.Name } catch {}
     if (-not $t) { try { $t = [string]$el.Current.HelpText } catch {} }
-    if ($t -and $t.Length -lt 2000) { [void]$chunks.Add($t) }
+    if ($t -and $t.Length -lt 20000) { [void]$chunks.Add($t) }
     try {
       $child = $walker.GetFirstChild($el)
       while ($null -ne $child) {
@@ -146,9 +184,10 @@ function parseC2C(text) {
 }
 
 try {
+  const grab = process.argv.includes("--grab");
   let text = "";
   if (PLATFORM === "darwin") {
-    text = scrapeMac();
+    text = grab ? grabMac() : scrapeMac();
   } else if (PLATFORM === "win32") {
     text = scrapeWin();
   } else {
@@ -163,6 +202,7 @@ try {
     process.exit();
   }
   const parsed = parseC2C(text);
+  if (parsed.ok) persistReply(parsed);
   console.log(JSON.stringify(parsed));
   process.exitCode = parsed.ok ? 0 : 1;
 } catch (e) {

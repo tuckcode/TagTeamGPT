@@ -36,10 +36,10 @@ Invoke in ChatGPT desktop **Codex** with **`$lob`** — not Cursor’s `/` picke
    thread (no local folder). Mount the **goal repo** only in **Codex** for
    execution. Banner: “Local projects don't support Chat.”
 9. **Codex mode ≠ Codex project.** `Control+3` / `Alt+3` only flips the tab.
-   The sidebar keeps the **last** project (often some other folder). Before any
-   `codex-send`, click the **mounted project for this goal** — whatever that
-   folder is named. Do not hardcode this checkout's folder name; that name is only this
-   development checkout. Public users run Lob *inside their own repo*.
+   The user gives the repo **path** with the goal (`--path` / `$lob` path).
+   The loop binds that path and Codex must `pwd` there. Do not click the
+   sidebar on every hop. The folder must already exist as a Codex project
+   (install once). Public users run Lob *inside their own repo*.
 10. **Codex cwd trap:** sidebar project name ≠ guarantee of writable git root.
    If Codex `pwd` is under `~/Documents/Codex/…`, it is a conversation snapshot
    — green tests there do not update the real checkout. Preflight `pwd`.
@@ -99,12 +99,11 @@ says Work. No nested `chatgpt.com` / CUA on the happy path.
 ## Auto-loop (macOS + Windows)
 
 ```bash
-# Full workflow by default: Chat + Codex handoff (+ mailbox/memory when configured)
-node tools/lob-loop.mjs --goal "…"
+node tools/lob-loop.mjs --goal "…" --path /path/to/repo --boot
 ```
 
-Overrides: `--no-codex` `--no-mailbox` `--no-memory` `--boot`. Config:
-`lob.config.json` or `.lob/config.json`.
+Give **goal** and **path** once. The loop hops Chat ↔ Codex after that.
+`--path` defaults to this repo if omitted. Overrides: `--no-codex` `--no-mailbox` `--no-memory`. Config: `lob.config.json` or `.lob/config.json`.
 
 Polls Chat for PLAN / DONE / BLOCKED. On PLAN writes `.lob/last-plan.md`
 and (by default) pastes into **Codex**. Waits for `.lob/executed.json`,

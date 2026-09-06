@@ -89,18 +89,14 @@ Optional `--verify` tries a mode read-back. Electron often hides the mode chip f
 ## Auto-loop (macOS + Windows)
 
 ```bash
-node tools/lob-loop.mjs --goal "…"
+node tools/lob-loop.mjs --goal "…" --path /path/to/repo --boot
 ```
+
+Give the goal and the folder path once. ChatGPT is brought forward for about a second to paste, then given back. Chat and Codex keep writing while you click around. Codex done is a file (`<repo>/.lob/executed.json`) — no focus. Chat’s reply is copied in a short burst, up to 10 seconds after send.
 
 Defaults (see `lob.config.json`): Chat + Codex handoff on; optional mailbox/memory notes.
 
-On a Chat wait miss, the loop tries one extra Enter, then returns `NO_REPLY`. On Windows, if the scrape is empty, copy Chat’s reply and run:
-
-```bash
-Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
-```
-
-If the loop cannot scrape Chat’s reply at all, copy Chat’s `[C2C]` block and run:
+If Chat’s `[C2C]` still is not seen, copy it and run:
 
 ```bash
 # macOS

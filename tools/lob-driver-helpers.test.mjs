@@ -62,6 +62,19 @@ assert.equal(
   skipModeHotkeyBeforePaste("chat", { beforeOk: true, beforeMode: "Codex" }),
   false
 );
+assert.equal(
+  skipModeHotkeyBeforePaste("chat", {
+    beforeOk: false,
+    lastMode: "ChatGPT",
+  }),
+  true,
+  "session last_mode Chat skips Control+1 without an AX scan"
+);
+assert.equal(
+  skipModeHotkeyBeforePaste("chat", { beforeOk: false }),
+  false,
+  "unknown mode still presses Control+1 so we leave Codex"
+);
 
 const c2c = parseC2C("x\n[C2C]\nSTATE: PLAN\nTASK_ID: c2c_ab\n");
 assert.equal(c2c.ok, true);
