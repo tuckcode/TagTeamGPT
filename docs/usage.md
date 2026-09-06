@@ -2,10 +2,6 @@
 
 ChatGPT **Chat** plans and reviews. **Codex** edits, runs shells, and tests. You (or the keystroke driver) move short `[C2C]` messages between them.
 
-![Lob loop](lob-loop-diagram.png)
-
-*Placeholder diagram. Real dunk art later.*
-
 `[C2C]` is the Chat-to-Codex handshake tag from upstream, not “clipboard-to-clipboard.”
 
 ## The idea in one loop
@@ -81,11 +77,9 @@ On Windows PowerShell you can also: `Get-Content stub.txt -Raw | node tools/lob-
 
 Prefer `chat-send` / `codex-send` / `send --mode chat|codex`. **Do not re-press `Control+1` / `Alt+1` when already in Chat** — it can open New chat and abandon your pinned planner thread.
 
-Optional `--verify` tries a mode read-back. Electron often hides the mode chip from accessibility; Windows UIA is best-effort. Skip verify on the happy path and confirm the thread by eye.
-
 **Timing** (slow machine? raise these): `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`, `LOB_PASTE_MS=120`, `LOB_ENTER_MS=250`. Same keys may live in `.lob/config.json`.
 
-**Vision / OCR is off by default.** Use `LOB_OCR=1` or `--verify-vision` only when `--verify` fails twice or mode is unknown — one crop of the mode chip. If OCR says Work, abort. No nested `chatgpt.com` / CUA on the happy path.
+`--verify`, OCR, and CUA are stuck-path only — see [Troubleshooting](troubleshooting.md).
 
 ## Auto-loop (macOS + Windows)
 

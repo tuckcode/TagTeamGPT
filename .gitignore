@@ -3,8 +3,6 @@
 .cursor/
 agent-tools/
 
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /mcp/node_modules

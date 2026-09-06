@@ -38,8 +38,6 @@ cp -R .agents/skills/lob ~/.agents/skills/lob
 
 Restart Codex or reopen the project if `$lob` does not appear.
 
-If you previously copied `$codexgpt`, delete `~/.agents/skills/codexgpt` and copy `.agents/skills/lob` instead.
-
 ### Invoke
 
 In a **Codex** composer, type:
