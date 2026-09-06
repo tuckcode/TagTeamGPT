@@ -29,19 +29,11 @@ export function Security() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="mcp">
-            <AccordionTrigger>With upstream MCP bridge</AccordionTrigger>
+            <AccordionTrigger>With workspace MCP</AccordionTrigger>
             <AccordionContent className="text-muted-foreground">
-              Same posture as C2C: read-only tools only, OAuth pairing, path
+              Read-only tools only, Bearer on the HTTPS tunnel, path
               containment, sensitive-file deny list. URL alone is not enough
-              without a bearer token bound to one workspace.
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="cu">
-            <AccordionTrigger>Desktop Computer Use</AccordionTrigger>
-            <AccordionContent className="text-muted-foreground">
-              If Codex drives keybinds via Computer Use, Always-allow only
-              the ChatGPT app. It can see screen content in allowed apps.
-              Prefer keystrokes over broad click automation.
+              without a token bound to one workspace.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="work">

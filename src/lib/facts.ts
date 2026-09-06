@@ -1,6 +1,5 @@
 export const UPSTREAM_REPO = "https://github.com/XiaoDuoYa/codex-with-chatgpt";
-export const GITHUB_REPO = "https://github.com/tuckcode/lob";
-export const THIS_REPO = GITHUB_REPO;
+export const THIS_REPO = "https://github.com/tuckcode/lob";
 export const PRODUCT_NAME = "Lob";
 export const TAGLINE = "Chat lobs. Codex dunks.";
 export const SKILL_PATH = ".agents/skills/lob";
@@ -51,16 +50,6 @@ export const MCP_TOOLS = [
     scope: "git.read",
     what: "Paginated diff. The independent review tool after EXECUTED.",
   },
-  {
-    name: "test_status",
-    scope: "execution.read",
-    what: "Reads the latest record Codex wrote — does not run tests.",
-  },
-  {
-    name: "execution_summary",
-    scope: "execution.read",
-    what: "Recent iterations: changed files, test summary, exit status.",
-  },
 ] as const;
 
 export const PROTOCOL_STEPS = [
@@ -110,16 +99,6 @@ Toggle survives reload; no flash of the wrong theme.
 
 SUCCESS_CRITERIA:
 User preference persists; default follows system.`,
-  },
-  {
-    state: "EXECUTE",
-    sender: "Codex",
-    title: "Keybind back to Codex — then ship",
-    detail:
-      "⌃3 / Alt+3 returns to Codex. Chat does not micro-manage tool calls. Codex edits, shells, tests with its own harness.",
-    message: `# back in Codex
-execute the PLAN
-optionally: c2c record --task c2c_f81a --iteration 1 ...`,
   },
   {
     state: "EXECUTED",
