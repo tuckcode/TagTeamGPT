@@ -1,8 +1,8 @@
 ---
-name: codexgpt
+name: lob
 description: >
   Run the Lob desktop workflow: Chat lobs (plans/reviews), Codex dunks (executes).
-  Use when the user says Lob, CodexGPT, C2C, desktop Chat/Codex split,
+  Use when the user says Lob, $lob, C2C, desktop Chat/Codex split,
   or asks to plan in Chat and implement in Codex with paste-back [C2C] messages.
   Do not use for ordinary coding that stays only in Codex with no Chat planner.
   Do not automate chatgpt.com in a nested browser. Do not use Work as the planner.
@@ -11,12 +11,11 @@ description: >
 # Lob (v0 paste-back · v1 keystroke driver)
 
 Chat lobs. Codex dunks. One ChatGPT desktop app.
-The skill id is still `$codexgpt`.
 
 You (Codex) own execution: editing, shell, git, tests, recovery.
 Chat owns planning and review.
 
-Invoke in ChatGPT desktop **Codex** with **`$codexgpt`** — not Cursor’s `/` picker.
+Invoke in ChatGPT desktop **Codex** with **`$lob`** — not Cursor’s `/` picker.
 
 ## Golden rules
 
@@ -140,7 +139,7 @@ Or write `.codexgpt/last-reply.json` with `{ "ok": true, "state": "PLAN", "task_
 
 ### 0. Start
 
-When invoked (“Use Lob to …”, `$codexgpt`, etc.):
+When invoked (“Use Lob to …”, `$lob`, etc.):
 
 1. Confirm: desktop **Chat** + **Codex** tabs; user will paste between them.
 2. Remind the Chat / Codex keybinds for their OS.

@@ -4,7 +4,7 @@
 
 ![Lob loop](docs/codexgpt-loop-diagram.png)
 
-**Lob** is the product name. The GitHub repo and Codex skill are still `CodexGPT` / `$codexgpt` until those get renamed.
+**Lob** is the product name. Invoke it in Codex with **`$lob`**. The GitHub repo is still `tuckcode/CodexGPT`.
 
 Use **Chat** as the planning and review brain, and **Codex** as the hands — without nesting `chatgpt.com` or mouse-hunting a browser UI.
 
@@ -23,12 +23,12 @@ Inspired by [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-wi
 git clone https://github.com/tuckcode/CodexGPT.git
 cd CodexGPT
 mkdir -p ~/.agents/skills
-cp -R .agents/skills/codexgpt ~/.agents/skills/codexgpt
+cp -R .agents/skills/lob ~/.agents/skills/lob
 ```
 
 1. Open **your** project folder in ChatGPT desktop **Codex** (whatever that folder is named).
 2. Open a **cloud Chat** thread with **no** local folder (local projects don’t support Chat).
-3. In Codex, run `$codexgpt` or say `Use Lob to …`.
+3. In Codex, run `$lob` or say `Use Lob to …`.
 4. Paste `[C2C]` stubs between Chat and Codex until Chat says `DONE`.
 
 Full walkthrough: **[docs/install.md](docs/install.md)** → **[docs/usage.md](docs/usage.md)**.
@@ -56,7 +56,7 @@ Full walkthrough: **[docs/install.md](docs/install.md)** → **[docs/usage.md](d
 
 1. **Chat** = cloud thread, no folder. **Codex** = repo mounted.
 2. Never use **Work** as the planner.
-3. Invoke with **`$codexgpt`** in Codex (not Cursor’s `/`).
+3. Invoke with **`$lob`** in Codex (not Cursor’s `/`).
 4. Mode hotkeys only flip the tab. Click the **mounted project for this goal** before sending to Codex.
 5. Confirm Codex `pwd` is your real git root before trusting results.
 

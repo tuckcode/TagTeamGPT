@@ -2,12 +2,12 @@
 
 Friendly guides for installing and using **Lob** with the **ChatGPT desktop app**.
 
-The product is **Lob**. The GitHub repo and skill id are still `CodexGPT` / `$codexgpt`.
+Invoke in Codex with `$lob`. The GitHub repo is still `tuckcode/CodexGPT`.
 
 | Doc | What it covers |
 | --- | --- |
 | [Install](install.md) | Clone, install the skill, wire Chat + Codex correctly |
-| [Usage](usage.md) | Day-to-day loop: `$codexgpt`, paste-back, driver, auto-loop |
+| [Usage](usage.md) | Day-to-day loop: `$lob`, paste-back, driver, auto-loop |
 | [Troubleshooting](troubleshooting.md) | Common gotchas (Work mode, folder banner, wrong cwd) |
 | [Approach](approach.md) | Design notes vs upstream Codex-with-ChatGPT |
 | [MCP connector](../mcp/README.md) | Optional read-only repo eyes for Chat |

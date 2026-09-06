@@ -5,8 +5,7 @@ unified ChatGPT desktop app (Chat · Work · Codex in one window).
 
 **Chat lobs. Codex dunks.**
 
-The product is **Lob**. The GitHub repo and skill id are still `CodexGPT` /
-`$codexgpt`.
+The product is **Lob**. Invoke with `$lob`. The GitHub repo is still `tuckcode/CodexGPT`.
 
 Upstream inspiration:
 [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-with-chatgpt).
@@ -15,7 +14,7 @@ Upstream inspiration:
 
 | Layer | State |
 | --- | --- |
-| v0 Skill + paste-back | Shipped (`.agents/skills/codexgpt/`) |
+| v0 Skill + paste-back | Shipped (`.agents/skills/lob/`) |
 | v1 Keystroke driver | Shipped (`tools/codexgpt-driver.mjs`, macOS Control+ / Windows Alt+) |
 | v2 Mailbox / memory | Started (`codexgpt.config.json`, vault helpers) |
 | v3 Read-only workspace MCP | Optional (`mcp/`, tunnel helper) |
@@ -50,13 +49,13 @@ the **mounted folder for this goal** before sending work.
 
 Loop:
 
-1. Codex (via `$codexgpt`) writes INIT / EXECUTED to a fenced block.
+1. Codex (via `$lob`) writes INIT / EXECUTED to a fenced block.
 2. You switch to Chat and paste.
 3. Chat replies with PLAN / DONE / BLOCKED.
 4. You paste that reply into Codex.
 5. Codex executes; repeat.
 
-Protocol templates: [`.agents/skills/codexgpt/references/protocol.md`](../.agents/skills/codexgpt/references/protocol.md).
+Protocol templates: [`.agents/skills/lob/references/protocol.md`](../.agents/skills/lob/references/protocol.md).
 
 ## Data plane
 
@@ -77,8 +76,8 @@ INIT → PLAN → EXECUTING → EXECUTED → REVIEW → PLAN | DONE | BLOCKED
 See [install.md](install.md) and [usage.md](usage.md).
 
 - Open this repo as a Codex project → skill auto-loads from `.agents/skills`.
-- Or copy to `~/.agents/skills/codexgpt` for all projects.
-- Invoke: `$codexgpt` or “Use Lob to …”.
+- Or copy to `~/.agents/skills/lob` for all projects.
+- Invoke: `$lob` or “Use Lob to …”.
 
 ## Credit
 

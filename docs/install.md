@@ -2,7 +2,7 @@
 
 Goal: get the skill into **ChatGPT desktop Codex**, then set up Chat and Codex the right way.
 
-The product is **Lob**. Clone URL and skill id are still `CodexGPT` / `$codexgpt`.
+The product is **Lob**. Invoke with `$lob`. Clone URL is still `tuckcode/CodexGPT`.
 
 ## What you need
 
@@ -17,7 +17,7 @@ git clone https://github.com/tuckcode/CodexGPT.git
 cd CodexGPT
 ```
 
-If the repo lives in a nested folder on your machine, `cd` into the package that contains `.agents/skills/codexgpt`.
+If the repo lives in a nested folder on your machine, `cd` into the package that contains `.agents/skills/lob`.
 
 ## 2. Install the skill
 
@@ -33,17 +33,19 @@ Pick one:
 
 ```bash
 mkdir -p ~/.agents/skills
-cp -R .agents/skills/codexgpt ~/.agents/skills/codexgpt
+cp -R .agents/skills/lob ~/.agents/skills/lob
 ```
 
-Restart Codex or reopen the project if `$codexgpt` does not appear.
+Restart Codex or reopen the project if `$lob` does not appear.
+
+If you previously copied `$codexgpt`, replace `~/.agents/skills/codexgpt` with the `lob` folder.
 
 ### Invoke
 
 In a **Codex** composer, type:
 
 ```text
-$codexgpt
+$lob
 ```
 
 or say: `Use Lob to …`
@@ -104,7 +106,7 @@ See [mcp/README.md](../mcp/README.md) and `node tools/codexgpt-mcp-up.mjs start`
 
 ## Sanity check
 
-1. Codex: `$codexgpt` is recognized.
+1. Codex: `$lob` is recognized.
 2. Chat: cloud thread, no folder banner.
 3. Codex: sidebar shows **this goal’s** mounted folder; `pwd` is your real git root (not `~/Documents/Codex/…` snapshot).
 4. Hotkeys flip Chat ↔ Codex.

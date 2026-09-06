@@ -12,7 +12,7 @@ ChatGPT **Chat** plans and reviews. **Codex** edits, runs shells, and tests. You
 INIT → PLAN → EXECUTING → EXECUTED → REVIEW → PLAN | DONE | BLOCKED
 ```
 
-1. Codex starts with `$codexgpt` and emits a tiny **INIT** stub.
+1. Codex starts with `$lob` and emits a tiny **INIT** stub.
 2. You paste that into a pinned **Chat** thread.
 3. Chat replies with a substantive **PLAN**.
 4. You paste the PLAN into **Codex**. Codex implements.
@@ -25,8 +25,8 @@ Keep control messages under ~1 KB. Do not dump full diffs into Chat unless Chat 
 
 Best first path — no Accessibility, no tunnels.
 
-1. In **Codex**, run `$codexgpt` (or “Use Lob to implement X”).
-2. First time: paste the **boot prompt** from [protocol.md](../.agents/skills/codexgpt/references/protocol.md) into your pinned Chat thread.
+1. In **Codex**, run `$lob` (or “Use Lob to implement X”).
+2. First time: paste the **boot prompt** from [protocol.md](../.agents/skills/lob/references/protocol.md) into your pinned Chat thread.
 3. Copy each `INIT` / `EXECUTED` stub → `Control+1` / `Alt+1` → paste → send.
 4. Copy Chat’s `PLAN` / `DONE` / `BLOCKED` → click the **mounted project for this goal** → `Control+3` / `Alt+3` if you are not already in Codex → paste into that live thread → send.
 5. Repeat until Chat says **DONE**.
@@ -134,7 +134,7 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 ## Protocol reference
 
-Full templates: [`.agents/skills/codexgpt/references/protocol.md`](../.agents/skills/codexgpt/references/protocol.md)  
-Keyboard notes: [`.agents/skills/codexgpt/references/keyboard.md`](../.agents/skills/codexgpt/references/keyboard.md)
+Full templates: [`.agents/skills/lob/references/protocol.md`](../.agents/skills/lob/references/protocol.md)  
+Keyboard notes: [`.agents/skills/lob/references/keyboard.md`](../.agents/skills/lob/references/keyboard.md)
 
 Stuck? See [Troubleshooting](troubleshooting.md).
