@@ -32,9 +32,10 @@ Driver / human:
 Confirmation is the next `[C2C]` STATE or a file side-effect
 (`demo/…`, `.codexgpt/executed.json`).
 
-The driver **skips** the mode hotkey when already in the target mode (use
-`--force` to thrash ⌃1/⌃3 anyway). Blind `codex-send` into a dead/empty
-Codex stub is the usual failure mode — mode flips, nothing runs.
+The driver **skips** the mode hotkey when already in the target mode.
+**Do not re-press ⌃1 while already in Chat** — it can open **New chat** and
+leave the pinned thread. Prefer `send` / `chat-send` without `--force-mode`.
+`--force-mode` re-fires the hotkey only when intentional.
 
 **Work contamination:** if the UI shows “Continued in Work” after a handoff,
 that is a **failure**. Work is not the planner and not the executor. Retry in

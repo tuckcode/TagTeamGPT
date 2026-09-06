@@ -142,7 +142,10 @@ async function sleep(ms) {
 async function switchMode(name, verify, { force = false } = {}) {
   const cfg = MODE_MAP[name];
   const before = readMode();
-  if (!force && before.ok && modesMatch(before.mode, cfg.want)) {
+  // Never re-press a mode hotkey when already there — especially Chat (⌃1),
+  // which can open New chat / leave the pinned thread. `--force` does not
+  // override this; use `--force-mode` only when you intentionally want the hotkey.
+  if (before.ok && modesMatch(before.mode, cfg.want)) {
     return {
       ok: true,
       mode: before.mode,
@@ -188,8 +191,8 @@ async function switchMode(name, verify, { force = false } = {}) {
   return { ...last, note: "hotkey sent; AX verify unavailable", switched: true };
 }
 
-async function switchAndSend(name, text, verify, { force = false } = {}) {
-  const s = await switchMode(name, verify, { force });
+async function switchAndSend(name, text, verify, { force = false, forceMode = false } = {}) {
+  const s = await switchMode(name, verify, { force: forceMode });
   if (!s.ok && s.code !== "MODE_ELEMENT_NOT_FOUND") return { ...s, caveat: CAVEAT };
 
   // Opaque AX: still paste (keystroke-first), but do NOT report success.
@@ -275,7 +278,10 @@ async function main() {
   const args = process.argv.slice(2);
   const verify = args.includes("--verify");
   const force = args.includes("--force");
-  const pos = args.filter((a) => a !== "--verify" && a !== "--force");
+  const forceMode = args.includes("--force-mode");
+  const pos = args.filter(
+    (a) => a !== "--verify" && a !== "--force" && a !== "--force-mode"
+  );
   const [cmd, arg, ...rest] = pos;
   let text = [arg, ...rest].filter(Boolean).join(" ");
   if (arg === "-") text = await readStdin();
@@ -292,12 +298,12 @@ async function main() {
         print({
           ok: false,
           code: "USAGE",
-          detail: "to chat|work|codex [--verify] [--force]",
+          detail: "to chat|work|codex [--verify] [--force-mode]",
         });
         process.exitCode = 1;
         break;
       }
-      const r = await switchMode(arg, verify, { force });
+      const r = await switchMode(arg, verify, { force: forceMode });
       print(r);
       process.exitCode = r.ok ? 0 : 1;
       break;
@@ -319,7 +325,7 @@ async function main() {
         print({
           ok: false,
           code: "USAGE",
-          detail: `${cmd} "text" [--verify] [--force]`,
+          detail: `${cmd} "text" [--verify] [--force-mode]`,
         });
         process.exitCode = 1;
         break;
@@ -328,7 +334,7 @@ async function main() {
         cmd === "chat-send" ? "chat" : "codex",
         text,
         verify,
-        { force }
+        { force, forceMode }
       );
       print(r);
       process.exitCode = r.ok ? 0 : 1;
@@ -339,7 +345,7 @@ async function main() {
         ok: false,
         code: "USAGE",
         detail:
-          "mode | to chat|work|codex [--verify] [--force] | send <text|-> | chat-send <text|-> [--verify] [--force] | codex-send <text|-> [--verify] [--force]",
+          "mode | to chat|work|codex [--verify] [--force-mode] | send <text|-> | chat-send <text|-> [--verify] [--force-mode] | codex-send <text|-> [--verify] [--force-mode]",
       });
       process.exitCode = 1;
   }
