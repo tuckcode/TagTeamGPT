@@ -2,31 +2,31 @@
 /**
  * Start/stop the local MCP server + Cloudflare Quick Tunnel.
  *
- *   node tools/codexgpt-mcp-up.mjs start|stop|status
+ *   node tools/lob-mcp-up.mjs start|stop|status
  *
  * Idle auto-stop (no cron): after mcp_idle_minutes with no /mcp traffic,
- * stops MCP + tunnel. Config: codexgpt.config.json → mcp_idle_minutes (default 60).
- * Set 0 to disable. Env: CODEXGPT_MCP_IDLE_MINUTES overrides.
+ * stops MCP + tunnel. Config: lob.config.json → mcp_idle_minutes (default 60).
+ * Set 0 to disable. Env: LOB_MCP_IDLE_MINUTES overrides.
  *
  * Writes:
- *   .codexgpt/mcp.pids.json
- *   .codexgpt/mcp.connector-url
- *   .codexgpt/mcp.last-activity
+ *   .lob/mcp.pids.json
+ *   .lob/mcp.connector-url
+ *   .lob/mcp.last-activity
  */
 import { spawn, execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadConfig } from "./lib/codexgpt-config.mjs";
+import { loadConfig } from "./lib/lob-config.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const STATE = path.join(ROOT, ".codexgpt");
+const STATE = path.join(ROOT, ".lob");
 const PIDS = path.join(STATE, "mcp.pids.json");
 const URL_FILE = path.join(STATE, "mcp.connector-url");
 const ACTIVITY = path.join(STATE, "mcp.last-activity");
 const MCP_DIR = path.join(ROOT, "mcp");
-const PORT = process.env.CODEXGPT_MCP_PORT || "8743";
+const PORT = process.env.LOB_MCP_PORT || "8743";
 
 function print(obj) {
   console.log(JSON.stringify(obj));
@@ -73,8 +73,8 @@ function ensureToken() {
 }
 
 function idleMinutes() {
-  if (process.env.CODEXGPT_MCP_IDLE_MINUTES != null) {
-    return Number(process.env.CODEXGPT_MCP_IDLE_MINUTES);
+  if (process.env.LOB_MCP_IDLE_MINUTES != null) {
+    return Number(process.env.LOB_MCP_IDLE_MINUTES);
   }
   return Number(loadConfig().mcp_idle_minutes ?? 60);
 }
@@ -88,7 +88,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const activity = ${JSON.stringify(ACTIVITY)};
 const stopCmd = ${JSON.stringify(process.execPath)};
-const stopArgs = ${JSON.stringify([path.join(__dirname, "codexgpt-mcp-up.mjs"), "stop"])};
+const stopArgs = ${JSON.stringify([path.join(__dirname, "lob-mcp-up.mjs"), "stop"])};
 const idleMs = ${ms};
 const poll = 30000;
 function last() {
@@ -131,7 +131,7 @@ async function start() {
   }
 
   const token = ensureToken();
-  const allowNoAuth = process.env.CODEXGPT_MCP_ALLOW_NO_AUTH === "1";
+  const allowNoAuth = process.env.LOB_MCP_ALLOW_NO_AUTH === "1";
   const idle = idleMinutes();
 
   const mcpLog = path.join(STATE, "mcp.server.log");
@@ -145,10 +145,10 @@ async function start() {
     cwd: MCP_DIR,
     env: {
       ...process.env,
-      CODEXGPT_ROOT: ROOT,
-      CODEXGPT_MCP_TOKEN: token,
-      CODEXGPT_MCP_PORT: PORT,
-      ...(allowNoAuth ? { CODEXGPT_MCP_ALLOW_NO_AUTH: "1" } : {}),
+      LOB_ROOT: ROOT,
+      LOB_MCP_TOKEN: token,
+      LOB_MCP_PORT: PORT,
+      ...(allowNoAuth ? { LOB_MCP_ALLOW_NO_AUTH: "1" } : {}),
     },
     stdio: ["ignore", mcpOut, mcpOut],
     detached: true,
@@ -208,8 +208,8 @@ async function start() {
     pids,
     idle_minutes: idle,
     note: allowNoAuth
-      ? "No-auth allowed (CODEXGPT_MCP_ALLOW_NO_AUTH=1)"
-      : "Bearer required; token in .codexgpt/mcp.token",
+      ? "No-auth allowed (LOB_MCP_ALLOW_NO_AUTH=1)"
+      : "Bearer required; token in .lob/mcp.token",
   });
 }
 
@@ -251,6 +251,6 @@ if (cmd === "start") start();
 else if (cmd === "stop") stop();
 else if (cmd === "status") status();
 else {
-  print({ ok: false, code: "USAGE", detail: "codexgpt-mcp-up.mjs start|stop|status" });
+  print({ ok: false, code: "USAGE", detail: "lob-mcp-up.mjs start|stop|status" });
   process.exitCode = 1;
 }

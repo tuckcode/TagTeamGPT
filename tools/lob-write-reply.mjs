@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Write .codexgpt/last-reply.json for the auto-loop (when AX scrape fails).
+ * Write .lob/last-reply.json for the auto-loop (when AX scrape fails).
  *
- *   node tools/codexgpt-write-reply.mjs --state PLAN --task-id c2c_xxxx [--snippet "…"]
- *   pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard          # macOS
- *   Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard  # Windows
- *   node tools/codexgpt-write-reply.mjs --from-text "$(cat reply.md)"
+ *   node tools/lob-write-reply.mjs --state PLAN --task-id c2c_xxxx [--snippet "…"]
+ *   pbpaste | node tools/lob-write-reply.mjs --from-clipboard          # macOS
+ *   Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard  # Windows
+ *   node tools/lob-write-reply.mjs --from-text "$(cat reply.md)"
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -14,7 +14,7 @@ import { execFileSync } from "node:child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const OUT = path.join(ROOT, ".codexgpt", "last-reply.json");
+const OUT = path.join(ROOT, ".lob", "last-reply.json");
 
 function arg(flag, fallback = null) {
   const i = process.argv.indexOf(flag);
@@ -90,7 +90,7 @@ function main() {
           ok: false,
           code: "USAGE",
           detail:
-            "codexgpt-write-reply.mjs --state PLAN --task-id c2c_… [--snippet …] | --from-clipboard | --from-text …",
+            "lob-write-reply.mjs --state PLAN --task-id c2c_… [--snippet …] | --from-clipboard | --from-text …",
         })
       );
       process.exitCode = 1;

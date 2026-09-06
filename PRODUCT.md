@@ -34,15 +34,15 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 - Invoke skill with `$lob` or “Use Lob to …”.
 - Protocol lives in `.agents/skills/lob/references/protocol.md`.
 - Explainer site: `pnpm dev` → http://127.0.0.1:43127.
-- Public GitHub: tuckcode/CodexGPT. Cursor Origin codebase: knispo/CodexGPT.
+- Public GitHub: tuckcode/lob. Cursor Origin codebase: knispo/codexgpt.
 
 ## Capabilities and Constraints
 
 - **v0 (shipped):** Skill + protocol; human (or agent-driven) paste-back between Chat and Codex.
 - **v1 (shipped):** keystroke driver — mode hotkeys + clipboard + Enter with light accessibility read-back; no vision screenshots in the happy path. No nested `chatgpt.com`.
 - **v2 (started):** Rhizome **mailbox** + **memory** — loop defaults write DONE/BLOCKED
-  receipts to `projects/codexgpt/mailbox/` and goal notes to `projects/codexgpt/memory/`.
-  Chat + Codex handoff are also **on by default** (`codexgpt.config.json`). Vault writes
+  receipts to `projects/lob/mailbox/` and goal notes to `projects/lob/memory/`.
+  Chat + Codex handoff are also **on by default** (`lob.config.json`). Vault writes
   stay with Codex/Cursor tools — **not** the Chat-facing workspace MCP.
 - **v3 (in progress):** read-only workspace MCP (`mcp/`) over Streamable HTTP so Chat can `git_diff` / `read_file` without paste. Needs HTTPS tunnel + ChatGPT Developer Mode connector; optional (paste-back works without it); human still on BLOCKED. Keep this MCP **repo-read-only** — no vault writes through the tunnel.
 - Never use Work as the planning brain (coding-quota adjacent).
@@ -54,7 +54,7 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 - Name: **Lob**
 - Tagline: **Chat lobs. Codex dunks.**
 - Skill: **`$lob`**
-- Repo (until renamed): `tuckcode/CodexGPT`
+- Repo: `tuckcode/lob`
 - Voice: direct, technical, personal (“my take”); do not claim OpenAI affiliation.
 - Binding references when credited: XiaoDuoYa/codex-with-chatgpt.
 
@@ -64,8 +64,8 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 - Approach notes: `docs/approach.md`
 - Explainer UI: `src/`
 - Upstream inspiration: https://github.com/XiaoDuoYa/codex-with-chatgpt
-- Public GitHub: https://github.com/tuckcode/CodexGPT
-- Origin browse: https://cursor.com/codebase/knispo/CodexGPT
+- Public GitHub: https://github.com/tuckcode/lob
+- Origin browse: https://cursor.com/codebase/knispo/codexgpt
 - No fabricated testimonials, customers, or benchmarks — do not invent them.
 
 ## Product Principles

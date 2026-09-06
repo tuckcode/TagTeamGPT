@@ -2,7 +2,7 @@
 
 No nested `chatgpt.com`. No mouse hunting. No CUA required to *send*.
 
-Driver: `tools/codexgpt-driver.mjs` — macOS (`Control+1/2/3`, ⌘V) and Windows
+Driver: `tools/lob-driver.mjs` — macOS (`Control+1/2/3`, ⌘V) and Windows
 (`Alt+1/2/3`, Ctrl+V).
 
 ## Modes
@@ -29,14 +29,14 @@ Driver / human:
 3. On PLAN: ensure a **live Codex thread under the mounted project** is open
    (not an empty “Continue current work” stub) → Codex hotkey only if not already
    Codex → paste plan + short “execute this” → Enter  
-4. When Codex finished: write `.codexgpt/executed.json` (or poll marker)  
+4. When Codex finished: write `.lob/executed.json` (or poll marker)  
 5. Chat hotkey → paste EXECUTED stub → Enter  
 6. On DONE/BLOCKED: copy reply →  
-   `pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard` (macOS) or  
-   `Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard` (Windows)
+   `pbpaste | node tools/lob-write-reply.mjs --from-clipboard` (macOS) or  
+   `Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard` (Windows)
 
 `ok: true` from the driver means **keys fired**, not “Chat/Codex accepted.”
-Confirmation is the next `[C2C]` STATE or `.codexgpt/executed.json`.
+Confirmation is the next `[C2C]` STATE or `.lob/executed.json`.
 After send, the driver restores the previous front app (especially macOS).
 
 `chat-send` / `codex-send` require `[C2C]` at the start; clipboard is set then
@@ -47,11 +47,11 @@ The driver **skips** the mode hotkey when already in the target mode.
 and leave the pinned thread. Prefer `send` / `chat-send` / `codex-send` without
 `--force-mode`. `enter` sends Enter only when the composer is already focused.
 
-Timing defaults: `CODEXGPT_FOCUS_MS=200`, `CODEXGPT_MODE_SETTLE_MS=350`,
-`CODEXGPT_PASTE_MS=120`, `CODEXGPT_ENTER_MS=250` (or `.codexgpt/config.json`).
+Timing defaults: `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`,
+`LOB_PASTE_MS=120`, `LOB_ENTER_MS=250` (or `.lob/config.json`).
 
 Optional `--verify` for mode read-back — often opaque on Electron; Windows UIA is
-best-effort. **OCR/vision is off by default** (`CODEXGPT_OCR=1` or
+best-effort. **OCR/vision is off by default** (`LOB_OCR=1` or
 `--verify-vision` only when `--verify` fails twice / mode unknown; one mode-chip
 crop; abort if OCR says Work).
 

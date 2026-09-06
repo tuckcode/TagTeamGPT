@@ -5,7 +5,7 @@ unified ChatGPT desktop app (Chat · Work · Codex in one window).
 
 **Chat lobs. Codex dunks.**
 
-The product is **Lob**. Invoke with `$lob`. The GitHub repo is still `tuckcode/CodexGPT`.
+The product is **Lob**. Invoke with `$lob`. GitHub: `tuckcode/lob`.
 
 Upstream inspiration:
 [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-with-chatgpt).
@@ -15,8 +15,8 @@ Upstream inspiration:
 | Layer | State |
 | --- | --- |
 | v0 Skill + paste-back | Shipped (`.agents/skills/lob/`) |
-| v1 Keystroke driver | Shipped (`tools/codexgpt-driver.mjs`, macOS Control+ / Windows Alt+) |
-| v2 Mailbox / memory | Started (`codexgpt.config.json`, vault helpers) |
+| v1 Keystroke driver | Shipped (`tools/lob-driver.mjs`, macOS Control+ / Windows Alt+) |
+| v2 Mailbox / memory | Started (`lob.config.json`, vault helpers) |
 | v3 Read-only workspace MCP | Optional (`mcp/`, tunnel helper) |
 
 ## What we keep from C2C

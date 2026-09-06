@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * CodexGPT read-only workspace MCP over Streamable HTTP.
+ * Lob read-only workspace MCP over Streamable HTTP.
  *
  * Local:
- *   CODEXGPT_ROOT=/path/to/repo CODEXGPT_MCP_TOKEN=secret node src/http.mjs
+ *   LOB_ROOT=/path/to/repo LOB_MCP_TOKEN=secret node src/http.mjs
  *   → http://127.0.0.1:8743/mcp
  *
  * ChatGPT Chat connector needs a public HTTPS URL (tunnel) + Developer Mode.
- * Auth: Authorization: Bearer <CODEXGPT_MCP_TOKEN>
+ * Auth: Authorization: Bearer <LOB_MCP_TOKEN>
  */
 import express from "express";
 import fs from "node:fs";
@@ -21,15 +21,15 @@ import { resolveRoot } from "./workspace.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultRoot = path.resolve(__dirname, "../..");
 
-const PORT = Number(process.env.PORT || process.env.CODEXGPT_MCP_PORT || 8743);
-const HOST = process.env.CODEXGPT_MCP_HOST || "127.0.0.1";
-const ROOT = resolveRoot(process.env.CODEXGPT_ROOT || defaultRoot);
+const PORT = Number(process.env.PORT || process.env.LOB_MCP_PORT || 8743);
+const HOST = process.env.LOB_MCP_HOST || "127.0.0.1";
+const ROOT = resolveRoot(process.env.LOB_ROOT || defaultRoot);
 const TOKEN =
-  process.env.CODEXGPT_MCP_TOKEN ||
+  process.env.LOB_MCP_TOKEN ||
   process.env.MCP_BEARER_TOKEN ||
   randomBytes(24).toString("hex");
 
-const ACTIVITY = path.join(ROOT, ".codexgpt", "mcp.last-activity");
+const ACTIVITY = path.join(ROOT, ".lob", "mcp.last-activity");
 
 function touchActivity() {
   try {
@@ -44,12 +44,12 @@ const app = express();
 app.use(express.json({ limit: "2mb" }));
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, root: ROOT, name: "codexgpt-workspace" });
+  res.json({ ok: true, root: ROOT, name: "lob-workspace" });
 });
 
 const ALLOW_NO_AUTH =
-  process.env.CODEXGPT_MCP_ALLOW_NO_AUTH === "1" ||
-  process.env.CODEXGPT_MCP_ALLOW_NO_AUTH === "true";
+  process.env.LOB_MCP_ALLOW_NO_AUTH === "1" ||
+  process.env.LOB_MCP_ALLOW_NO_AUTH === "true";
 
 app.use((req, res, next) => {
   if (req.path === "/health") return next();
@@ -95,11 +95,11 @@ app.listen(PORT, HOST, () => {
       hint: "Tunnel this URL over HTTPS, then add as a ChatGPT custom MCP connector (Developer Mode). Send Authorization: Bearer <token>.",
     })
   );
-  if (!process.env.CODEXGPT_MCP_TOKEN && !process.env.MCP_BEARER_TOKEN) {
+  if (!process.env.LOB_MCP_TOKEN && !process.env.MCP_BEARER_TOKEN) {
     console.error(
       JSON.stringify({
         warning:
-          "CODEXGPT_MCP_TOKEN was not set; generated an ephemeral token for this process (not printed — read .codexgpt/mcp.token or set the env)",
+          "LOB_MCP_TOKEN was not set; generated an ephemeral token for this process (not printed — read .lob/mcp.token or set the env)",
         token_set: true,
       })
     );

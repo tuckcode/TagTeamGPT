@@ -2,7 +2,7 @@
 
 Friendly guides for installing and using **Lob** with the **ChatGPT desktop app**.
 
-Invoke in Codex with `$lob`. The GitHub repo is still `tuckcode/CodexGPT`.
+Invoke in Codex with `$lob`. GitHub: `tuckcode/lob`.
 
 | Doc | What it covers |
 | --- | --- |

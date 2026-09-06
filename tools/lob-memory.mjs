@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * CodexGPT v2 memory — longer goal/decision notes in the Rhizome vault.
+ * Lob v2 memory — longer goal/decision notes in the Rhizome vault.
  *
- *   node tools/codexgpt-memory.mjs --action start --task-id c2c_xxxx --goal "…"
- *   node tools/codexgpt-memory.mjs --action finish --task-id c2c_xxxx --goal "…" \
+ *   node tools/lob-memory.mjs --action start --task-id c2c_xxxx --goal "…"
+ *   node tools/lob-memory.mjs --action finish --task-id c2c_xxxx --goal "…" \
  *     --state DONE|BLOCKED [--snippet "…"] [--iteration N] [--mailbox-path "…"]
- *   node tools/codexgpt-memory.mjs --action decision --task-id c2c_xxxx --decision "…"
+ *   node tools/lob-memory.mjs --action decision --task-id c2c_xxxx --decision "…"
  *
- * Env: CODEXGPT_RHIZOME_VAULT, CODEXGPT_MEMORY=0
+ * Env: LOB_RHIZOME_VAULT, LOB_MEMORY=0
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -21,7 +21,7 @@ function arg(flag, fallback = null) {
 
 function vaultRoot() {
   return (
-    process.env.CODEXGPT_RHIZOME_VAULT ||
+    process.env.LOB_RHIZOME_VAULT ||
     path.join(os.homedir(), "Documents", "Rhizome Vault")
   );
 }
@@ -32,11 +32,11 @@ function today() {
 }
 
 function memoryPath(root, taskId) {
-  return path.join(root, "projects", "codexgpt", "memory", `${taskId}.md`);
+  return path.join(root, "projects", "lob", "memory", `${taskId}.md`);
 }
 
 function ensureHub(root) {
-  const memDir = path.join(root, "projects", "codexgpt", "memory");
+  const memDir = path.join(root, "projects", "lob", "memory");
   fs.mkdirSync(memDir, { recursive: true });
   const readme = path.join(memDir, "README.md");
   if (!fs.existsSync(readme)) {
@@ -45,12 +45,12 @@ function ensureHub(root) {
       `---
 type: Note
 status: Active
-tags: [codexgpt, memory]
+tags: [lob, memory]
 ---
 
-# CodexGPT memory
+# Lob memory
 
-Longer goal and decision notes (not every PLAN). Search: \`codexgpt memory\`. Hub: [[../CodexGPT|CodexGPT]].
+Longer goal and decision notes (not every PLAN). Search: \`lob memory\`. Hub: [[../Lob|Lob]].
 `,
       "utf8"
     );
@@ -62,7 +62,7 @@ function startNote({ taskId, goal }) {
   return `---
 type: Note
 status: Active
-tags: [codexgpt, memory, goal]
+tags: [lob, memory, goal]
 task_id: ${taskId}
 goal_status: active
 date: ${date}
@@ -70,7 +70,7 @@ date: ${date}
 
 # Goal: ${taskId}
 
-Hub: [[../CodexGPT|CodexGPT]] · Mailbox: [[../mailbox/README|mailbox]]
+Hub: [[../Lob|Lob]] · Mailbox: [[../mailbox/README|mailbox]]
 
 ## Goal
 
@@ -90,13 +90,13 @@ _Pending._
 
 ## Open
 
-- Run CodexGPT loop to DONE or BLOCKED.
+- Run Lob loop to DONE or BLOCKED.
 `;
 }
 
 function main() {
-  if (process.env.CODEXGPT_MEMORY === "0") {
-    console.log(JSON.stringify({ ok: true, skipped: true, reason: "CODEXGPT_MEMORY=0" }));
+  if (process.env.LOB_MEMORY === "0") {
+    console.log(JSON.stringify({ ok: true, skipped: true, reason: "LOB_MEMORY=0" }));
     return;
   }
 
@@ -115,7 +115,7 @@ function main() {
         ok: false,
         code: "USAGE",
         detail:
-          "codexgpt-memory.mjs --action start|finish|decision --task-id c2c_… [--goal …] [--state DONE|BLOCKED] [--decision …]",
+          "lob-memory.mjs --action start|finish|decision --task-id c2c_… [--goal …] [--state DONE|BLOCKED] [--decision …]",
       })
     );
     process.exitCode = 1;

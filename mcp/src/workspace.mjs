@@ -21,10 +21,11 @@ const DENY_PART = [
   "/.gnupg/",
   "/.aws/",
   "/.cursor/hooks/state/",
+  "/.lob/",
   "/.codexgpt/",
 ];
 
-export function resolveRoot(cwd = process.env.CODEXGPT_ROOT || process.cwd()) {
+export function resolveRoot(cwd = process.env.LOB_ROOT || process.cwd()) {
   return path.resolve(cwd);
 }
 
@@ -77,7 +78,7 @@ export function workspaceInfo(root) {
   return {
     root,
     languages: ["TypeScript", "JavaScript", "Markdown"],
-    project_type: "CodexGPT (Next.js explainer + Codex skill + desktop driver)",
+    project_type: "Lob (Next.js explainer + Codex skill + desktop driver)",
     git_branch: branch,
     dirty,
   };

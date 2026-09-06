@@ -2,12 +2,12 @@
 // Best-effort read of the latest [C2C] STATE from ChatGPT desktop.
 // Uses Accessibility / UIA text only — no screenshots.
 //
-//   node tools/codexgpt-read-reply.mjs
+//   node tools/lob-read-reply.mjs
 //   → {"ok":true,"state":"PLAN","task_id":"c2c_…","snippet":"…"}
 //
 // Windows: UIA dump is best-effort; if empty, returns NO_STATE (loop still
-// polls .codexgpt/last-reply.json). Hint:
-//   Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard
+// polls .lob/last-reply.json). Hint:
+//   Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
 
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -56,7 +56,7 @@ function scrapeMac() {
 }
 
 function scrapeWin() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "codexgpt-read-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-read-"));
   const ps1 = path.join(tmpDir, "read.ps1");
   const script = `
 $ErrorActionPreference = 'Stop'
@@ -123,8 +123,8 @@ function parseC2C(text) {
   if (!states.length) {
     const hint =
       PLATFORM === "win32"
-        ? "Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard"
-        : "pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard";
+        ? "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard"
+        : "pbpaste | node tools/lob-write-reply.mjs --from-clipboard";
     return {
       ok: false,
       code: "NO_STATE",
@@ -176,7 +176,7 @@ try {
         ok: false,
         code: "NO_STATE",
         detail: String(e.message || e).slice(0, 300),
-        hint: "Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard",
+        hint: "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard",
       })
     );
   }

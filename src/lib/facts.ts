@@ -1,5 +1,5 @@
 export const UPSTREAM_REPO = "https://github.com/XiaoDuoYa/codex-with-chatgpt";
-export const GITHUB_REPO = "https://github.com/tuckcode/CodexGPT";
+export const GITHUB_REPO = "https://github.com/tuckcode/lob";
 export const THIS_REPO = GITHUB_REPO;
 export const PRODUCT_NAME = "Lob";
 export const TAGLINE = "Chat lobs. Codex dunks.";

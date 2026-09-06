@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * CodexGPT v2 mailbox — write DONE/BLOCKED notes into the Rhizome vault.
+ * Lob v2 mailbox — write DONE/BLOCKED notes into the Rhizome vault.
  *
- *   node tools/codexgpt-mailbox.mjs \
+ *   node tools/lob-mailbox.mjs \
  *     --state DONE|BLOCKED --task-id c2c_xxxx --goal "…" [--snippet "…"] [--iteration N]
  *
  * Env:
- *   CODEXGPT_RHIZOME_VAULT  vault root (default: ~/Documents/Rhizome Vault)
- *   CODEXGPT_MAILBOX=0      disable (loop honors this too)
+ *   LOB_RHIZOME_VAULT  vault root (default: ~/Documents/Rhizome Vault)
+ *   LOB_MAILBOX=0      disable (loop honors this too)
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -21,7 +21,7 @@ function arg(flag, fallback = null) {
 
 function vaultRoot() {
   return (
-    process.env.CODEXGPT_RHIZOME_VAULT ||
+    process.env.LOB_RHIZOME_VAULT ||
     path.join(os.homedir(), "Documents", "Rhizome Vault")
   );
 }
@@ -37,8 +37,8 @@ function stamp() {
 }
 
 function main() {
-  if (process.env.CODEXGPT_MAILBOX === "0") {
-    console.log(JSON.stringify({ ok: true, skipped: true, reason: "CODEXGPT_MAILBOX=0" }));
+  if (process.env.LOB_MAILBOX === "0") {
+    console.log(JSON.stringify({ ok: true, skipped: true, reason: "LOB_MAILBOX=0" }));
     return;
   }
 
@@ -54,7 +54,7 @@ function main() {
         ok: false,
         code: "USAGE",
         detail:
-          "codexgpt-mailbox.mjs --state DONE|BLOCKED --task-id c2c_… [--goal …] [--snippet …] [--iteration N]",
+          "lob-mailbox.mjs --state DONE|BLOCKED --task-id c2c_… [--goal …] [--snippet …] [--iteration N]",
       })
     );
     process.exitCode = 1;
@@ -62,7 +62,7 @@ function main() {
   }
 
   const root = vaultRoot();
-  const mailboxDir = path.join(root, "projects", "codexgpt", "mailbox");
+  const mailboxDir = path.join(root, "projects", "lob", "mailbox");
   if (!fs.existsSync(root)) {
     console.log(JSON.stringify({ ok: false, code: "NO_VAULT", detail: root }));
     process.exitCode = 1;
@@ -78,16 +78,16 @@ function main() {
   const body = `---
 type: Note
 status: Active
-tags: [codexgpt, mailbox, c2c, ${state.toLowerCase()}]
+tags: [lob, mailbox, c2c, ${state.toLowerCase()}]
 task_id: ${taskId}
 loop_state: ${state}
 iteration: ${iteration}
 date: ${date}
 ---
 
-# CodexGPT ${state}: ${taskId}
+# Lob ${state}: ${taskId}
 
-Hub: [[../CodexGPT|CodexGPT]]
+Hub: [[../Lob|Lob]]
 
 ## Goal
 
@@ -101,7 +101,7 @@ ${(snippet || "").trim() || "(no snippet)"}
 
 ## Search
 
-\`codexgpt mailbox\` · \`task_id: ${taskId}\` · \`${state}\`
+\`lob mailbox\` · \`task_id: ${taskId}\` · \`${state}\`
 `;
 
   if (fs.existsSync(outPath)) {

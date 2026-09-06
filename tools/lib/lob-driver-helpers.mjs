@@ -1,5 +1,5 @@
 /**
- * Pure helpers for the CodexGPT keystroke driver (no OS automation).
+ * Pure helpers for the Lob keystroke driver (no OS automation).
  * Timing: env beats config beats built-in defaults.
  */
 
@@ -11,10 +11,10 @@ export const TIMING_DEFAULTS = {
 };
 
 const TIMING_ENV = {
-  focus_ms: "CODEXGPT_FOCUS_MS",
-  mode_settle_ms: "CODEXGPT_MODE_SETTLE_MS",
-  paste_ms: "CODEXGPT_PASTE_MS",
-  enter_ms: "CODEXGPT_ENTER_MS",
+  focus_ms: "LOB_FOCUS_MS",
+  mode_settle_ms: "LOB_MODE_SETTLE_MS",
+  paste_ms: "LOB_PASTE_MS",
+  enter_ms: "LOB_ENTER_MS",
 };
 
 function positiveInt(value, fallback) {
@@ -57,10 +57,10 @@ export function settleBackoffMs(attempt) {
   return steps[i];
 }
 
-/** OCR/vision stuck-path only: CODEXGPT_OCR=1 or --verify-vision. */
+/** OCR/vision stuck-path only: LOB_OCR=1 or --verify-vision. */
 export function ocrEnabled(argv = process.argv, env = process.env, cfg = {}) {
   if (argv.includes("--verify-vision")) return true;
-  if (env.CODEXGPT_OCR === "1" || /^true$/i.test(String(env.CODEXGPT_OCR || ""))) return true;
+  if (env.LOB_OCR === "1" || /^true$/i.test(String(env.LOB_OCR || ""))) return true;
   return cfg.ocr === true;
 }
 

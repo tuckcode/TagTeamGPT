@@ -2,7 +2,7 @@
 
 Goal: get the skill into **ChatGPT desktop Codex**, then set up Chat and Codex the right way.
 
-The product is **Lob**. Invoke with `$lob`. Clone URL is still `tuckcode/CodexGPT`.
+The product is **Lob**. Invoke with `$lob`. Clone: `tuckcode/lob`.
 
 ## What you need
 
@@ -13,8 +13,8 @@ The product is **Lob**. Invoke with `$lob`. Clone URL is still `tuckcode/CodexGP
 ## 1. Get the code
 
 ```bash
-git clone https://github.com/tuckcode/CodexGPT.git
-cd CodexGPT
+git clone https://github.com/tuckcode/lob.git
+cd lob
 ```
 
 If the repo lives in a nested folder on your machine, `cd` into the package that contains `.agents/skills/lob`.
@@ -38,7 +38,7 @@ cp -R .agents/skills/lob ~/.agents/skills/lob
 
 Restart Codex or reopen the project if `$lob` does not appear.
 
-If you previously copied `$codexgpt`, replace `~/.agents/skills/codexgpt` with the `lob` folder.
+If you previously copied `$codexgpt`, delete `~/.agents/skills/codexgpt` and copy `.agents/skills/lob` instead.
 
 ### Invoke
 
@@ -86,13 +86,13 @@ Remap in Settings → Keyboard Shortcuts if needed.
 From the repo root, with ChatGPT desktop running:
 
 ```bash
-node tools/codexgpt-driver.mjs to chat
-node tools/codexgpt-driver.mjs to codex
+node tools/lob-driver.mjs to chat
+node tools/lob-driver.mjs to codex
 ```
 
 - **macOS:** grant **Accessibility** to your terminal (or Cursor) if keystrokes are blocked. Uses `Control+1/2/3`.
 - **Windows:** focuses the ChatGPT window and sends `Alt+1/2/3` + Ctrl+V. Mode verify is limited; confirm the right thread by eye.
-- **Timing** (defaults; raise on slow machines): `CODEXGPT_FOCUS_MS=200`, `CODEXGPT_MODE_SETTLE_MS=350`, `CODEXGPT_PASTE_MS=120`, `CODEXGPT_ENTER_MS=250`. Same keys may live in `.codexgpt/config.json`.
+- **Timing** (defaults; raise on slow machines): `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`, `LOB_PASTE_MS=120`, `LOB_ENTER_MS=250`. Same keys may live in `.lob/config.json`.
 
 `ok: true` means keys fired, not accepted. After send the driver restores your previous front app (especially macOS). Do not re-press `Control+1` / `Alt+1` when already in Chat.
 
@@ -102,7 +102,7 @@ Manual copy/paste always works without the driver.
 
 Default loop does **not** need MCP. Add it only when Chat should pull diffs/files itself.
 
-See [mcp/README.md](../mcp/README.md) and `node tools/codexgpt-mcp-up.mjs start`.
+See [mcp/README.md](../mcp/README.md) and `node tools/lob-mcp-up.mjs start`.
 
 ## Sanity check
 
