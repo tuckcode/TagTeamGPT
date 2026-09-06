@@ -16,24 +16,14 @@ export function createServer(root = resolveRoot()) {
   const server = new McpServer({
     name: "lob-workspace",
     version: "0.1.0",
-    instructions: `Lob control plane (keyboard, not mouse hunting):
-
-• One pinned Chat thread per goal — never New chat mid-loop; never use Work as planner.
-• Local folder projects do not support Chat — keep Chat as a cloud thread (no local folder); mount the repo only in Codex.
-• Modes (macOS): Control+1 Chat, Control+2 Work (avoid), Control+3 Codex. Win/Linux: Alt+1/2/3.
-• Loop: Chat receives [C2C] INIT → reply PLAN → human/driver Control+3 pastes PLAN into Codex → Codex works → Control+1 pastes [C2C] EXECUTED back into the same Chat → you reply DONE, PLAN, or BLOCKED.
-• Always reply with structured [C2C] STATE headers only for state changes. Keep messages tiny (~1KB). No full file dumps.
-• After EXECUTED: prefer these tools (git_diff, read_file, git_status, workspace_info) over asking Codex to paste. Keep pulls small and paginated.
-• Humans dump your reply into the auto-loop via Chat’s copy control, then: pbpaste | node tools/lob-write-reply.mjs --from-clipboard (AX scrape is unreliable on Electron).
-• Trust keystroke send (clipboard+Enter); do not require screenshots/CUA for the happy path.`,
-
+    instructions: "Paginated read-only git/file tools; no vault writes.",
   });
 
   server.registerTool(
     "workspace_info",
     {
       title: "Workspace info",
-      description: "Project type, languages, git branch, dirty state. Call this first.",
+      description: "Git root, branch, and dirty state.",
       inputSchema: {},
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -92,7 +82,7 @@ export function createServer(root = resolveRoot()) {
     "search_workspace",
     {
       title: "Search workspace",
-      description: "ripgrep (or Node fallback) across the workspace.",
+      description: "ripgrep (or Node fallback). Same secret paths as read_file are denied.",
       inputSchema: {
         query: z.string().min(2),
         page: z.number().int().min(0).optional(),
