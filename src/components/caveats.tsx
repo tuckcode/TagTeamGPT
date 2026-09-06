@@ -23,20 +23,9 @@ export function Caveats() {
             Remap and verify ⌃1–⌃3 / Alt+1–3 on your build before automating.
           </li>
           <li>
-            <strong className="font-medium text-foreground">Reading Chat’s reply is still hard.</strong>{" "}
-            Keybinds move you; extracting STATE: PLAN without a human gate
-            needs reliable Computer Use or a future IPC API.
-          </li>
-          <li>
             <strong className="font-medium text-foreground">MCP is optional and surface-dependent.</strong>{" "}
             Custom connectors are documented for ChatGPT web Developer Mode.
             Confirm before relying on independent git_diff review.
-          </li>
-          <li>
-            <strong className="font-medium text-foreground">Same-app Computer Use is awkward.</strong>{" "}
-            Codex driving the app it lives in works for keystrokes, but focus
-            and permissions need care — especially on Windows foreground
-            takeover.
           </li>
         </ul>
       </div>
