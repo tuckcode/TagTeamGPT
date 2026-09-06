@@ -10,6 +10,7 @@ import {
   parseModeLabel,
   modesMatch,
   isWorkMode,
+  skipModeHotkeyBeforePaste,
   parseC2C,
   TIMING_DEFAULTS,
 } from "./lib/lob-driver-helpers.mjs";
@@ -48,6 +49,19 @@ assert.equal(modesMatch("ChatGPT", "ChatGPT"), true);
 assert.equal(modesMatch("Chat", "ChatGPT"), true);
 assert.equal(isWorkMode("Work"), true);
 assert.equal(isWorkMode("ChatGPT"), false);
+assert.equal(
+  skipModeHotkeyBeforePaste("codex", { beforeOk: true, beforeMode: "Codex" }),
+  false,
+  "Codex paste always fires Control+3 / Alt+3"
+);
+assert.equal(
+  skipModeHotkeyBeforePaste("chat", { beforeOk: true, beforeMode: "ChatGPT" }),
+  true
+);
+assert.equal(
+  skipModeHotkeyBeforePaste("chat", { beforeOk: true, beforeMode: "Codex" }),
+  false
+);
 
 const c2c = parseC2C("x\n[C2C]\nSTATE: PLAN\nTASK_ID: c2c_ab\n");
 assert.equal(c2c.ok, true);

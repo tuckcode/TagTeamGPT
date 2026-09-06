@@ -74,11 +74,11 @@ EOF
 
 On Windows PowerShell you can also: `Get-Content stub.txt -Raw | node tools/lob-driver.mjs chat-send -`
 
-`chat-send` / `codex-send` require a payload starting with `[C2C]`. The driver sets the clipboard and reads it back before paste.
+`chat-send` / `codex-send` require a payload starting with `[C2C]`. The driver sets the clipboard and reads it back before paste. `codex-send` and `send --mode codex` fire Control+3 / Alt+3 and paste in one step — do not `to codex` then `send` later.
 
 `ok: true` means **keys fired**, not “Chat accepted the message.” Confirmation is the next `[C2C]` **STATE** or `.lob/executed.json` (or another expected file side-effect). After send, the driver restores the previous front app (especially on macOS).
 
-Prefer `send` / `chat-send` / `codex-send` **without** forcing the mode hotkey when you are already in that mode. **Do not re-press `Control+1` / `Alt+1` when already in Chat** — it can open New chat and abandon your pinned planner thread.
+Prefer `chat-send` / `codex-send` / `send --mode chat|codex`. **Do not re-press `Control+1` / `Alt+1` when already in Chat** — it can open New chat and abandon your pinned planner thread.
 
 Optional `--verify` tries a mode read-back. Electron often hides the mode chip from accessibility; Windows UIA is best-effort. Skip verify on the happy path and confirm the thread by eye.
 
