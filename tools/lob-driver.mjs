@@ -1,17 +1,17 @@
 #!/usr/bin/env node
-// CodexGPT v1 keystroke driver (macOS + Windows).
+// Lob v1 keystroke driver (macOS + Windows).
 // Happy path: mode hotkeys + clipboard paste + Enter. No screenshots.
 //   macOS: Control+1/2/3, ⌘V
 //   Windows: Alt+1/2/3, Ctrl+V
 // Optional --verify tries an accessibility/UIA read-back (often opaque on Electron).
-// OCR/vision is off the happy path: CODEXGPT_OCR=1 or --verify-vision only.
+// OCR/vision is off the happy path: LOB_OCR=1 or --verify-vision only.
 //
-//   node tools/codexgpt-driver.mjs mode
-//   node tools/codexgpt-driver.mjs to chat|work|codex [--verify] [--force-mode]
-//   node tools/codexgpt-driver.mjs send "text" | send -
-//   node tools/codexgpt-driver.mjs enter
-//   node tools/codexgpt-driver.mjs chat-send "text" [--verify] [--force-mode]
-//   node tools/codexgpt-driver.mjs codex-send "text" [--verify] [--force-mode]
+//   node tools/lob-driver.mjs mode
+//   node tools/lob-driver.mjs to chat|work|codex [--verify] [--force-mode]
+//   node tools/lob-driver.mjs send "text" | send -
+//   node tools/lob-driver.mjs enter
+//   node tools/lob-driver.mjs chat-send "text" [--verify] [--force-mode]
+//   node tools/lob-driver.mjs codex-send "text" [--verify] [--force-mode]
 //
 // Mode switch is skipped when already in the target mode (when mode can be
 // read). ok:true means keys fired — not that Chat/Codex accepted the message.
@@ -21,7 +21,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { stdin as input } from "node:process";
-import { loadConfig } from "./lib/codexgpt-config.mjs";
+import { loadConfig } from "./lib/lob-config.mjs";
 import {
   resolveTiming,
   hasC2CPrefix,
@@ -30,7 +30,7 @@ import {
   parseModeLabel,
   modesMatch,
   isWorkMode,
-} from "./lib/codexgpt-driver-helpers.mjs";
+} from "./lib/lob-driver-helpers.mjs";
 
 const APP = "ChatGPT";
 const PLATFORM = process.platform;
@@ -258,7 +258,7 @@ function enterMac() {
 }
 
 function readModeOcrMac() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "codexgpt-ocr-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-ocr-"));
   const png = path.join(tmpDir, "chip.png");
   try {
     const rect = JSON.parse(
@@ -334,7 +334,7 @@ function classifyWinError(msg) {
 }
 
 function runPowerShell(script, { clipText, timeout = 30_000 } = {}) {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "codexgpt-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-"));
   const ps1 = path.join(tmpDir, "run.ps1");
   let clipFile = null;
   try {
@@ -569,7 +569,7 @@ function enterWin() {
 }
 
 function readModeOcrWin() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "codexgpt-ocr-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-ocr-"));
   const png = path.join(tmpDir, "chip.png");
   try {
     const out = runPowerShell(

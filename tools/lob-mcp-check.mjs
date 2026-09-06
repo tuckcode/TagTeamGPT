@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Rigorous CodexGPT MCP check (local and/or tunneled HTTPS).
+ * Rigorous Lob MCP check (local and/or tunneled HTTPS).
  *
- *   node tools/codexgpt-mcp-check.mjs
- *   node tools/codexgpt-mcp-check.mjs --url https://….trycloudflare.com/mcp
+ *   node tools/lob-mcp-check.mjs
+ *   node tools/lob-mcp-check.mjs --url https://….trycloudflare.com/mcp
  *
- * Reads Bearer token from CODEXGPT_MCP_TOKEN or .codexgpt/mcp.token (never prints it).
+ * Reads Bearer token from LOB_MCP_TOKEN or .lob/mcp.token (never prints it).
  * Exit 0 only if every case passes.
  */
 import fs from "node:fs";
@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const STATE = path.join(ROOT, ".codexgpt");
+const STATE = path.join(ROOT, ".lob");
 
 function arg(flag, fallback = null) {
   const i = process.argv.indexOf(flag);
@@ -23,9 +23,9 @@ function arg(flag, fallback = null) {
 }
 
 function loadToken() {
-  if (process.env.CODEXGPT_MCP_TOKEN) return process.env.CODEXGPT_MCP_TOKEN.trim();
+  if (process.env.LOB_MCP_TOKEN) return process.env.LOB_MCP_TOKEN.trim();
   const p = path.join(STATE, "mcp.token");
-  if (!fs.existsSync(p)) throw new Error("missing .codexgpt/mcp.token");
+  if (!fs.existsSync(p)) throw new Error("missing .lob/mcp.token");
   return fs.readFileSync(p, "utf8").trim();
 }
 
@@ -142,11 +142,11 @@ async function main() {
     params: {
       protocolVersion: "2024-11-05",
       capabilities: {},
-      clientInfo: { name: "codexgpt-mcp-check", version: "0.1" },
+      clientInfo: { name: "lob-mcp-check", version: "0.1" },
     },
   });
   mark(
-    init.ok && init.msg?.result?.serverInfo?.name === "codexgpt-workspace",
+    init.ok && init.msg?.result?.serverInfo?.name === "lob-workspace",
     "initialize",
     {
       ms: init.ms,
@@ -190,7 +190,7 @@ async function main() {
   {
     const r = await callTool(10, "workspace_info", {});
     const text = toolText(r.msg);
-    mark(r.ok && /codexgpt|branch|dirty/i.test(text), "workspace_info", {
+    mark(r.ok && /lob|branch|dirty/i.test(text), "workspace_info", {
       ms: r.ms,
       preview: text.slice(0, 200),
       error: r.error,
@@ -216,7 +216,7 @@ async function main() {
       limit: 30,
     });
     const text = toolText(r.msg);
-    mark(r.ok && /CodexGPT|Product/i.test(text), "read_file", {
+    mark(r.ok && /Lob|Product/i.test(text), "read_file", {
       ms: r.ms,
       preview: text.slice(0, 180),
       error: r.error,
@@ -242,11 +242,11 @@ async function main() {
   // 9) search_workspace
   {
     const r = await callTool(14, "search_workspace", {
-      query: "CodexGPT",
+      query: "Lob",
       max_results: 5,
     });
     const text = toolText(r.msg);
-    mark(r.ok && /CodexGPT/i.test(text), "search_workspace", {
+    mark(r.ok && /Lob/i.test(text), "search_workspace", {
       ms: r.ms,
       preview: text.slice(0, 200),
       error: r.error,

@@ -6,13 +6,13 @@
  *   unreviewed notes >= mailbox_nudge_count (default 10), OR
  *   days since last skim >= mailbox_nudge_days (default 14)
  *
- *   node tools/codexgpt-mailbox-nudge.mjs [--ack]
+ *   node tools/lob-mailbox-nudge.mjs [--ack]
  *   --ack  record that you skimmed (resets the clock / count baseline)
  */
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { loadConfig, STATE_DIR, ROOT } from "./lib/codexgpt-config.mjs";
+import { loadConfig, STATE_DIR, ROOT } from "./lib/lob-config.mjs";
 
 function arg(flag, fallback = null) {
   const i = process.argv.indexOf(flag);
@@ -22,7 +22,7 @@ function arg(flag, fallback = null) {
 
 function vaultRoot() {
   return (
-    process.env.CODEXGPT_RHIZOME_VAULT ||
+    process.env.LOB_RHIZOME_VAULT ||
     path.join(os.homedir(), "Documents", "Rhizome Vault")
   );
 }
@@ -30,7 +30,7 @@ function vaultRoot() {
 const ACK = path.join(STATE_DIR, "mailbox-triage.json");
 
 function listMail() {
-  const dir = path.join(vaultRoot(), "projects", "codexgpt", "mailbox");
+  const dir = path.join(vaultRoot(), "projects", "lob", "mailbox");
   if (!fs.existsSync(dir)) return [];
   return fs
     .readdirSync(dir)
@@ -88,7 +88,7 @@ function main() {
     reason: nudge ? (byCount ? "count" : "days") : null,
     latest: mail.slice(0, 5).map((m) => m.name),
     hint: nudge
-      ? `Mailbox nudge: ${newSinceAck} new / ${mail.length} total, ${Number.isFinite(daysSince) ? Math.floor(daysSince) + "d" : "never"} since skim. Review vault projects/codexgpt/mailbox — then: node tools/codexgpt-mailbox-nudge.mjs --ack`
+      ? `Mailbox nudge: ${newSinceAck} new / ${mail.length} total, ${Number.isFinite(daysSince) ? Math.floor(daysSince) + "d" : "never"} since skim. Review vault projects/lob/mailbox — then: node tools/lob-mailbox-nudge.mjs --ack`
       : null,
     root: ROOT,
   };

@@ -20,7 +20,7 @@
 2. You are in **Codex**, not Chat or Cursor.
 3. You used **`$lob`**, not `/lob` (slash is Cursor).
 4. Restart Codex / reopen the project.
-5. If you still have `~/.agents/skills/codexgpt`, replace it with the `lob` folder.
+5. If you still have `~/.agents/skills/codexgpt`, delete it and copy `.agents/skills/lob` instead.
 
 ## Codex says tests passed but files did not change in my repo
 
@@ -38,7 +38,7 @@
 
 **Cause:** The driver fired keystrokes; it does not prove ChatGPT accepted them. Common misses: wrong window focused, composer not focused, clipboard mismatch (payload did not round-trip), wrong Chat/Codex thread, Accessibility denied (macOS), or on Windows the ChatGPT window is minimized / not foreground.
 
-**Fix:** Click the intended thread so the composer is active. Grant Accessibility (macOS). Retry. Confirm by the next `[C2C]` **STATE** or `.codexgpt/executed.json` — not `ok: true` alone. On Windows, leave ChatGPT visible before running the driver.
+**Fix:** Click the intended thread so the composer is active. Grant Accessibility (macOS). Retry. Confirm by the next `[C2C]` **STATE** or `.lob/executed.json` — not `ok: true` alone. On Windows, leave ChatGPT visible before running the driver.
 
 ## Auto-loop returns `NO_REPLY` or never sees Chat’s PLAN
 
@@ -48,26 +48,26 @@
 
 ```bash
 # macOS
-pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard
+pbpaste | node tools/lob-write-reply.mjs --from-clipboard
 # Windows PowerShell
-Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard
+Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
 ```
 
 ## Slow machine — paste lands wrong or mode switch races
 
-**Fix:** Raise timing env vars (defaults): `CODEXGPT_FOCUS_MS`, `CODEXGPT_MODE_SETTLE_MS`, `CODEXGPT_PASTE_MS`, `CODEXGPT_ENTER_MS`. Same keys may live in `.codexgpt/config.json`.
+**Fix:** Raise timing env vars (defaults): `LOB_FOCUS_MS`, `LOB_MODE_SETTLE_MS`, `LOB_PASTE_MS`, `LOB_ENTER_MS`. Same keys may live in `.lob/config.json`.
 
 ## Mode verify / OCR (stuck path only)
 
 **Cause:** `--verify` read-back is optional; Electron often hides the mode chip. Windows UIA is best-effort.
 
-**Fix:** Skip `--verify` on the happy path. If mode is unknown after two `--verify` failures, try `CODEXGPT_OCR=1` or `--verify-vision` (one crop of the mode chip). If OCR says **Work**, abort — never use Work as planner/executor. Do not reach for nested `chatgpt.com` / CUA unless you are truly stuck.
+**Fix:** Skip `--verify` on the happy path. If mode is unknown after two `--verify` failures, try `LOB_OCR=1` or `--verify-vision` (one crop of the mode chip). If OCR says **Work**, abort — never use Work as planner/executor. Do not reach for nested `chatgpt.com` / CUA unless you are truly stuck.
 
 ## MCP / tunnel attached but Chat still can’t read files
 
 **Checks:**
 
-1. Tunnel process still running (`node tools/codexgpt-mcp-up.mjs status`).
+1. Tunnel process still running (`node tools/lob-mcp-up.mjs status`).
 2. Connector URL matches the **current** tunnel (pasting a URL into chat does not rebind settings).
 3. You are in a **Chat** cloud thread with Developer Mode / custom connector enabled.
 4. Ask Chat to call `workspace_info` first.

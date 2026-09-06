@@ -2,9 +2,9 @@
 
 **Chat lobs. Codex dunks.** One ChatGPT desktop app.
 
-![Lob loop](docs/codexgpt-loop-diagram.png)
+![Lob loop](docs/lob-loop-diagram.png)
 
-**Lob** is the product name. Invoke it in Codex with **`$lob`**. The GitHub repo is still `tuckcode/CodexGPT`.
+**Lob** is the product name. Invoke it in Codex with **`$lob`**. GitHub: `tuckcode/lob`.
 
 Use **Chat** as the planning and review brain, and **Codex** as the hands — without nesting `chatgpt.com` or mouse-hunting a browser UI.
 
@@ -20,8 +20,8 @@ Inspired by [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-wi
 ## Quick start
 
 ```bash
-git clone https://github.com/tuckcode/CodexGPT.git
-cd CodexGPT
+git clone https://github.com/tuckcode/lob.git
+cd lob
 mkdir -p ~/.agents/skills
 cp -R .agents/skills/lob ~/.agents/skills/lob
 ```
@@ -64,13 +64,13 @@ Full walkthrough: **[docs/install.md](docs/install.md)** → **[docs/usage.md](d
 
 ```bash
 # Driver: macOS Control+1/2/3 (Accessibility) · Windows Alt+1/2/3
-node tools/codexgpt-driver.mjs to chat
+node tools/lob-driver.mjs to chat
 
 # Auto-loop (same platforms)
-node tools/codexgpt-loop.mjs --goal "…"
+node tools/lob-loop.mjs --goal "…"
 
 # Optional MCP + tunnel
-node tools/codexgpt-mcp-up.mjs start
+node tools/lob-mcp-up.mjs start
 ```
 
 ## Explainer site

@@ -25,15 +25,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Learned Workspace Facts
 
-- Public product name is **Lob** (tagline: Chat lobs. Codex dunks.). Invoke in Codex with `$lob`. GitHub repo is still `tuckcode/CodexGPT`. Desktop-app take on XiaoDuoYa/codex-with-chatgpt: Chat plans and reviews; Codex executes.
+- Public product name is **Lob** (tagline: Chat lobs. Codex dunks.). Invoke in Codex with `$lob`. GitHub repo is `tuckcode/lob`. Desktop-app take on XiaoDuoYa/codex-with-chatgpt: Chat plans and reviews; Codex executes. End users run it in their own Codex-mounted repo — this checkout is only the tool's development tree.
 - Control plane is `[C2C]` stubs plus mode keybinds/clipboard; desktop driver prefers a keystroke path without vision; no nested browser automation.
-- Workspace MCP (`mcp/`) plus `tools/codexgpt-*` give Chat optional read-only repo eyes via an HTTPS tunnel — not the Chat↔Codex bridge (that’s keybinds/clipboard/mailbox); paste-back works without MCP; mailbox is not on the Chat MCP surface; a new tunnel URL in a C2C message does not rebind ChatGPT’s connector — edit/reload connector settings when the URL changes.
+- Workspace MCP (`mcp/`) plus `tools/lob-*` give Chat optional read-only repo eyes via an HTTPS tunnel — not the Chat↔Codex bridge (that’s keybinds/clipboard/mailbox); paste-back works without MCP; mailbox is not on the Chat MCP surface; a new tunnel URL in a C2C message does not rebind ChatGPT’s connector — edit/reload connector settings when the URL changes.
 - Codex mail/mailbox is the default durable handoff between Chat and Codex (prefer notes after build/inspection); promote lasting notes to Rhizome (standalone MD app, not Obsidian) — repo `AGENTS.md` alone is not enough for lasting product lessons.
-- Shared agent skills canonicalize under `~/.agents/skills`; the in-repo Lob skill is `.agents/skills/lob` and is invoked in ChatGPT desktop Codex with `$lob` (or “Use Lob to …”) — `$` is not a Cursor skill picker (`/` is).
-- Desktop mode shortcuts and keystroke driver: macOS `Control+1/2/3`, Windows/Linux `Alt+1/2/3` for Chat / Work / Codex (driver uses the same OS keys); driver `ok: true` means keys fired, not accepted (accepted is the next `[C2C]` STATE or `.codexgpt/executed.json`); archive ChatGPT threads with ⇧⌘A (not ⌘A select-all).
+- Shared agent skills canonicalize under `~/.agents/skills`; the in-repo Lob skill is `.agents/skills/lob` and is invoked in ChatGPT desktop Codex with `$lob` (or “Use Lob to …”) — not `gpt-lob`; `$` is not a Cursor skill picker (`/` is).
+- Desktop mode shortcuts and keystroke driver: macOS `Control+1/2/3`, Windows/Linux `Alt+1/2/3` for Chat / Work / Codex (driver uses the same OS keys); driver `ok: true` means keys fired, not accepted (accepted is the next `[C2C]` STATE or `.lob/executed.json`); archive ChatGPT threads with ⇧⌘A (not ⌘A select-all).
 - ChatGPT desktop: local folder projects do not support Chat — keep Chat as a plain cloud thread; mount the repo only in Codex for execution.
 - Desktop Codex may still run with cwd under `~/Documents/Codex/YYYY-MM-DD/<thread>/` (conversation snapshot) even when the sidebar shows the intended project — verify `pwd` against the real git root before trusting EXECUTED. Mode hotkeys do not select the Codex project.
-- Repo defaults live in `codexgpt.config.json` (e.g. MCP idle auto-stop ~60m; mailbox nudge at ~10 notes or ~14 days).
+- Repo defaults live in `lob.config.json` (e.g. MCP idle auto-stop ~60m; mailbox nudge at ~10 notes or ~14 days).
 - This repo also ships a Next.js explainer UI (`pnpm dev`, typically http://127.0.0.1:43127).
-- Public GitHub home: `tuckcode/CodexGPT` (https://github.com/tuckcode/CodexGPT); Cursor Origin codebase remains `knispo/CodexGPT`.
+- Public GitHub home: `tuckcode/lob` (https://github.com/tuckcode/lob); Cursor Origin codebase remains `knispo/codexgpt`.
 - ChatGPT desktop Chat and Codex can surface the same task across modes (Chat may expand Codex step logs via Show more; sidebars swap labels with mode keys) — paste-back does not fully isolate the two.

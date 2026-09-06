@@ -18,20 +18,20 @@ don’t paste them into the composer. Control plane stays keybinds + `[C2C]`.
 
 ```bash
 # One-shot helper (MCP + Cloudflare Quick Tunnel):
-node tools/codexgpt-mcp-up.mjs start   # prints connector HTTPS URL; idle-stops after 60m no /mcp traffic
-node tools/codexgpt-mcp-up.mjs status
-node tools/codexgpt-mcp-up.mjs stop
+node tools/lob-mcp-up.mjs start   # prints connector HTTPS URL; idle-stops after 60m no /mcp traffic
+node tools/lob-mcp-up.mjs status
+node tools/lob-mcp-up.mjs stop
 ```
 
-Idle minutes: `mcp_idle_minutes` in `codexgpt.config.json`, or `CODEXGPT_MCP_IDLE_MINUTES=0` to disable.
+Idle minutes: `mcp_idle_minutes` in `lob.config.json`, or `LOB_MCP_IDLE_MINUTES=0` to disable.
 
 Or manually:
 
 ```bash
 cd mcp
 npm install
-export CODEXGPT_ROOT="$(cd .. && pwd)"
-export CODEXGPT_MCP_TOKEN="$(openssl rand -hex 24)"
+export LOB_ROOT="$(cd .. && pwd)"
+export LOB_MCP_TOKEN="$(openssl rand -hex 24)"
 npm start
 # → http://127.0.0.1:8743/mcp
 ```
@@ -47,7 +47,7 @@ ChatGPT does **not** launch local stdio MCP. It needs a **public HTTPS** MCP URL
 2. Tunnel loopback: `cloudflared tunnel --url http://127.0.0.1:8743`
 3. Add plugin with URL `https://<tunnel>/mcp`. If Create only offers
    OAuth / No auth / Mixed, use **No authentication** briefly with
-   `CODEXGPT_MCP_ALLOW_NO_AUTH=1`, then turn auth back on and set a Bearer
+   `LOB_MCP_ALLOW_NO_AUTH=1`, then turn auth back on and set a Bearer
    header on the plugin if the UI allows — otherwise leave no-auth only for
    short local demos.
 4. In a **Chat** thread (not Work), ask for `workspace_info` / `git_status`.
@@ -60,5 +60,5 @@ or workspace may not allow custom MCP yet.
 
 - Binds `127.0.0.1` by default. Do not open `0.0.0.0` without a reverse proxy.
 - Bearer token required on `/mcp`.
-- Paths cannot escape `CODEXGPT_ROOT`; secrets patterns are denied.
+- Paths cannot escape `LOB_ROOT`; secrets patterns are denied.
 - Prefer ephemeral tunnels; rotate the token if the URL leaks.

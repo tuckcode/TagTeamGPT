@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * CodexGPT auto-loop (macOS + Windows): Chat plans → Codex executes → Chat reviews.
+ * Lob auto-loop (macOS + Windows): Chat plans → Codex executes → Chat reviews.
  * Mode hotkeys via driver: macOS Control+1/2/3, Windows Alt+1/2/3.
  *
- *   node tools/codexgpt-loop.mjs --goal "…"
+ *   node tools/lob-loop.mjs --goal "…"
  *
- * Defaults (codexgpt.config.json / .codexgpt/config.json):
+ * Defaults (lob.config.json / .lob/config.json):
  *   codex: true   — paste PLAN into Codex (⌃3 / Alt+3)
  *   mailbox: true — Rhizome DONE/BLOCKED note
  *   memory: true  — Rhizome goal note
@@ -15,27 +15,27 @@
  * Overrides: --no-codex --no-mailbox --no-memory --codex --mailbox --memory --boot
  *
  * Stay on one pinned Chat thread — do not open New chat between turns.
- * Driver ok:true = keys_fired; accepted = next [C2C] STATE or .codexgpt/executed.json.
+ * Driver ok:true = keys_fired; accepted = next [C2C] STATE or .lob/executed.json.
  */
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
-import { loadConfig, flagOrConfig, ROOT, STATE_DIR } from "./lib/codexgpt-config.mjs";
+import { loadConfig, flagOrConfig, ROOT, STATE_DIR } from "./lib/lob-config.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DRIVER = path.join(__dirname, "codexgpt-driver.mjs");
-const READER = path.join(__dirname, "codexgpt-read-reply.mjs");
-const MAILBOX = path.join(__dirname, "codexgpt-mailbox.mjs");
-const MEMORY = path.join(__dirname, "codexgpt-memory.mjs");
-const NUDGE = path.join(__dirname, "codexgpt-mailbox-nudge.mjs");
+const DRIVER = path.join(__dirname, "lob-driver.mjs");
+const READER = path.join(__dirname, "lob-read-reply.mjs");
+const MAILBOX = path.join(__dirname, "lob-mailbox.mjs");
+const MEMORY = path.join(__dirname, "lob-memory.mjs");
+const NUDGE = path.join(__dirname, "lob-mailbox-nudge.mjs");
 const PLAN_PATH = path.join(STATE_DIR, "last-plan.md");
 const EXEC_PATH = path.join(STATE_DIR, "executed.json");
 const REPLY_PATH = path.join(STATE_DIR, "last-reply.json");
 
 const WIN_CLIP_HINT =
-  "Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard";
+  "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard";
 
 function arg(flag, fallback = null) {
   const i = process.argv.indexOf(flag);
@@ -104,7 +104,7 @@ function noReplyPayload(last) {
   const hint =
     process.platform === "win32"
       ? WIN_CLIP_HINT
-      : "pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard";
+      : "pbpaste | node tools/lob-write-reply.mjs --from-clipboard";
   return {
     ok: false,
     code: "NO_REPLY",
@@ -206,7 +206,7 @@ function runHelper(script, args) {
 }
 
 function recordMailbox({ enabled, state, taskId, goal, snippet, iteration }) {
-  if (!enabled || process.env.CODEXGPT_MAILBOX === "0") {
+  if (!enabled || process.env.LOB_MAILBOX === "0") {
     return { ok: true, skipped: true };
   }
   return runHelper(MAILBOX, [
@@ -224,7 +224,7 @@ function recordMailbox({ enabled, state, taskId, goal, snippet, iteration }) {
 }
 
 function recordMemory(enabled, args) {
-  if (!enabled || process.env.CODEXGPT_MEMORY === "0") {
+  if (!enabled || process.env.LOB_MEMORY === "0") {
     return { ok: true, skipped: true };
   }
   return runHelper(MEMORY, args);
@@ -236,7 +236,7 @@ STATE: PLAN
 TASK_ID: ${taskId}
 ITERATION: ${iteration}
 
-Execute this CodexGPT PLAN now in the open workspace.
+Execute this Lob PLAN now in the open workspace.
 
 HARD PREFLIGHT (do this first):
 1. Run: pwd && test -d .git && test -f package.json
@@ -396,13 +396,13 @@ async function onPlan(planText, taskId, iteration, useCodex) {
     if (!r.ok) return null;
   }
 
-  const hook = process.env.CODEXGPT_ON_PLAN;
+  const hook = process.env.LOB_ON_PLAN;
   if (hook) {
     execFileSync(hook, [PLAN_PATH, taskId, String(iteration)], {
       cwd: ROOT,
       stdio: "inherit",
       shell: true,
-      env: { ...process.env, CODEXGPT_PLAN: PLAN_PATH, CODEXGPT_TASK_ID: taskId },
+      env: { ...process.env, LOB_PLAN: PLAN_PATH, LOB_TASK_ID: taskId },
     });
     if (fs.existsSync(EXEC_PATH)) {
       const raw = fs.readFileSync(EXEC_PATH, "utf8");
@@ -426,7 +426,7 @@ async function main() {
         ok: false,
         code: "USAGE",
         detail:
-          'node tools/codexgpt-loop.mjs --goal "…"  # Chat+Codex+mailbox+memory by default',
+          'node tools/lob-loop.mjs --goal "…"  # Chat+Codex+mailbox+memory by default',
       })
     );
     process.exitCode = 1;
@@ -564,7 +564,7 @@ async function main() {
           plan: PLAN_PATH,
           keys_fired: true,
           accepted: false,
-          detail: "No .codexgpt/executed.json — Codex proof is that file only",
+          detail: "No .lob/executed.json — Codex proof is that file only",
         })
       );
       process.exitCode = 1;

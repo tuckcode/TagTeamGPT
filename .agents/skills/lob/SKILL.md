@@ -38,7 +38,7 @@ Invoke in ChatGPT desktop **Codex** with **`$lob`** — not Cursor’s `/` picke
 9. **Codex mode ≠ Codex project.** `Control+3` / `Alt+3` only flips the tab.
    The sidebar keeps the **last** project (often some other folder). Before any
    `codex-send`, click the **mounted project for this goal** — whatever that
-   folder is named. Do not hardcode `codexgpt`; that name is only this
+   folder is named. Do not hardcode this checkout's folder name; that name is only this
    development checkout. Public users run Lob *inside their own repo*.
 10. **Codex cwd trap:** sidebar project name ≠ guarantee of writable git root.
    If Codex `pwd` is under `~/Documents/Codex/…`, it is a conversation snapshot
@@ -74,28 +74,28 @@ From the repo root (ChatGPT desktop running). macOS needs Accessibility for the
 shell; Windows focuses the ChatGPT window via PowerShell SendKeys.
 
 ```bash
-node tools/codexgpt-driver.mjs to chat
-node tools/codexgpt-driver.mjs chat-send "$(cat <<'EOF'
+node tools/lob-driver.mjs to chat
+node tools/lob-driver.mjs chat-send "$(cat <<'EOF'
 [C2C]
 STATE: INIT
 ...
 EOF
 )"
-node tools/codexgpt-driver.mjs enter   # Enter only, composer focused
-node tools/codexgpt-driver.mjs to codex
+node tools/lob-driver.mjs enter   # Enter only, composer focused
+node tools/lob-driver.mjs to codex
 ```
 
 Other commands: `mode`, `to work`, `send "…"`, `codex-send "…"`. `chat-send` /
 `codex-send` require `[C2C]`; clipboard is set then read back before paste.
 `ok: true` = keys fired, not accepted — confirm next `[C2C]` STATE or
-`.codexgpt/executed.json`. Do not re-press ⌃1 / Alt+1 when already in Chat.
+`.lob/executed.json`. Do not re-press ⌃1 / Alt+1 when already in Chat.
 After send, previous front app is restored (especially macOS).
 
-Timing defaults: `CODEXGPT_FOCUS_MS=200`, `CODEXGPT_MODE_SETTLE_MS=350`,
-`CODEXGPT_PASTE_MS=120`, `CODEXGPT_ENTER_MS=250` (or `.codexgpt/config.json`).
+Timing defaults: `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`,
+`LOB_PASTE_MS=120`, `LOB_ENTER_MS=250` (or `.lob/config.json`).
 
 Add `--verify` only for optional mode read-back (Electron often opaque; Windows
-UIA best-effort). OCR/vision off by default — `CODEXGPT_OCR=1` or
+UIA best-effort). OCR/vision off by default — `LOB_OCR=1` or
 `--verify-vision` only when `--verify` fails twice / mode unknown; abort if OCR
 says Work. No nested `chatgpt.com` / CUA on the happy path.
 
@@ -103,37 +103,37 @@ says Work. No nested `chatgpt.com` / CUA on the happy path.
 
 ```bash
 # Full workflow by default: Chat + Codex handoff (+ mailbox/memory when configured)
-node tools/codexgpt-loop.mjs --goal "…"
+node tools/lob-loop.mjs --goal "…"
 ```
 
 Overrides: `--no-codex` `--no-mailbox` `--no-memory` `--boot`. Config:
-`codexgpt.config.json` or `.codexgpt/config.json`.
+`lob.config.json` or `.lob/config.json`.
 
-Polls Chat for PLAN / DONE / BLOCKED. On PLAN writes `.codexgpt/last-plan.md`
-and (by default) pastes into **Codex**. Waits for `.codexgpt/executed.json`,
+Polls Chat for PLAN / DONE / BLOCKED. On PLAN writes `.lob/last-plan.md`
+and (by default) pastes into **Codex**. Waits for `.lob/executed.json`,
 then EXECUTED back to the **same** Chat. DONE/BLOCKED → vault mailbox + memory.
 
-MCP tunnel helper: `node tools/codexgpt-mcp-up.mjs start|stop|status`
+MCP tunnel helper: `node tools/lob-mcp-up.mjs start|stop|status`
 (idle auto-stop after `mcp_idle_minutes`, default 60). Mailbox skim nudge after
-DONE when 10 new notes **or** 14 days: `node tools/codexgpt-mailbox-nudge.mjs`
+DONE when 10 new notes **or** 14 days: `node tools/lob-mailbox-nudge.mjs`
 (`--ack` after you skim).
 
 Do **not** open New chat between turns — one thread per goal.
 
 On Chat wait miss the loop tries one extra Enter, then `NO_REPLY`. Windows:
-if scrape is empty, copy reply → `Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard`.
+if scrape is empty, copy reply → `Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard`.
 
 If the loop cannot see Chat text, dump replies yourself:
 
 ```bash
 # copy Chat’s [C2C] reply, then:
 # macOS:
-pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard
+pbpaste | node tools/lob-write-reply.mjs --from-clipboard
 # Windows (PowerShell):
-Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard
+Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
 ```
 
-Or write `.codexgpt/last-reply.json` with `{ "ok": true, "state": "PLAN", "task_id": "…", "snippet": "…" }`.
+Or write `.lob/last-reply.json` with `{ "ok": true, "state": "PLAN", "task_id": "…", "snippet": "…" }`.
 
 ## Workflow
 

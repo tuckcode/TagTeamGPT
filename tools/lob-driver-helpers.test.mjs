@@ -12,16 +12,16 @@ import {
   isWorkMode,
   parseC2C,
   TIMING_DEFAULTS,
-} from "./lib/codexgpt-driver-helpers.mjs";
+} from "./lib/lob-driver-helpers.mjs";
 
 assert.deepEqual(resolveTiming({}, {}), TIMING_DEFAULTS);
 assert.equal(
-  resolveTiming({ focus_ms: 500 }, { CODEXGPT_FOCUS_MS: "90" }).focus_ms,
+  resolveTiming({ focus_ms: 500 }, { LOB_FOCUS_MS: "90" }).focus_ms,
   90,
   "env beats config"
 );
 assert.equal(resolveTiming({ paste_ms: 99 }, {}).paste_ms, 99);
-assert.equal(resolveTiming({}, { CODEXGPT_ENTER_MS: "nope" }).enter_ms, 250);
+assert.equal(resolveTiming({}, { LOB_ENTER_MS: "nope" }).enter_ms, 250);
 
 assert.equal(hasC2CPrefix("[C2C]\nSTATE: INIT"), true);
 assert.equal(hasC2CPrefix("  [C2C]\n"), true);
@@ -38,7 +38,7 @@ assert.equal(settleBackoffMs(99), 800);
 
 assert.equal(ocrEnabled([], {}, {}), false);
 assert.equal(ocrEnabled(["--verify-vision"], {}, {}), true);
-assert.equal(ocrEnabled([], { CODEXGPT_OCR: "1" }, {}), true);
+assert.equal(ocrEnabled([], { LOB_OCR: "1" }, {}), true);
 assert.equal(ocrEnabled([], {}, { ocr: true }), true);
 
 assert.equal(parseModeLabel("current mode: ChatGPT"), "ChatGPT");
@@ -55,4 +55,4 @@ assert.equal(c2c.state, "PLAN");
 assert.equal(c2c.task_id, "c2c_ab");
 assert.equal(parseC2C("nope").ok, false);
 
-console.log("ok: codexgpt-driver-helpers.test.mjs");
+console.log("ok: lob-driver-helpers.test.mjs");

@@ -70,7 +70,7 @@ export function DesktopGlue() {
               <strong className="font-medium text-foreground">Shipped (v1).</strong>{" "}
               From the repo root,{" "}
               <code className="font-mono text-foreground">
-                node tools/codexgpt-driver.mjs
+                node tools/lob-driver.mjs
               </code>{" "}
               sends mode hotkeys, clipboard paste, and Enter. macOS needs
               Accessibility; Windows uses Alt+1/2/3.{" "}
@@ -93,7 +93,7 @@ export function DesktopGlue() {
               <code className="font-mono text-foreground">mcp/</code>
               . Start it with{" "}
               <code className="font-mono text-foreground">
-                node tools/codexgpt-mcp-up.mjs start
+                node tools/lob-mcp-up.mjs start
               </code>
               , then attach the HTTPS URL in ChatGPT Developer Mode so Chat can
               call{" "}
