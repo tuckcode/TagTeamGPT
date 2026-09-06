@@ -44,16 +44,15 @@ Documented desktop shortcuts (Settings → Keyboard Shortcuts; remappable):
 - macOS: `⌃1` Chat · `⌃2` Work · `⌃3` Codex
 - Windows / Linux: `Alt+1` · `Alt+2` · `Alt+3`
 
-Mode keys only flip the tab. The Codex sidebar keeps the last project — click
-the **mounted folder for this goal** before sending work.
+Mode keys only flip the tab. Bind the repo with `--path` on the loop (or `$lob` path + goal). Do not click the sidebar every hop.
 
 Loop:
 
-1. Codex (via `$lob`) writes INIT / EXECUTED to a fenced block.
-2. You switch to Chat and paste.
-3. Chat replies with PLAN / DONE / BLOCKED.
-4. You paste that reply into Codex.
-5. Codex executes; repeat.
+1. You give `--goal` and `--path` once (`--boot` on a new Chat thread).
+2. The driver pastes INIT into Chat (~1s focus burst).
+3. Chat replies PLAN; the loop pastes that into Codex.
+4. Codex writes `<repo>/.lob/executed.json`; the loop pastes EXECUTED back to Chat.
+5. Chat replies DONE, another PLAN, or BLOCKED.
 
 Protocol templates: [`.agents/skills/lob/references/protocol.md`](../.agents/skills/lob/references/protocol.md).
 
