@@ -12,7 +12,7 @@ const ROOT = path.resolve(__dirname, "../..");
 const STATE_DIR = path.join(ROOT, ".lob");
 const SESSION_PATH = path.join(STATE_DIR, "session.json");
 
-export const DEFAULTS = {
+const DEFAULTS = {
   /** Paste PLAN into Codex (Control+3) during the loop */
   codex: true,
   /** Write DONE/BLOCKED notes to Rhizome mailbox */
@@ -32,8 +32,6 @@ export const DEFAULTS = {
   mode_settle_ms: 350,
   paste_ms: 120,
   enter_ms: 250,
-  /** Stuck-path OCR of mode chip; off on happy path. LOB_OCR=1 / --verify-vision */
-  ocr: false,
   /** Chat reply wait after paste (ms). Generation runs unfocused. */
   chat_wait_ms: 10_000,
 };
@@ -75,4 +73,4 @@ export function writeSession(patch = {}) {
   return next;
 }
 
-export { ROOT, STATE_DIR, SESSION_PATH };
+export { ROOT, STATE_DIR };

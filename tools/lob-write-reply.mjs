@@ -3,14 +3,14 @@
  * Write .lob/last-reply.json for the auto-loop (when AX scrape fails).
  *
  *   node tools/lob-write-reply.mjs --state PLAN --task-id c2c_xxxx [--snippet "…"]
- *   pbpaste | node tools/lob-write-reply.mjs --from-clipboard          # macOS
- *   Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard  # Windows
+ *   node tools/lob-write-reply.mjs --from-clipboard   # reads OS clipboard (pbpaste / Get-Clipboard)
  *   node tools/lob-write-reply.mjs --from-text "$(cat reply.md)"
  */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
+import { parseC2C } from "./lib/lob-driver-helpers.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -23,22 +23,6 @@ function arg(flag, fallback = null) {
 }
 function has(flag) {
   return process.argv.includes(flag);
-}
-
-function parseC2C(text) {
-  const states = [...text.matchAll(/STATE:\s*(INIT|PLAN|EXECUTED|DONE|BLOCKED|READY)/gi)];
-  if (!states.length) return null;
-  const last = states[states.length - 1];
-  const state = last[1].toUpperCase();
-  const from = last.index;
-  const window = text.slice(Math.max(0, from - 40), from + 2000);
-  const task = window.match(/TASK_ID:\s*(c2c_[a-zA-Z0-9]+)/i);
-  return {
-    ok: true,
-    state,
-    task_id: task ? task[1] : null,
-    snippet: window.slice(0, 1200),
-  };
 }
 
 function main() {
@@ -70,14 +54,14 @@ function main() {
       return;
     }
     payload = parseC2C(text);
-    if (!payload) {
+    if (!payload.ok) {
       console.log(JSON.stringify({ ok: false, code: "NO_STATE", detail: "clipboard has no C2C STATE" }));
       process.exitCode = 1;
       return;
     }
   } else if (has("--from-text")) {
     payload = parseC2C(arg("--from-text", ""));
-    if (!payload) {
+    if (!payload.ok) {
       console.log(JSON.stringify({ ok: false, code: "NO_STATE" }));
       process.exitCode = 1;
       return;
