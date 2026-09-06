@@ -12,7 +12,7 @@ Primary users: developers who already use the ChatGPT desktop app with Codex and
 
 ## Product Purpose
 
-CodexGPT is a desktop-first take on “Chat plans, Codex ships”: a Codex Skill plus a short `[C2C]` paste-back protocol that uses ChatGPT desktop mode keybinds and the clipboard as the control plane.
+**Lob** is a desktop-first take on “Chat lobs. Codex dunks.”: a Codex Skill plus a short `[C2C]` paste-back protocol that uses ChatGPT desktop mode keybinds and the clipboard as the control plane.
 
 This repo also ships a Next.js explainer site that teaches the approach, install path, and loop.
 
@@ -27,14 +27,14 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 ## Operating Context
 
 - ChatGPT desktop app modes: Chat (planner), Work (avoid for planning), Codex (executor).
-- Mode keybinds: macOS `⌃1/2/3`, Windows/Linux `Alt+1/2/3` (remappable).
+- Mode keybinds: macOS `⌃1/2/3`, Windows/Linux `Alt+1/2/3` (remappable). Mode keys flip the tab only — they do not select the Codex project.
 - **Local folder projects do not support Chat.** Chat stays a cloud thread with
-  no local folder; mount the repo only in Codex. Watch for the banner
+  no local folder; mount the **goal repo** only in Codex. Watch for the banner
   “Local projects don't support Chat.”
-- Invoke skill with `$codexgpt` or “Use CodexGPT to …”.
+- Invoke skill with `$codexgpt` or “Use Lob to …”.
 - Protocol lives in `.agents/skills/codexgpt/references/protocol.md`.
 - Explainer site: `pnpm dev` → http://127.0.0.1:43127.
-- Cursor Origin codebase: knispo/CodexGPT.
+- Public GitHub: tuckcode/CodexGPT. Cursor Origin codebase: knispo/CodexGPT.
 
 ## Capabilities and Constraints
 
@@ -48,12 +48,12 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 - Never use Work as the planning brain (coding-quota adjacent).
 - Never automate nested `chatgpt.com` for the control plane.
 - Keep Codex→Chat control messages under ~1 KB; no full diffs unless Chat asks for a short snippet.
-- Undecided: whether public distribution beyond this Origin/repo surface (e.g. GitHub mirror, packaging) matters yet.
 
 ## Brand Commitments
 
-- Name: **CodexGPT**
-- Tagline: **Chat plans. Codex ships.**
+- Name: **Lob**
+- Tagline: **Chat lobs. Codex dunks.**
+- Skill / repo id (until renamed): `$codexgpt` · `tuckcode/CodexGPT`
 - Voice: direct, technical, personal (“my take”); do not claim OpenAI affiliation.
 - Binding references when credited: XiaoDuoYa/codex-with-chatgpt.
 
@@ -63,6 +63,7 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 - Approach notes: `docs/approach.md`
 - Explainer UI: `src/`
 - Upstream inspiration: https://github.com/XiaoDuoYa/codex-with-chatgpt
+- Public GitHub: https://github.com/tuckcode/CodexGPT
 - Origin browse: https://cursor.com/codebase/knispo/CodexGPT
 - No fabricated testimonials, customers, or benchmarks — do not invent them.
 

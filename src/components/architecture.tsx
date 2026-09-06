@@ -73,15 +73,11 @@ export function Architecture() {
         </div>
 
         <h3 className="font-heading mt-16 text-3xl tracking-tight">
-          Optional MCP tools (upstream bridge)
+          Optional MCP tools
         </h3>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          If you wire{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-            c2c
-          </code>{" "}
-          as the data plane, Chat gets these eight read-only tools — same as
-          the original project.
+          If you wire the workspace MCP as the data plane, Chat gets these
+          read-only tools. Paste-back still works without them.
         </p>
         <ul className="mt-8 grid gap-3 sm:grid-cols-2">
           {MCP_TOOLS.map((tool) => (

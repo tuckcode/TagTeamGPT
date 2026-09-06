@@ -1,8 +1,10 @@
-# CodexGPT
+# Lob
 
-**Chat plans. Codex ships.** One ChatGPT desktop app.
+**Chat lobs. Codex dunks.** One ChatGPT desktop app.
 
-![CodexGPT loop](docs/codexgpt-loop-diagram.png)
+![Lob loop](docs/codexgpt-loop-diagram.png)
+
+**Lob** is the product name. The GitHub repo and Codex skill are still `CodexGPT` / `$codexgpt` until those get renamed.
 
 Use **Chat** as the planning and review brain, and **Codex** as the hands — without nesting `chatgpt.com` or mouse-hunting a browser UI.
 
@@ -13,7 +15,7 @@ Inspired by [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-wi
 - **Chat** is cheap talk (conversation quota).
 - **Codex** is the scarce coding meter — edits, shells, tests.
 - Same window: switch with `Control+1` / `Control+3` (macOS) or `Alt+1` / `Alt+3` (Windows/Linux).
-- Tiny `[C2C]` control messages — not full-diff paste spam.
+- Tiny `[C2C]` control messages — Chat-to-Codex handshake tags, not full-diff paste spam.
 
 ## Quick start
 
@@ -24,9 +26,9 @@ mkdir -p ~/.agents/skills
 cp -R .agents/skills/codexgpt ~/.agents/skills/codexgpt
 ```
 
-1. Open your project folder in ChatGPT desktop **Codex**.
+1. Open **your** project folder in ChatGPT desktop **Codex** (whatever that folder is named).
 2. Open a **cloud Chat** thread with **no** local folder (local projects don’t support Chat).
-3. In Codex, run `$codexgpt` or say `Use CodexGPT to …`.
+3. In Codex, run `$codexgpt` or say `Use Lob to …`.
 4. Paste `[C2C]` stubs between Chat and Codex until Chat says `DONE`.
 
 Full walkthrough: **[docs/install.md](docs/install.md)** → **[docs/usage.md](docs/usage.md)**.
@@ -55,7 +57,8 @@ Full walkthrough: **[docs/install.md](docs/install.md)** → **[docs/usage.md](d
 1. **Chat** = cloud thread, no folder. **Codex** = repo mounted.
 2. Never use **Work** as the planner.
 3. Invoke with **`$codexgpt`** in Codex (not Cursor’s `/`).
-4. Confirm Codex `pwd` is your real git root before trusting results.
+4. Mode hotkeys only flip the tab. Click the **mounted project for this goal** before sending to Codex.
+5. Confirm Codex `pwd` is your real git root before trusting results.
 
 ## Optional tooling
 

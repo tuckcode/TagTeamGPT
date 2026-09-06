@@ -20,7 +20,7 @@ export function DesktopGlue() {
           <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
             {SKILL_INVOKE}
           </code>{" "}
-          or “Use CodexGPT to …”.
+          or “Use Lob to …”.
         </p>
 
         <Tabs defaultValue="semi" className="mt-10">
@@ -46,7 +46,7 @@ export function DesktopGlue() {
               <li>
                 In Codex, run{" "}
                 <code className="font-mono text-foreground">{SKILL_INVOKE}</code>{" "}
-                (or “Use CodexGPT to implement X”).
+                (or “Use Lob to implement X”).
               </li>
               <li>
                 Pin one Chat thread. Paste the boot prompt once when the Skill
@@ -67,17 +67,20 @@ export function DesktopGlue() {
             className="mt-4 rounded-xl border border-border bg-card p-5 text-sm leading-relaxed text-muted-foreground"
           >
             <p>
-              <strong className="font-medium text-foreground">Deferred (v1).</strong>{" "}
-              Once paste-back feels right, let Codex use desktop Computer Use
-              for <em>only</em> stable actions: mode keybind, paste, Enter.
-              Always-allow the ChatGPT app. Avoid screenshot-clicking Settings
-              menus.
+              <strong className="font-medium text-foreground">Shipped (v1).</strong>{" "}
+              From the repo root,{" "}
+              <code className="font-mono text-foreground">
+                node tools/codexgpt-driver.mjs
+              </code>{" "}
+              sends mode hotkeys, clipboard paste, and Enter. macOS needs
+              Accessibility; Windows uses Alt+1/2/3.{" "}
+              <code className="font-mono text-foreground">ok: true</code> means
+              keys fired, not accepted.
             </p>
             <p className="mt-3">
-              Hard part remains: detecting that Chat finished and extracting
-              the [C2C] reply. Keep a human &quot;reply ready&quot; gate until
-              that is reliable. Remap shortcuts in Settings if ⌃1–⌃3 / Alt+1–3
-              are flaky on your build.
+              Do not re-press ⌃1 / Alt+1 when already in Chat — that can open
+              New chat. Remap shortcuts in Settings if they are flaky. Manual
+              paste-back always works without the driver.
             </p>
           </TabsContent>
           <TabsContent
@@ -85,14 +88,18 @@ export function DesktopGlue() {
             className="mt-4 rounded-xl border border-border bg-card p-5 text-sm leading-relaxed text-muted-foreground"
           >
             <p>
-              <strong className="font-medium text-foreground">Deferred.</strong>{" "}
-              For full independent review, run the upstream{" "}
-              <code className="font-mono text-foreground">c2c</code> bridge so
-              Chat can call{" "}
-              <code className="font-mono text-foreground">git_diff</code> and
-              friends. That still needs a public HTTPS connector Chat can
-              attach (Developer Mode). Confirm that on your Chat surface
-              before depending on it.
+              <strong className="font-medium text-foreground">Optional.</strong>{" "}
+              This repo ships a read-only workspace MCP at{" "}
+              <code className="font-mono text-foreground">mcp/</code>
+              . Start it with{" "}
+              <code className="font-mono text-foreground">
+                node tools/codexgpt-mcp-up.mjs start
+              </code>
+              , then attach the HTTPS URL in ChatGPT Developer Mode so Chat can
+              call{" "}
+              <code className="font-mono text-foreground">git_diff</code> and{" "}
+              <code className="font-mono text-foreground">read_file</code>.
+              Paste-back works without it.
             </p>
             <p className="mt-3">
               Without MCP, keep control messages tiny and paste only the paths

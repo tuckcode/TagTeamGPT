@@ -1,4 +1,4 @@
-# CodexGPT MCP (read-only workspace)
+# Lob MCP (read-only workspace)
 
 Lets **Chat** pull small repo facts (status, diffs, files) over MCP so you
 don’t paste them into the composer. Control plane stays keybinds + `[C2C]`.

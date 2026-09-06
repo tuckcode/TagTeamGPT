@@ -1,6 +1,8 @@
-# CodexGPT docs
+# Lob docs
 
-Friendly guides for installing and using CodexGPT with the **ChatGPT desktop app**.
+Friendly guides for installing and using **Lob** with the **ChatGPT desktop app**.
+
+The product is **Lob**. The GitHub repo and skill id are still `CodexGPT` / `$codexgpt`.
 
 | Doc | What it covers |
 | --- | --- |

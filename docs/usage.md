@@ -1,8 +1,10 @@
-# Using CodexGPT
+# Using Lob
 
 ChatGPT **Chat** plans and reviews. **Codex** edits, runs shells, and tests. You (or the keystroke driver) move short `[C2C]` messages between them.
 
-![CodexGPT loop](codexgpt-loop-diagram.png)
+![Lob loop](codexgpt-loop-diagram.png)
+
+`[C2C]` is the Chat-to-Codex handshake tag from upstream, not “clipboard-to-clipboard.”
 
 ## The idea in one loop
 
@@ -23,10 +25,10 @@ Keep control messages under ~1 KB. Do not dump full diffs into Chat unless Chat 
 
 Best first path — no Accessibility, no tunnels.
 
-1. In **Codex**, run `$codexgpt` (or “Use CodexGPT to implement X”).
+1. In **Codex**, run `$codexgpt` (or “Use Lob to implement X”).
 2. First time: paste the **boot prompt** from [protocol.md](../.agents/skills/codexgpt/references/protocol.md) into your pinned Chat thread.
 3. Copy each `INIT` / `EXECUTED` stub → `Control+1` / `Alt+1` → paste → send.
-4. Copy Chat’s `PLAN` / `DONE` / `BLOCKED` → `Control+3` / `Alt+3` → paste into a **live Codex project thread** → send.
+4. Copy Chat’s `PLAN` / `DONE` / `BLOCKED` → click the **mounted project for this goal** → `Control+3` / `Alt+3` if you are not already in Codex → paste into that live thread → send.
 5. Repeat until Chat says **DONE**.
 
 ### What a good PLAN looks like

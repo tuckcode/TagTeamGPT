@@ -1,16 +1,17 @@
 ---
 name: codexgpt
 description: >
-  Run the CodexGPT desktop workflow: Chat plans and reviews, Codex executes.
-  Use when the user says CodexGPT, Chat plans, C2C, desktop Chat/Codex split,
+  Run the Lob desktop workflow: Chat lobs (plans/reviews), Codex dunks (executes).
+  Use when the user says Lob, CodexGPT, C2C, desktop Chat/Codex split,
   or asks to plan in Chat and implement in Codex with paste-back [C2C] messages.
   Do not use for ordinary coding that stays only in Codex with no Chat planner.
   Do not automate chatgpt.com in a nested browser. Do not use Work as the planner.
 ---
 
-# CodexGPT (v0 paste-back · v1 keystroke driver)
+# Lob (v0 paste-back · v1 keystroke driver)
 
-Chat plans. Codex ships. One ChatGPT desktop app.
+Chat lobs. Codex dunks. One ChatGPT desktop app.
+The skill id is still `$codexgpt`.
 
 You (Codex) own execution: editing, shell, git, tests, recovery.
 Chat owns planning and review.
@@ -33,12 +34,16 @@ Invoke in ChatGPT desktop **Codex** with **`$codexgpt`** — not Cursor’s `/` 
    Do not require CUA/screenshots for the happy path.
 7. Read `references/protocol.md` for boot prompt and message templates.
 8. **Local folder projects do not support Chat.** Keep Chat as a plain cloud
-   thread (no local folder). Mount the repo only in **Codex** for execution.
-   Banner to watch for: “Local projects don't support Chat.”
-9. **Codex cwd trap:** sidebar project `codexgpt` ≠ guarantee of writable git
-   root. If Codex `pwd` is under `~/Documents/Codex/…`, it is a conversation
-   snapshot — green tests there do not update the real checkout. Handoffs must
-   preflight `pwd` against the expected repo path.
+   thread (no local folder). Mount the **goal repo** only in **Codex** for
+   execution. Banner: “Local projects don't support Chat.”
+9. **Codex mode ≠ Codex project.** `Control+3` / `Alt+3` only flips the tab.
+   The sidebar keeps the **last** project (often some other folder). Before any
+   `codex-send`, click the **mounted project for this goal** — whatever that
+   folder is named. Do not hardcode `codexgpt`; that name is only this
+   development checkout. Public users run Lob *inside their own repo*.
+10. **Codex cwd trap:** sidebar project name ≠ guarantee of writable git root.
+   If Codex `pwd` is under `~/Documents/Codex/…`, it is a conversation snapshot
+   — green tests there do not update the real checkout. Preflight `pwd`.
 
 ## When to use the connector (v3)
 
@@ -135,7 +140,7 @@ Or write `.codexgpt/last-reply.json` with `{ "ok": true, "state": "PLAN", "task_
 
 ### 0. Start
 
-When invoked (“Use CodexGPT to …”, `$codexgpt`, etc.):
+When invoked (“Use Lob to …”, `$codexgpt`, etc.):
 
 1. Confirm: desktop **Chat** + **Codex** tabs; user will paste between them.
 2. Remind the Chat / Codex keybinds for their OS.
@@ -150,7 +155,7 @@ If this is a new ChatGPT Chat thread for the task:
 2. Tell the user: pin that Chat thread; paste the boot prompt once; send; then
    come back here.
 
-Skip if the user says the Chat thread is already booted for CodexGPT.
+Skip if the user says the Chat thread is already booted for Lob.
 
 ### 2. Send INIT
 
@@ -197,7 +202,7 @@ At iteration 12 without `DONE`, ask: “12 iterations done — continue?”
 ## Forbidden
 
 - Nested in-app browser to `chatgpt.com` / mouse Computer Use on the web UI
-- Treating tunnels/connectors as required for every CodexGPT run
+- Treating tunnels/connectors as required for every Lob run
 - Calling or installing upstream `c2c` / MCP bridge as if it were v0/v1
 - Treating Work mode as the planner
 - Vision / OCR / screenshot loops on the happy path (hotkeys first; OCR only when stuck)

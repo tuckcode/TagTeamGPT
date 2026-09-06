@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Read-only CodexGPT workspace MCP (Streamable HTTP) for ChatGPT Chat connectors",
+  "description": "Read-only Lob workspace MCP (Streamable HTTP) for ChatGPT Chat connectors",
   "scripts": {
     "start": "node src/http.mjs",
     "dev": "node --watch src/http.mjs"
