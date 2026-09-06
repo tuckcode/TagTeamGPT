@@ -16,13 +16,17 @@
 // Codex paste always fires Control+3 / Alt+3 in the same step as paste so a
 // prior `to codex` cannot restore Cursor and drop the next paste into Chat.
 // Chat still skips ⌃1 / Alt+1 when already in Chat (New chat).
+// The user talks in Cursor. Paste must steal ChatGPT focus and abort
+// (FOCUS_LOST) if Cursor is still frontmost at Cmd+V / Ctrl+V.
+// Happy path does not scan the window (no AX mode walk). Generation
+// continues unfocused after Enter; only paste/read need a ~1s burst.
 
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { stdin as input } from "node:process";
-import { loadConfig } from "./lib/lob-config.mjs";
+import { loadConfig, readSession, writeSession } from "./lib/lob-config.mjs";
 import {
   resolveTiming,
   hasC2CPrefix,
@@ -99,6 +103,16 @@ function runInChatGPTMac(inner) {
         try { Application(prev).activate(); } catch (e) {}
       }
     }
+    function assertFront() {
+      p.frontmost = true;
+      delay(${sec(TIMING.focus_ms)});
+      let name = '';
+      try {
+        const fp = se.applicationProcesses.whose({ frontmost: true });
+        if (fp.length) name = String(fp[0].name());
+      } catch (e) {}
+      if (name !== ${JSON.stringify(APP)}) throw new Error('FOCUS_LOST:' + name);
+    }
     function focusComposer(root) {
       function walk(el, d) {
         if (d > 16) return false;
@@ -136,6 +150,13 @@ function classifyMacError(e) {
       ok: false,
       code: "CLIPBOARD_MISMATCH",
       detail: "Clipboard read-back did not match the payload.",
+    };
+  if (/FOCUS_LOST/.test(msg))
+    return {
+      ok: false,
+      code: "FOCUS_LOST",
+      detail:
+        "ChatGPT was not frontmost at paste time — aborted so this did not land in Cursor. Retry the send; you can keep talking here after it finishes.",
     };
   if (/MODE_ELEMENT_NOT_FOUND/.test(msg))
     return {
@@ -231,7 +252,6 @@ function modeThenPasteMac(key, text) {
       p.frontmost = true;
       delay(${sec(TIMING.focus_ms)});
       ${hotkey}
-      try { focusComposer(p.windows[0]); } catch (e) {}
       const app = Application.currentApplication();
       app.includeStandardAdditions = true;
       const payload = ${JSON.stringify(text)};
@@ -240,6 +260,7 @@ function modeThenPasteMac(key, text) {
       let got = '';
       try { got = String(app.theClipboard()); } catch (e) {}
       if (got !== payload) throw new Error('CLIPBOARD_MISMATCH');
+      assertFront();
       se.keystroke('v', { using: ['command down'] });
       delay(${sec(TIMING.enter_ms)});
       se.keyCode(36);
@@ -336,6 +357,13 @@ function classifyWinError(msg) {
       ok: false,
       code: "CLIPBOARD_MISMATCH",
       detail: "Clipboard read-back did not match the payload.",
+    };
+  if (/FOCUS_LOST/i.test(m))
+    return {
+      ok: false,
+      code: "FOCUS_LOST",
+      detail:
+        "ChatGPT was not frontmost at paste time — aborted so this did not land in Cursor. Retry the send; you can keep talking here after it finishes.",
     };
   if (/access is denied|UIAccess|SendKeys/i.test(m))
     return {
@@ -561,6 +589,9 @@ $got = [System.Windows.Forms.Clipboard]::GetText()
 $a = ($clipText -replace "\`r\`n","\`n")
 $b = ($got -replace "\`r\`n","\`n")
 if ($a -ne $b) { throw 'CLIPBOARD_MISMATCH' }
+[void][CodexGptWin]::SetForegroundWindow($hwnd)
+Start-Sleep -Milliseconds ${TIMING.focus_ms}
+if ([CodexGptWin]::GetForegroundWindow() -ne $hwnd) { throw 'FOCUS_LOST' }
 [System.Windows.Forms.SendKeys]::SendWait('^v')
 Start-Sleep -Milliseconds ${TIMING.enter_ms}
 [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
@@ -823,33 +854,54 @@ async function switchMode(name, verify, { force = false } = {}) {
 
 async function switchAndSend(name, text, verify, { force = false, forceMode = false } = {}) {
   const cfg = MODE_MAP[name];
-  let before = readMode();
-  if (!before.ok) before = await maybeOcr(before, { verifyFails: verify ? 1 : 0 });
-  if (before.ok && isWorkMode(before.mode) && name !== "work") {
-    return {
-      ok: false,
-      code: "MODE_DRIFT",
-      mode: before.mode,
-      want: cfg.want,
-      platform: PLATFORM,
-      detail:
-        "Mode is Work — abort; never use Work as planner/executor. Open a live Codex project thread and retry.",
-      caveat: CAVEAT,
-    };
+  const session = readSession();
+  let before = { ok: false };
+  if (verify) {
+    before = readMode();
+    if (!before.ok) before = await maybeOcr(before, { verifyFails: 1 });
+    if (before.ok && isWorkMode(before.mode) && name !== "work") {
+      return {
+        ok: false,
+        code: "MODE_DRIFT",
+        mode: before.mode,
+        want: cfg.want,
+        platform: PLATFORM,
+        detail:
+          "Mode is Work — abort; never use Work as planner/executor. Open a live Codex project thread and retry.",
+        caveat: CAVEAT,
+      };
+    }
   }
 
   const skip = skipModeHotkeyBeforePaste(name, {
     beforeOk: before.ok,
     beforeMode: before.mode,
+    lastMode: session.last_mode,
     force: forceMode,
   });
   const key = skip ? null : cfg.key;
   const paste = modeThenPaste(key, text);
   if (!paste.ok) return { ...paste, caveat: CAVEAT, platform: PLATFORM };
 
+  writeSession({ last_mode: cfg.want });
+
+  if (!verify) {
+    return {
+      ok: true,
+      mode: cfg.want,
+      want: cfg.want,
+      verified: false,
+      switched: key != null,
+      skipped_hotkey: skip,
+      paste: "sent",
+      platform: PLATFORM,
+      caveat: CAVEAT,
+    };
+  }
+
   await sleep(Math.max(TIMING.enter_ms, 400));
   let after = readMode();
-  if (!after.ok) after = await maybeOcr(after, { verifyFails: verify ? 2 : 0 });
+  if (!after.ok) after = await maybeOcr(after, { verifyFails: 2 });
   const want = cfg.want;
   const switched = key != null;
   if (!after.ok) {

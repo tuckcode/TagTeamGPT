@@ -17,8 +17,8 @@ One **pinned Chat thread** per goal. Do not open New chat between INIT / PLAN / 
 **Local folder projects do not support Chat.** Chat = cloud thread (no folder).
 Mount the **goal repo** only under **Codex**. Banner: “Local projects don't support Chat.”
 
-**Mode ≠ project.** `⌃3` / `Alt+3` only flips the tab. Click the mounted folder
-for this goal before `codex-send` — do not assume the last sidebar project.
+**Mode ≠ project.** `⌃3` / `Alt+3` only flips the tab. Bind the repo with
+`--path` on the loop (or `$lob` path + goal). Do not click the sidebar every hop.
 
 ## Send (blind keystrokes)
 
@@ -37,7 +37,9 @@ Driver / human:
 
 `ok: true` from the driver means **keys fired**, not “Chat/Codex accepted.”
 Confirmation is the next `[C2C]` STATE or `.lob/executed.json`.
-After send, the driver restores the previous front app (especially macOS).
+After send, the driver restores the previous front app (especially macOS) so you can keep talking in Cursor. Paste aborts with `FOCUS_LOST` instead of landing here if ChatGPT is not frontmost at Cmd+V.
+
+**Focus bursts, not a held window.** A send steals ChatGPT for ~1s (focus → paste → Enter → restore). Chat and Codex keep generating while unfocused. Codex completion is `.lob/executed.json` (no focus). Chat’s reply is one copy burst after ~2s, again at ~8s if needed. The loop does not sit on ChatGPT for 30s.
 
 `chat-send` / `codex-send` require `[C2C]` at the start; clipboard is set then
 read back before paste.

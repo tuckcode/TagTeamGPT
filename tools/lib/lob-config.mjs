@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
 const STATE_DIR = path.join(ROOT, ".lob");
+const SESSION_PATH = path.join(STATE_DIR, "session.json");
 
 export const DEFAULTS = {
   /** Paste PLAN into Codex (Control+3) during the loop */
@@ -33,6 +34,8 @@ export const DEFAULTS = {
   enter_ms: 250,
   /** Stuck-path OCR of mode chip; off on happy path. LOB_OCR=1 / --verify-vision */
   ocr: false,
+  /** Chat reply wait after paste (ms). Generation runs unfocused. */
+  chat_wait_ms: 10_000,
 };
 
 function readJson(p) {
@@ -57,4 +60,19 @@ export function flagOrConfig(argv, onFlag, offFlag, configKey, cfg = loadConfig(
   return !!cfg[configKey];
 }
 
-export { ROOT, STATE_DIR };
+export function readSession() {
+  return readJson(SESSION_PATH);
+}
+
+export function writeSession(patch = {}) {
+  fs.mkdirSync(STATE_DIR, { recursive: true });
+  const next = {
+    ...readSession(),
+    ...patch,
+    updated_at: new Date().toISOString(),
+  };
+  fs.writeFileSync(SESSION_PATH, JSON.stringify(next, null, 2) + "\n");
+  return next;
+}
+
+export { ROOT, STATE_DIR, SESSION_PATH };

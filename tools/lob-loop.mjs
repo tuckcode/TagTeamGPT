@@ -3,7 +3,12 @@
  * Lob auto-loop (macOS + Windows): Chat plans → Codex executes → Chat reviews.
  * Mode hotkeys via driver: macOS Control+1/2/3, Windows Alt+1/2/3.
  *
- *   node tools/lob-loop.mjs --goal "…"
+ *   node tools/lob-loop.mjs --goal "…" [--path /path/to/repo] [--boot]
+ *
+ * You give the goal and the folder path once. The loop hops Chat ↔ Codex
+ * after that. ChatGPT is stolen for ~1s per paste, then given back.
+ * Chat/Codex keep generating while you click around. Codex done = .lob/executed.json
+ * (no focus). Chat reply = wait up to 10s, then one copy burst.
  *
  * Defaults (lob.config.json / .lob/config.json):
  *   codex: true   — paste PLAN into Codex (⌃3 / Alt+3)
@@ -22,7 +27,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
-import { loadConfig, flagOrConfig, ROOT, STATE_DIR } from "./lib/lob-config.mjs";
+import { loadConfig, flagOrConfig, readSession, writeSession, ROOT, STATE_DIR } from "./lib/lob-config.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DRIVER = path.join(__dirname, "lob-driver.mjs");
@@ -31,7 +36,6 @@ const MAILBOX = path.join(__dirname, "lob-mailbox.mjs");
 const MEMORY = path.join(__dirname, "lob-memory.mjs");
 const NUDGE = path.join(__dirname, "lob-mailbox-nudge.mjs");
 const PLAN_PATH = path.join(STATE_DIR, "last-plan.md");
-const EXEC_PATH = path.join(STATE_DIR, "executed.json");
 const REPLY_PATH = path.join(STATE_DIR, "last-reply.json");
 
 const WIN_CLIP_HINT =
@@ -41,6 +45,15 @@ function arg(flag, fallback = null) {
   const i = process.argv.indexOf(flag);
   if (i === -1) return fallback;
   return process.argv[i + 1] ?? fallback;
+}
+
+function resolveRepoPath() {
+  const raw = arg("--path") || readSession().pwd || ROOT;
+  const resolved = path.resolve(raw);
+  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
+    return { ok: false, path: resolved };
+  }
+  return { ok: true, path: resolved };
 }
 
 function runNode(script, args = []) {
@@ -81,19 +94,25 @@ function consumeReplyFile() {
   }
 }
 
-function readReply() {
-  const fromFile = peekReplyFile();
-  if (fromFile) return fromFile;
+function grabReply() {
   try {
-    return JSON.parse(runNode(READER, []));
+    return JSON.parse(runNode(READER, ["--grab"]));
   } catch (e) {
     const msg = String(e.stdout || e.message || e);
     try {
       return JSON.parse(msg);
     } catch {
-      return { ok: false, code: "READ_FAILED", detail: msg.slice(0, 300) };
+      return { ok: false, code: "GRAB_FAILED", detail: msg.slice(0, 300) };
     }
   }
+}
+
+function replyMatches(last, want, taskId) {
+  return (
+    last?.ok &&
+    want.has(String(last.state).toUpperCase()) &&
+    (!taskId || !last.task_id || last.task_id === taskId)
+  );
 }
 
 async function sleep(ms) {
@@ -115,47 +134,32 @@ function noReplyPayload(last) {
   };
 }
 
-async function waitForState(wanted, { timeoutMs = 180_000, pollMs = 2000, taskId } = {}) {
+/** Chat wait: poll a reply file, then 1–2 copy bursts. Generation stays unfocused. */
+async function waitForChatState(wanted, opts = {}) {
+  const timeoutMs = opts.timeoutMs ?? loadConfig().chat_wait_ms ?? 10_000;
+  const taskId = opts.taskId;
   const want = new Set(wanted.map((s) => s.toUpperCase()));
   const start = Date.now();
+  const grabAt = [2_000, 8_000];
+  let gi = 0;
   let last = null;
   while (Date.now() - start < timeoutMs) {
-    last = readReply();
-    if (
-      last.ok &&
-      want.has(String(last.state).toUpperCase()) &&
-      (!taskId || !last.task_id || last.task_id === taskId)
-    ) {
-      if (last._from_file) consumeReplyFile();
+    last = peekReplyFile();
+    if (replyMatches(last, want, taskId)) {
+      consumeReplyFile();
       return { ...last, accepted: true };
     }
-    await sleep(pollMs);
+    if (gi < grabAt.length && Date.now() - start >= grabAt[gi]) {
+      last = grabReply();
+      gi += 1;
+      if (replyMatches(last, want, taskId)) {
+        consumeReplyFile();
+        return { ...last, accepted: true };
+      }
+    }
+    await sleep(300);
   }
-  return { ok: false, code: "TIMEOUT", last };
-}
-
-/** Chat wait: on timeout, one driver enter, wait again, then NO_REPLY. */
-async function waitForChatState(wanted, opts = {}) {
-  const first = await waitForState(wanted, opts);
-  if (first.ok) return first;
-
-  console.error(
-    JSON.stringify({
-      phase: "chat-wait-miss",
-      action: "enter-once",
-      keys_fired: true,
-      accepted: false,
-    })
-  );
-  const enter = driver("enter");
-  console.error(JSON.stringify({ phase: "chat-enter-retry", ...enter, keys_fired: !!enter.ok, accepted: false }));
-
-  const second = await waitForState(wanted, {
-    ...opts,
-    timeoutMs: Math.min(opts.timeoutMs ?? 180_000, 90_000),
-  });
-  if (second.ok) return second;
-  return noReplyPayload(second.last || first.last);
+  return noReplyPayload(last);
 }
 
 function chatSend(text) {
@@ -230,7 +234,7 @@ function recordMemory(enabled, args) {
   return runHelper(MEMORY, args);
 }
 
-function buildCodexHandoff(planText, taskId, iteration) {
+function buildCodexHandoff(planText, taskId, iteration, repoPath) {
   return `[C2C]
 STATE: PLAN
 TASK_ID: ${taskId}
@@ -239,8 +243,8 @@ ITERATION: ${iteration}
 Execute this Lob PLAN now in the open workspace.
 
 HARD PREFLIGHT (do this first):
-1. Run: pwd && test -d .git && test -f package.json
-2. Your pwd MUST be: ${ROOT}
+1. Run: pwd && test -d .git
+2. Your pwd MUST be: ${repoPath}
 3. If pwd is under ~/Documents/Codex/ or otherwise ≠ that path, STOP and report BLOCKED — you are in a conversation snapshot, not the git checkout. Do not treat green tests there as success.
 
 Do only the ACTIONS. Change only the listed files. When finished, stop and wait — do not invent a Chat reply.
@@ -273,7 +277,7 @@ Rules:
    restatement of the checklist), ACTIONS, FILES_LIKELY_INVOLVED, TESTS, and
    SUCCESS_CRITERIA. Never reply with a bare one-liner or ACTIONS-only list.`;
 
-function buildInit(taskId, goal) {
+function buildInit(taskId, goal, repoPath) {
   return `[C2C]
 STATE: INIT
 TASK_ID: ${taskId}
@@ -282,8 +286,11 @@ ITERATION: 0
 GOAL:
 ${goal}
 
+REPO:
+${repoPath}
+
 INSTRUCTION:
-Create an implementation PLAN for Codex. Keep it finite and executable.
+Create an implementation PLAN for Codex to run in that repo path. Keep it finite and executable.
 Reply with a C2C PLAN message.`;
 }
 
@@ -348,23 +355,24 @@ Previous PLAN was rejected (${detail}). Reply again with a full C2C PLAN:
 GOAL, RATIONALE as prose (not a restatement of ACTIONS), ACTIONS, FILES_LIKELY_INVOLVED, TESTS, SUCCESS_CRITERIA.`;
 }
 
-async function waitForExecutedFile({ timeoutMs = 600_000, pollMs = 1500 } = {}) {
+async function waitForExecutedFile(execPath, { timeoutMs = 600_000, pollMs = 1500 } = {}) {
   const start = Date.now();
-  if (fs.existsSync(EXEC_PATH)) fs.unlinkSync(EXEC_PATH);
+  fs.mkdirSync(path.dirname(execPath), { recursive: true });
+  if (fs.existsSync(execPath)) fs.unlinkSync(execPath);
   console.error(
     JSON.stringify({
       waiting: "execution",
       proof: "executed.json",
-      write: EXEC_PATH,
+      write: execPath,
       keys_fired: true,
       accepted: false,
       example: { result: "…", changed_files: 1, tests: "not run" },
     })
   );
   while (Date.now() - start < timeoutMs) {
-    if (fs.existsSync(EXEC_PATH)) {
-      const raw = fs.readFileSync(EXEC_PATH, "utf8");
-      fs.unlinkSync(EXEC_PATH);
+    if (fs.existsSync(execPath)) {
+      const raw = fs.readFileSync(execPath, "utf8");
+      fs.unlinkSync(execPath);
       return JSON.parse(raw);
     }
     await sleep(pollMs);
@@ -372,12 +380,13 @@ async function waitForExecutedFile({ timeoutMs = 600_000, pollMs = 1500 } = {}) 
   return null;
 }
 
-async function onPlan(planText, taskId, iteration, useCodex) {
+async function onPlan(planText, taskId, iteration, useCodex, repoPath) {
   fs.mkdirSync(STATE_DIR, { recursive: true });
   fs.writeFileSync(PLAN_PATH, planText, "utf8");
+  const execPath = path.join(repoPath, ".lob", "executed.json");
 
   if (useCodex) {
-    const handoff = buildCodexHandoff(planText, taskId, iteration);
+    const handoff = buildCodexHandoff(planText, taskId, iteration, repoPath);
     const r = codexSend(handoff);
     console.error(
       JSON.stringify({
@@ -385,6 +394,7 @@ async function onPlan(planText, taskId, iteration, useCodex) {
         keys_fired: !!r.ok,
         accepted: false,
         ...r,
+        repo: repoPath,
         note:
           r.verified === false
             ? "paste fired; mode unverified — confirm live Codex project thread by eye"
@@ -399,19 +409,19 @@ async function onPlan(planText, taskId, iteration, useCodex) {
   const hook = process.env.LOB_ON_PLAN;
   if (hook) {
     execFileSync(hook, [PLAN_PATH, taskId, String(iteration)], {
-      cwd: ROOT,
+      cwd: repoPath,
       stdio: "inherit",
       shell: true,
-      env: { ...process.env, LOB_PLAN: PLAN_PATH, LOB_TASK_ID: taskId },
+      env: { ...process.env, LOB_PLAN: PLAN_PATH, LOB_TASK_ID: taskId, LOB_REPO: repoPath },
     });
-    if (fs.existsSync(EXEC_PATH)) {
-      const raw = fs.readFileSync(EXEC_PATH, "utf8");
-      fs.unlinkSync(EXEC_PATH);
+    if (fs.existsSync(execPath)) {
+      const raw = fs.readFileSync(execPath, "utf8");
+      fs.unlinkSync(execPath);
       console.error(JSON.stringify({ phase: "codex-accepted", via: "hook", accepted: true, keys_fired: true }));
       return JSON.parse(raw);
     }
   }
-  const payload = await waitForExecutedFile();
+  const payload = await waitForExecutedFile(execPath);
   if (payload) {
     console.error(JSON.stringify({ phase: "codex-accepted", via: "executed.json", accepted: true, keys_fired: true }));
   }
@@ -426,12 +436,26 @@ async function main() {
         ok: false,
         code: "USAGE",
         detail:
-          'node tools/lob-loop.mjs --goal "…"  # Chat+Codex+mailbox+memory by default',
+          'node tools/lob-loop.mjs --goal "…" [--path /path/to/repo] [--boot]',
       })
     );
     process.exitCode = 1;
     return;
   }
+
+  const repo = resolveRepoPath();
+  if (!repo.ok) {
+    console.log(
+      JSON.stringify({
+        ok: false,
+        code: "BAD_PATH",
+        detail: `Repo path is not a folder: ${repo.path}`,
+      })
+    );
+    process.exitCode = 1;
+    return;
+  }
+  const repoPath = repo.path;
 
   const cfg = loadConfig();
   const useCodex = flagOrConfig(process.argv, "--codex", "--no-codex", "codex", cfg);
@@ -442,12 +466,14 @@ async function main() {
   const max = Number(arg("--max", "12"));
   const taskId = arg("--task-id", `c2c_${randomBytes(2).toString("hex")}`);
   fs.mkdirSync(STATE_DIR, { recursive: true });
+  writeSession({ goal, pwd: repoPath, task_id: taskId });
 
   console.error(
     JSON.stringify({
       phase: "start",
       task_id: taskId,
       goal,
+      path: repoPath,
       defaults: { chat: true, codex: useCodex, mailbox: useMailbox, memory: useMemory, boot: useBoot },
     })
   );
@@ -463,15 +489,13 @@ async function main() {
   console.error(JSON.stringify({ phase: "memory-start", ...memStart }));
 
   if (useBoot) {
-    // Boot prose is not a C2C stub — mode switch + unrestricted send.
-    const mode = driver("to", "chat");
-    const b = mode.ok || mode.code === "MODE_ELEMENT_NOT_FOUND" ? driver("send", BOOT) : mode;
+    const b = driver("send", "--mode", "chat", BOOT);
     console.error(JSON.stringify({ phase: "boot", keys_fired: !!b.ok, accepted: false, ...b }));
-    await sleep(2500);
+    await sleep(400);
   }
 
   let iteration = 0;
-  let send = chatSend(buildInit(taskId, goal));
+  let send = chatSend(buildInit(taskId, goal, repoPath));
   console.error(JSON.stringify({ phase: "init", keys_fired: !!send.ok, accepted: false, ...send }));
   if (!send.ok) {
     process.exitCode = 1;
@@ -555,7 +579,7 @@ async function main() {
     }
 
     iteration += 1;
-    const execPayload = await onPlan(reply.snippet, taskId, iteration, useCodex);
+    const execPayload = await onPlan(reply.snippet, taskId, iteration, useCodex, repoPath);
     if (!execPayload) {
       console.log(
         JSON.stringify({

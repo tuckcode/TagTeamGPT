@@ -92,13 +92,14 @@ export function isWorkMode(mode) {
  */
 export function skipModeHotkeyBeforePaste(
   target,
-  { beforeOk, beforeMode, force } = {}
+  { beforeOk, beforeMode, lastMode, force } = {}
 ) {
   if (force) return false;
   if (target === "codex") return false;
-  if (!beforeOk) return false;
-  if (target === "chat") return modesMatch(beforeMode, "ChatGPT");
-  if (target === "work") return modesMatch(beforeMode, "Work");
+  const mode = beforeOk && beforeMode ? beforeMode : lastMode;
+  if (!mode) return false;
+  if (target === "chat") return modesMatch(mode, "ChatGPT");
+  if (target === "work") return modesMatch(mode, "Work");
   return false;
 }
 
