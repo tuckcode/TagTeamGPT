@@ -85,6 +85,23 @@ export function isWorkMode(mode) {
   return parseModeLabel(mode) === "Work" || /^work$/i.test(String(mode || ""));
 }
 
+/**
+ * Chat ⌃1 / Alt+1 can open New chat — skip that key if already in Chat.
+ * Codex ⌃3 / Alt+3 is a lock: never skip it on paste. A prior `to codex`
+ * restores Cursor, and the next paste can land in Chat.
+ */
+export function skipModeHotkeyBeforePaste(
+  target,
+  { beforeOk, beforeMode, force } = {}
+) {
+  if (force) return false;
+  if (target === "codex") return false;
+  if (!beforeOk) return false;
+  if (target === "chat") return modesMatch(beforeMode, "ChatGPT");
+  if (target === "work") return modesMatch(beforeMode, "Work");
+  return false;
+}
+
 /** Last STATE: in a blob (latest assistant turn). */
 export function parseC2C(text) {
   const raw = String(text ?? "");

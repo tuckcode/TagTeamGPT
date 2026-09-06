@@ -74,22 +74,19 @@ From the repo root (ChatGPT desktop running). macOS needs Accessibility for the
 shell; Windows focuses the ChatGPT window via PowerShell SendKeys.
 
 ```bash
-node tools/lob-driver.mjs to chat
 node tools/lob-driver.mjs chat-send "$(cat <<'EOF'
 [C2C]
 STATE: INIT
 ...
 EOF
 )"
-node tools/lob-driver.mjs enter   # Enter only, composer focused
-node tools/lob-driver.mjs to codex
+node tools/lob-driver.mjs send --mode codex "execute this PLAN"
 ```
 
-Other commands: `mode`, `to work`, `send "…"`, `codex-send "…"`. `chat-send` /
-`codex-send` require `[C2C]`; clipboard is set then read back before paste.
-`ok: true` = keys fired, not accepted — confirm next `[C2C]` STATE or
-`.lob/executed.json`. Do not re-press ⌃1 / Alt+1 when already in Chat.
-After send, previous front app is restored (especially macOS).
+`codex-send` / `send --mode codex` fire Control+3 / Alt+3 and paste in **one**
+step. Do not `to codex` then `send` later — that restores Cursor in between and
+can paste into Chat. `chat-send` / `codex-send` require `[C2C]`. `ok: true` =
+keys fired, not accepted. Do not re-press ⌃1 / Alt+1 when already in Chat.
 
 Timing defaults: `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`,
 `LOB_PASTE_MS=120`, `LOB_ENTER_MS=250` (or `.lob/config.json`).

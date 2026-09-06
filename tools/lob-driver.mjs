@@ -8,13 +8,14 @@
 //
 //   node tools/lob-driver.mjs mode
 //   node tools/lob-driver.mjs to chat|work|codex [--verify] [--force-mode]
-//   node tools/lob-driver.mjs send "text" | send -
+//   node tools/lob-driver.mjs send "text" | send - [--mode chat|codex]
 //   node tools/lob-driver.mjs enter
 //   node tools/lob-driver.mjs chat-send "text" [--verify] [--force-mode]
 //   node tools/lob-driver.mjs codex-send "text" [--verify] [--force-mode]
 //
-// Mode switch is skipped when already in the target mode (when mode can be
-// read). ok:true means keys fired — not that Chat/Codex accepted the message.
+// Codex paste always fires Control+3 / Alt+3 in the same step as paste so a
+// prior `to codex` cannot restore Cursor and drop the next paste into Chat.
+// Chat still skips ⌃1 / Alt+1 when already in Chat (New chat).
 
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -30,6 +31,7 @@ import {
   parseModeLabel,
   modesMatch,
   isWorkMode,
+  skipModeHotkeyBeforePaste,
 } from "./lib/lob-driver-helpers.mjs";
 
 const APP = "ChatGPT";
@@ -212,11 +214,23 @@ function pressModeKeyMac(key) {
 }
 
 function pasteAndEnterMac(text) {
+  return modeThenPasteMac(null, text);
+}
+
+function modeThenPasteMac(key, text) {
+  const hotkey =
+    key == null
+      ? ""
+      : `
+      se.keystroke(${JSON.stringify(String(key))}, { using: ['control down'] });
+      delay(${sec(TIMING.mode_settle_ms)});
+`;
   try {
     runInChatGPTMac(`
       const prev = prevApp();
       p.frontmost = true;
       delay(${sec(TIMING.focus_ms)});
+      ${hotkey}
       try { focusComposer(p.windows[0]); } catch (e) {}
       const app = Application.currentApplication();
       app.includeStandardAdditions = true;
@@ -528,11 +542,19 @@ function pressModeKeyWin(key) {
 }
 
 function pasteAndEnterWin(text) {
+  return modeThenPasteWin(null, text);
+}
+
+function modeThenPasteWin(key, text) {
+  const hotkey =
+    key == null
+      ? ""
+      : `[System.Windows.Forms.SendKeys]::SendWait('%${key}')\nStart-Sleep -Milliseconds ${TIMING.mode_settle_ms}\n`;
   try {
     runPowerShell(
       winPickFocus(true) +
         `
-Focus-Composer
+${hotkey}Focus-Composer
 [System.Windows.Forms.Clipboard]::SetText($clipText)
 Start-Sleep -Milliseconds ${TIMING.paste_ms}
 $got = [System.Windows.Forms.Clipboard]::GetText()
@@ -646,6 +668,12 @@ function pressModeKey(key) {
 function pasteAndEnter(text) {
   if (PLATFORM === "darwin") return pasteAndEnterMac(text);
   if (PLATFORM === "win32") return pasteAndEnterWin(text);
+  return unsupportedPlatform();
+}
+
+function modeThenPaste(key, text) {
+  if (PLATFORM === "darwin") return modeThenPasteMac(key, text);
+  if (PLATFORM === "win32") return modeThenPasteWin(key, text);
   return unsupportedPlatform();
 }
 
@@ -794,58 +822,62 @@ async function switchMode(name, verify, { force = false } = {}) {
 }
 
 async function switchAndSend(name, text, verify, { force = false, forceMode = false } = {}) {
-  const s = await switchMode(name, verify, { force: forceMode });
-  if (!s.ok && s.code !== "MODE_ELEMENT_NOT_FOUND") return { ...s, caveat: CAVEAT };
-
-  if (s.switched) await sleep(TIMING.mode_settle_ms);
-
-  if (!s.ok && s.code === "MODE_ELEMENT_NOT_FOUND") {
-    const paste = pasteAndEnter(text);
-    if (!paste.ok) return { ...paste, caveat: CAVEAT, platform: PLATFORM };
+  const cfg = MODE_MAP[name];
+  let before = readMode();
+  if (!before.ok) before = await maybeOcr(before, { verifyFails: verify ? 1 : 0 });
+  if (before.ok && isWorkMode(before.mode) && name !== "work") {
     return {
-      ok: true,
-      mode: MODE_MAP[name].want,
-      verified: false,
-      switched: true,
-      paste: "sent",
+      ok: false,
+      code: "MODE_DRIFT",
+      mode: before.mode,
+      want: cfg.want,
       platform: PLATFORM,
       detail:
-        "Hotkey+paste fired but mode verify is opaque. Confirm live Codex/Chat thread by eye.",
+        "Mode is Work — abort; never use Work as planner/executor. Open a live Codex project thread and retry.",
       caveat: CAVEAT,
     };
   }
 
-  if (!s.ok) return { ...s, caveat: CAVEAT };
-
-  const paste = pasteAndEnter(text);
+  const skip = skipModeHotkeyBeforePaste(name, {
+    beforeOk: before.ok,
+    beforeMode: before.mode,
+    force: forceMode,
+  });
+  const key = skip ? null : cfg.key;
+  const paste = modeThenPaste(key, text);
   if (!paste.ok) return { ...paste, caveat: CAVEAT, platform: PLATFORM };
 
   await sleep(Math.max(TIMING.enter_ms, 400));
   let after = readMode();
   if (!after.ok) after = await maybeOcr(after, { verifyFails: verify ? 2 : 0 });
-  const want = MODE_MAP[name].want;
+  const want = cfg.want;
+  const switched = key != null;
   if (!after.ok) {
     return {
       ok: true,
-      mode: s.mode || want,
+      mode: want,
       want,
       verified: false,
-      switched: !!s.switched,
-      skipped_hotkey: !!s.skipped_hotkey,
+      switched,
+      skipped_hotkey: skip,
       paste: "sent",
       platform: PLATFORM,
-      detail: "Paste fired; post-paste mode verify unavailable.",
+      detail: skip
+        ? "Paste fired; post-paste mode verify unavailable."
+        : `Locked ${want} (hotkey ${key}) and paste in one step; post-paste mode verify unavailable.`,
       caveat: CAVEAT,
     };
   }
-  if (!modesMatch(after.mode, want)) return driftResult(after, want, s);
+  if (!modesMatch(after.mode, want)) {
+    return driftResult(after, want, { switched, skipped_hotkey: skip });
+  }
 
   return {
     ok: true,
     mode: after.mode,
-    verified: !!s.verified || modesMatch(after.mode, want),
-    switched: !!s.switched,
-    skipped_hotkey: !!s.skipped_hotkey,
+    verified: true,
+    switched,
+    skipped_hotkey: skip,
     paste: "sent",
     platform: PLATFORM,
     caveat: CAVEAT,
@@ -871,12 +903,21 @@ async function main() {
   const verify = args.includes("--verify");
   const force = args.includes("--force");
   const forceMode = args.includes("--force-mode");
+  let requireMode = null;
+  const modeFlag = args.indexOf("--mode");
+  if (modeFlag !== -1) requireMode = args[modeFlag + 1] || null;
+  const skipNext = new Set();
+  if (modeFlag !== -1) {
+    skipNext.add(modeFlag);
+    skipNext.add(modeFlag + 1);
+  }
   const pos = args.filter(
-    (a) =>
+    (a, i) =>
       a !== "--verify" &&
       a !== "--force" &&
       a !== "--force-mode" &&
-      a !== "--verify-vision"
+      a !== "--verify-vision" &&
+      !skipNext.has(i)
   );
   const [cmd, arg, ...rest] = pos;
   let text = [arg, ...rest].filter(Boolean).join(" ");
@@ -913,11 +954,33 @@ async function main() {
     }
     case "send": {
       if (!text) {
-        print({ ok: false, code: "USAGE", detail: 'send "text" | send -' });
+        print({ ok: false, code: "USAGE", detail: 'send "text" | send - [--mode chat|codex]' });
         process.exitCode = 1;
         break;
       }
-      const r = pasteAndEnter(text);
+      if (requireMode && !MODE_MAP[requireMode]) {
+        print({
+          ok: false,
+          code: "USAGE",
+          detail: 'send --mode chat|codex "text"',
+          platform: PLATFORM,
+        });
+        process.exitCode = 1;
+        break;
+      }
+      if (requireMode === "work") {
+        print({
+          ok: false,
+          code: "MODE_DRIFT",
+          detail: "Never paste into Work.",
+          platform: PLATFORM,
+        });
+        process.exitCode = 1;
+        break;
+      }
+      const r = requireMode
+        ? await switchAndSend(requireMode, text, verify, { force, forceMode })
+        : pasteAndEnter(text);
       print({ ...r, platform: PLATFORM, caveat: CAVEAT });
       process.exitCode = r.ok ? 0 : 1;
       break;
@@ -958,7 +1021,7 @@ async function main() {
         ok: false,
         code: "USAGE",
         detail:
-          "mode | to chat|work|codex [--verify] [--force-mode] | send <text|-> | enter | chat-send <text|-> [--verify] [--force-mode] | codex-send <text|-> [--verify] [--force-mode]",
+          "mode | to chat|work|codex [--verify] [--force-mode] | send <text|-> [--mode chat|codex] | enter | chat-send <text|-> [--verify] [--force-mode] | codex-send <text|-> [--verify] [--force-mode]",
         platform: PLATFORM,
       });
       process.exitCode = 1;
