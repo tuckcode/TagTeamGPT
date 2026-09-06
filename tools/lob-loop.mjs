@@ -38,8 +38,7 @@ const NUDGE = path.join(__dirname, "lob-mailbox-nudge.mjs");
 const PLAN_PATH = path.join(STATE_DIR, "last-plan.md");
 const REPLY_PATH = path.join(STATE_DIR, "last-reply.json");
 
-const WIN_CLIP_HINT =
-  "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard";
+const CLIP_HINT = "node tools/lob-write-reply.mjs --from-clipboard";
 
 function arg(flag, fallback = null) {
   const i = process.argv.indexOf(flag);
@@ -120,15 +119,11 @@ async function sleep(ms) {
 }
 
 function noReplyPayload(last) {
-  const hint =
-    process.platform === "win32"
-      ? WIN_CLIP_HINT
-      : "pbpaste | node tools/lob-write-reply.mjs --from-clipboard";
   return {
     ok: false,
     code: "NO_REPLY",
     last,
-    hint,
+    hint: CLIP_HINT,
     keys_fired: true,
     accepted: false,
   };
@@ -406,21 +401,6 @@ async function onPlan(planText, taskId, iteration, useCodex, repoPath) {
     if (!r.ok) return null;
   }
 
-  const hook = process.env.LOB_ON_PLAN;
-  if (hook) {
-    execFileSync(hook, [PLAN_PATH, taskId, String(iteration)], {
-      cwd: repoPath,
-      stdio: "inherit",
-      shell: true,
-      env: { ...process.env, LOB_PLAN: PLAN_PATH, LOB_TASK_ID: taskId, LOB_REPO: repoPath },
-    });
-    if (fs.existsSync(execPath)) {
-      const raw = fs.readFileSync(execPath, "utf8");
-      fs.unlinkSync(execPath);
-      console.error(JSON.stringify({ phase: "codex-accepted", via: "hook", accepted: true, keys_fired: true }));
-      return JSON.parse(raw);
-    }
-  }
   const payload = await waitForExecutedFile(execPath);
   if (payload) {
     console.error(JSON.stringify({ phase: "codex-accepted", via: "executed.json", accepted: true, keys_fired: true }));
