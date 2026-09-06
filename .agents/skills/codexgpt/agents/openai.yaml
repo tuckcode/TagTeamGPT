@@ -1,7 +1,0 @@
-interface:
-  display_name: "CodexGPT"
-  short_description: "Chat plans, Codex ships — desktop paste-back loop"
-  default_prompt: "Use CodexGPT to "
-
-policy:
-  allow_implicit_invocation: true

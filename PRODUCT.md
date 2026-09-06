@@ -16,7 +16,7 @@ Primary users: developers who already use the ChatGPT desktop app with Codex and
 
 This repo also ships a Next.js explainer site that teaches the approach, install path, and loop.
 
-Success means: someone can understand the idea, install `$codexgpt`, and run the Chat ↔ Codex loop without Work as the planner and without nested browser automation.
+Success means: someone can understand the idea, install `$lob`, and run the Chat ↔ Codex loop without Work as the planner and without nested browser automation.
 
 ## Positioning
 
@@ -31,8 +31,8 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 - **Local folder projects do not support Chat.** Chat stays a cloud thread with
   no local folder; mount the **goal repo** only in Codex. Watch for the banner
   “Local projects don't support Chat.”
-- Invoke skill with `$codexgpt` or “Use Lob to …”.
-- Protocol lives in `.agents/skills/codexgpt/references/protocol.md`.
+- Invoke skill with `$lob` or “Use Lob to …”.
+- Protocol lives in `.agents/skills/lob/references/protocol.md`.
 - Explainer site: `pnpm dev` → http://127.0.0.1:43127.
 - Public GitHub: tuckcode/CodexGPT. Cursor Origin codebase: knispo/CodexGPT.
 
@@ -53,13 +53,14 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 
 - Name: **Lob**
 - Tagline: **Chat lobs. Codex dunks.**
-- Skill / repo id (until renamed): `$codexgpt` · `tuckcode/CodexGPT`
+- Skill: **`$lob`**
+- Repo (until renamed): `tuckcode/CodexGPT`
 - Voice: direct, technical, personal (“my take”); do not claim OpenAI affiliation.
 - Binding references when credited: XiaoDuoYa/codex-with-chatgpt.
 
 ## Evidence on Hand
 
-- Skill package: `.agents/skills/codexgpt/`
+- Skill package: `.agents/skills/lob/`
 - Approach notes: `docs/approach.md`
 - Explainer UI: `src/`
 - Upstream inspiration: https://github.com/XiaoDuoYa/codex-with-chatgpt

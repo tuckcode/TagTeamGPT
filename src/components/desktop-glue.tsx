@@ -38,7 +38,7 @@ export function DesktopGlue() {
               <code className="font-mono text-foreground">{SKILL_PATH}</code>.
               Open this repo as a Codex project (auto-load) or copy to{" "}
               <code className="font-mono text-foreground">
-                ~/.agents/skills/codexgpt
+                ~/.agents/skills/lob
               </code>
               .
             </p>

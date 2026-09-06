@@ -12,14 +12,15 @@
 
 **Fix:** Treat that as a failed handoff. Go back to **Codex** under the mounted project thread. Never use Work for Lob planning.
 
-## `$codexgpt` does nothing / skill missing
+## `$lob` does nothing / skill missing
 
 **Checks:**
 
-1. Skill folder exists at `.agents/skills/codexgpt` (project) or `~/.agents/skills/codexgpt` (user).
+1. Skill folder exists at `.agents/skills/lob` (project) or `~/.agents/skills/lob` (user).
 2. You are in **Codex**, not Chat or Cursor.
-3. You used **`$codexgpt`**, not `/codexgpt`.
+3. You used **`$lob`**, not `/lob` (slash is Cursor).
 4. Restart Codex / reopen the project.
+5. If you still have `~/.agents/skills/codexgpt`, replace it with the `lob` folder.
 
 ## Codex says tests passed but files did not change in my repo
 
