@@ -15,11 +15,13 @@ Chat plans. Codex ships. One ChatGPT desktop app.
 You (Codex) own execution: editing, shell, git, tests, recovery.
 Chat owns planning and review.
 
+Invoke in ChatGPT desktop **Codex** with **`$codexgpt`** — not Cursor’s `/` picker.
+
 ## Golden rules
 
-1. Prefer the **v1 driver** when available (macOS): hotkeys + clipboard + Enter,
-   no screenshots. Fall back to v0 paste-back (user copies) if the driver fails
-   or Accessibility is denied.
+1. Prefer the **v1 driver** when available (macOS + Windows): hotkeys + clipboard
+   + Enter, no screenshots. macOS uses Control+1/2/3; Windows uses Alt+1/2/3.
+   Fall back to v0 paste-back if the driver fails or OS blocks keystrokes.
 2. **Never** open nested `chatgpt.com`, hunt connector settings, or mouse-hunt
    the web ChatGPT UI. That is upstream C2C’s path, not this skill.
 3. **Connector is optional.** Default is paste-back `[C2C]` only. Do not require
@@ -62,9 +64,10 @@ Chat needs evidence, paste one short targeted snippet only.
 
 Remappable in Settings → Keyboard Shortcuts. If flaky, tell the user to remap.
 
-## v1 driver (macOS)
+## v1 driver (macOS + Windows)
 
-From the repo root (needs ChatGPT desktop running + Accessibility for the shell):
+From the repo root (ChatGPT desktop running). macOS needs Accessibility for the
+shell; Windows focuses the ChatGPT window via PowerShell SendKeys.
 
 ```bash
 node tools/codexgpt-driver.mjs to chat
@@ -74,18 +77,28 @@ STATE: INIT
 ...
 EOF
 )"
+node tools/codexgpt-driver.mjs enter   # Enter only, composer focused
 node tools/codexgpt-driver.mjs to codex
 ```
 
-Other commands: `mode`, `to work`, `send "…"`, `codex-send "…"`. Add `--verify`
-only when you need an AX mode read-back (often unavailable via osascript on
-Electron — hotkeys still work).
+Other commands: `mode`, `to work`, `send "…"`, `codex-send "…"`. `chat-send` /
+`codex-send` require `[C2C]`; clipboard is set then read back before paste.
+`ok: true` = keys fired, not accepted — confirm next `[C2C]` STATE or
+`.codexgpt/executed.json`. Do not re-press ⌃1 / Alt+1 when already in Chat.
+After send, previous front app is restored (especially macOS).
 
-## Auto-loop (macOS)
+Timing defaults: `CODEXGPT_FOCUS_MS=200`, `CODEXGPT_MODE_SETTLE_MS=350`,
+`CODEXGPT_PASTE_MS=120`, `CODEXGPT_ENTER_MS=250` (or `.codexgpt/config.json`).
+
+Add `--verify` only for optional mode read-back (Electron often opaque; Windows
+UIA best-effort). OCR/vision off by default — `CODEXGPT_OCR=1` or
+`--verify-vision` only when `--verify` fails twice / mode unknown; abort if OCR
+says Work. No nested `chatgpt.com` / CUA on the happy path.
+
+## Auto-loop (macOS + Windows)
 
 ```bash
-```bash
-# Full workflow by default: Chat (⌃1) + Codex (⌃3) + Rhizome mailbox/memory
+# Full workflow by default: Chat + Codex handoff (+ mailbox/memory when configured)
 node tools/codexgpt-loop.mjs --goal "…"
 ```
 
@@ -103,11 +116,17 @@ DONE when 10 new notes **or** 14 days: `node tools/codexgpt-mailbox-nudge.mjs`
 
 Do **not** open New chat between turns — one thread per goal.
 
-If osascript cannot see Chat text, dump replies yourself:
+On Chat wait miss the loop tries one extra Enter, then `NO_REPLY`. Windows:
+if scrape is empty, copy reply → `Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard`.
+
+If the loop cannot see Chat text, dump replies yourself:
 
 ```bash
 # copy Chat’s [C2C] reply, then:
-node tools/codexgpt-write-reply.mjs --from-clipboard
+# macOS:
+pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard
+# Windows (PowerShell):
+Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard
 ```
 
 Or write `.codexgpt/last-reply.json` with `{ "ok": true, "state": "PLAN", "task_id": "…", "snippet": "…" }`.
@@ -181,7 +200,7 @@ At iteration 12 without `DONE`, ask: “12 iterations done — continue?”
 - Treating tunnels/connectors as required for every CodexGPT run
 - Calling or installing upstream `c2c` / MCP bridge as if it were v0/v1
 - Treating Work mode as the planner
-- Vision / screenshot loops for the happy-path mode switch (use hotkeys; optional `--verify`)
+- Vision / OCR / screenshot loops on the happy path (hotkeys first; OCR only when stuck)
 
 ## After v1
 

@@ -26,6 +26,13 @@ export const DEFAULTS = {
   mailbox_nudge_days: 14,
   /** MCP+tunnel idle auto-stop (minutes). 0 = disabled */
   mcp_idle_minutes: 60,
+  /** Driver timing (ms). Env CODEXGPT_*_MS overrides these. */
+  focus_ms: 200,
+  mode_settle_ms: 350,
+  paste_ms: 120,
+  enter_ms: 250,
+  /** Stuck-path OCR of mode chip; off on happy path. CODEXGPT_OCR=1 / --verify-vision */
+  ocr: false,
 };
 
 function readJson(p) {

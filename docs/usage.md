@@ -1,6 +1,6 @@
 # Using CodexGPT
 
-ChatGPT **Chat** plans and reviews. **Codex** edits, runs shells, and tests. You (or the macOS driver) move short `[C2C]` messages between them.
+ChatGPT **Chat** plans and reviews. **Codex** edits, runs shells, and tests. You (or the keystroke driver) move short `[C2C]` messages between them.
 
 ![CodexGPT loop](codexgpt-loop-diagram.png)
 
@@ -42,17 +42,20 @@ Chat should return reasoning first, checklist second:
 
 Thin ACTIONS-only lists are weak plans — ask Chat to revise before Codex runs.
 
-## macOS keystroke driver
+## Keystroke driver (macOS + Windows)
 
 From the repo root:
 
 ```bash
-# Flip modes
+# Flip modes — macOS Control+1/2/3 · Windows Alt+1/2/3
 node tools/codexgpt-driver.mjs to chat
 node tools/codexgpt-driver.mjs to codex
 
-# Paste + Enter in the current mode
+# Paste + Enter in the current mode (no mode switch)
 node tools/codexgpt-driver.mjs send "hello"
+
+# Enter only (composer already focused)
+node tools/codexgpt-driver.mjs enter
 
 # Switch to Chat, paste a stub, send
 node tools/codexgpt-driver.mjs chat-send "$(cat <<'EOF'
@@ -67,11 +70,21 @@ EOF
 )"
 ```
 
-`ok: true` means **keys fired**, not “Chat accepted the message.” Confirmation is the next `[C2C]` state or a file change on disk.
+On Windows PowerShell you can also: `Get-Content stub.txt -Raw | node tools/codexgpt-driver.mjs chat-send -`
 
-Prefer `send` / `chat-send` / `codex-send` **without** forcing the mode hotkey when you are already in that mode.
+`chat-send` / `codex-send` require a payload starting with `[C2C]`. The driver sets the clipboard and reads it back before paste.
 
-## Auto-loop (macOS)
+`ok: true` means **keys fired**, not “Chat accepted the message.” Confirmation is the next `[C2C]` **STATE** or `.codexgpt/executed.json` (or another expected file side-effect). After send, the driver restores the previous front app (especially on macOS).
+
+Prefer `send` / `chat-send` / `codex-send` **without** forcing the mode hotkey when you are already in that mode. **Do not re-press `Control+1` / `Alt+1` when already in Chat** — it can open New chat and abandon your pinned planner thread.
+
+Optional `--verify` tries a mode read-back. Electron often hides the mode chip from accessibility; Windows UIA is best-effort. Skip verify on the happy path and confirm the thread by eye.
+
+**Timing** (slow machine? raise these): `CODEXGPT_FOCUS_MS=200`, `CODEXGPT_MODE_SETTLE_MS=350`, `CODEXGPT_PASTE_MS=120`, `CODEXGPT_ENTER_MS=250`. Same keys may live in `.codexgpt/config.json`.
+
+**Vision / OCR is off by default.** Use `CODEXGPT_OCR=1` or `--verify-vision` only when `--verify` fails twice or mode is unknown — one crop of the mode chip. If OCR says Work, abort. No nested `chatgpt.com` / CUA on the happy path.
+
+## Auto-loop (macOS + Windows)
 
 ```bash
 node tools/codexgpt-loop.mjs --goal "…"
@@ -79,10 +92,19 @@ node tools/codexgpt-loop.mjs --goal "…"
 
 Defaults (see `codexgpt.config.json`): Chat + Codex handoff on; optional mailbox/memory notes.
 
-If the loop cannot scrape Chat’s reply (Electron often returns empty accessibility text), copy Chat’s `[C2C]` block and run:
+On a Chat wait miss, the loop tries one extra Enter, then returns `NO_REPLY`. On Windows, if the scrape is empty, copy Chat’s reply and run:
 
 ```bash
+Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard
+```
+
+If the loop cannot scrape Chat’s reply at all, copy Chat’s `[C2C]` block and run:
+
+```bash
+# macOS
 pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard
+# Windows PowerShell
+Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard
 ```
 
 ## Optional MCP review

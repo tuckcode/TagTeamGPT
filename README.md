@@ -46,7 +46,7 @@ Full walkthrough: **[docs/install.md](docs/install.md)** → **[docs/usage.md](d
 | Piece | State |
 | --- | --- |
 | v0 paste-back skill | Shipped |
-| v1 macOS keystroke driver | Shipped |
+| v1 keystroke driver (macOS + Windows) | Shipped |
 | v2 mailbox / memory helpers | Started (optional vault notes) |
 | v3 workspace MCP | Optional; paste-back works without it |
 
@@ -60,10 +60,10 @@ Full walkthrough: **[docs/install.md](docs/install.md)** → **[docs/usage.md](d
 ## Optional tooling
 
 ```bash
-# macOS driver (needs Accessibility)
+# Driver: macOS Control+1/2/3 (Accessibility) · Windows Alt+1/2/3
 node tools/codexgpt-driver.mjs to chat
 
-# Auto-loop
+# Auto-loop (same platforms)
 node tools/codexgpt-loop.mjs --goal "…"
 
 # Optional MCP + tunnel

@@ -3,7 +3,8 @@
  * Write .codexgpt/last-reply.json for the auto-loop (when AX scrape fails).
  *
  *   node tools/codexgpt-write-reply.mjs --state PLAN --task-id c2c_xxxx [--snippet "…"]
- *   pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard
+ *   pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard          # macOS
+ *   Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard  # Windows
  *   node tools/codexgpt-write-reply.mjs --from-text "$(cat reply.md)"
  */
 import fs from "node:fs";
@@ -43,7 +44,31 @@ function parseC2C(text) {
 function main() {
   let payload = null;
   if (has("--from-clipboard")) {
-    const text = execFileSync("pbpaste", { encoding: "utf8" });
+    let text = "";
+    if (process.platform === "darwin") {
+      text = execFileSync("pbpaste", { encoding: "utf8" });
+    } else if (process.platform === "win32") {
+      text = execFileSync(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-Command",
+          "Get-Clipboard -Raw",
+        ],
+        { encoding: "utf8", windowsHide: true }
+      );
+    } else {
+      console.log(
+        JSON.stringify({
+          ok: false,
+          code: "UNSUPPORTED_PLATFORM",
+          detail: "clipboard read supports macOS (pbpaste) and Windows (Get-Clipboard)",
+        })
+      );
+      process.exitCode = 1;
+      return;
+    }
     payload = parseC2C(text);
     if (!payload) {
       console.log(JSON.stringify({ ok: false, code: "NO_STATE", detail: "clipboard has no C2C STATE" }));

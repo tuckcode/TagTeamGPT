@@ -1,13 +1,21 @@
 #!/usr/bin/env node
-// Best-effort read of the latest [C2C] STATE from ChatGPT desktop (macOS).
-// Uses Accessibility text only — no screenshots.
+// Best-effort read of the latest [C2C] STATE from ChatGPT desktop.
+// Uses Accessibility / UIA text only — no screenshots.
 //
 //   node tools/codexgpt-read-reply.mjs
 //   → {"ok":true,"state":"PLAN","task_id":"c2c_…","snippet":"…"}
+//
+// Windows: UIA dump is best-effort; if empty, returns NO_STATE (loop still
+// polls .codexgpt/last-reply.json). Hint:
+//   Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 const APP = "ChatGPT";
+const PLATFORM = process.platform;
 
 function jxa(body) {
   return execFileSync("osascript", ["-l", "JavaScript", "-e", body], {
@@ -16,7 +24,7 @@ function jxa(body) {
   }).trim();
 }
 
-function classify(e) {
+function classifyMac(e) {
   const msg = String((e && e.stderr) || e.message || e);
   if (/APP_NOT_RUNNING/.test(msg)) return { ok: false, code: "APP_NOT_RUNNING" };
   if (/assistive|not allowed|-25211|-1719/i.test(msg))
@@ -24,8 +32,8 @@ function classify(e) {
   return { ok: false, code: "OSA_ERROR", detail: msg.slice(0, 400) };
 }
 
-function scrape() {
-  const raw = jxa(`
+function scrapeMac() {
+  return jxa(`
     const se = Application('System Events');
     const procs = se.processes.whose({ name: ${JSON.stringify(APP)} });
     if (procs.length === 0) throw new Error('APP_NOT_RUNNING');
@@ -45,13 +53,85 @@ function scrape() {
     for (let w = 0; w < p.windows.length; w++) walk(p.windows[w], 0);
     chunks.join('\\n');
   `);
-  return raw;
+}
+
+function scrapeWin() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "codexgpt-read-"));
+  const ps1 = path.join(tmpDir, "read.ps1");
+  const script = `
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName UIAutomationClient -ErrorAction SilentlyContinue
+Add-Type -AssemblyName UIAutomationTypes -ErrorAction SilentlyContinue
+$proc = Get-Process -Name 'ChatGPT' -ErrorAction SilentlyContinue |
+  Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero } |
+  Select-Object -First 1
+if (-not $proc) { Write-Output 'APP_NOT_RUNNING'; exit 2 }
+try {
+  $root = [System.Windows.Automation.AutomationElement]::FromHandle($proc.MainWindowHandle)
+  if (-not $root) { Write-Output ''; exit 0 }
+  $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
+  $stack = New-Object System.Collections.Generic.Stack[System.Windows.Automation.AutomationElement]
+  $stack.Push($root)
+  $chunks = New-Object System.Collections.Generic.List[string]
+  $seen = 0
+  while ($stack.Count -gt 0 -and $seen -lt 6000 -and $chunks.Count -lt 3000) {
+    $el = $stack.Pop()
+    $seen++
+    $t = ''
+    try { $t = [string]$el.Current.Name } catch {}
+    if (-not $t) { try { $t = [string]$el.Current.HelpText } catch {} }
+    if ($t -and $t.Length -lt 2000) { [void]$chunks.Add($t) }
+    try {
+      $child = $walker.GetFirstChild($el)
+      while ($null -ne $child) {
+        $stack.Push($child)
+        $child = $walker.GetNextSibling($child)
+      }
+    } catch {}
+  }
+  ($chunks -join "\`n")
+} catch {
+  Write-Output ''
+  exit 0
+}
+`;
+  try {
+    fs.writeFileSync(ps1, script, "utf8");
+    const r = spawnSync(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", ps1],
+      { encoding: "utf8", timeout: 45_000, windowsHide: true }
+    );
+    const out = `${r.stdout || ""}`.trim();
+    if (r.status === 2 || /APP_NOT_RUNNING/.test(out)) {
+      const err = new Error("APP_NOT_RUNNING");
+      throw err;
+    }
+    return out;
+  } finally {
+    try {
+      fs.unlinkSync(ps1);
+      fs.rmdirSync(tmpDir);
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 function parseC2C(text) {
-  // Prefer the last STATE: occurrence (latest assistant turn).
-  const states = [...text.matchAll(/STATE:\s*(INIT|PLAN|EXECUTED|DONE|BLOCKED|READY)/gi)];
-  if (!states.length) return { ok: false, code: "NO_STATE", detail: "No C2C STATE found in AX text" };
+  const states = [...String(text || "").matchAll(/STATE:\s*(INIT|PLAN|EXECUTED|DONE|BLOCKED|READY)/gi)];
+  if (!states.length) {
+    const hint =
+      PLATFORM === "win32"
+        ? "Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard"
+        : "pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard";
+    return {
+      ok: false,
+      code: "NO_STATE",
+      detail: "No C2C STATE found in accessibility text",
+      hint,
+    };
+  }
   const last = states[states.length - 1];
   const state = last[1].toUpperCase();
   const from = last.index;
@@ -66,11 +146,39 @@ function parseC2C(text) {
 }
 
 try {
-  const text = scrape();
+  let text = "";
+  if (PLATFORM === "darwin") {
+    text = scrapeMac();
+  } else if (PLATFORM === "win32") {
+    text = scrapeWin();
+  } else {
+    console.log(
+      JSON.stringify({
+        ok: false,
+        code: "UNSUPPORTED_PLATFORM",
+        detail: `read-reply supports macOS and Windows; got ${PLATFORM}`,
+      })
+    );
+    process.exitCode = 1;
+    process.exit();
+  }
   const parsed = parseC2C(text);
   console.log(JSON.stringify(parsed));
   process.exitCode = parsed.ok ? 0 : 1;
 } catch (e) {
-  console.log(JSON.stringify(classify(e)));
+  if (PLATFORM === "darwin") {
+    console.log(JSON.stringify(classifyMac(e)));
+  } else if (/APP_NOT_RUNNING/.test(String(e.message || e))) {
+    console.log(JSON.stringify({ ok: false, code: "APP_NOT_RUNNING" }));
+  } else {
+    console.log(
+      JSON.stringify({
+        ok: false,
+        code: "NO_STATE",
+        detail: String(e.message || e).slice(0, 300),
+        hint: "Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard",
+      })
+    );
+  }
   process.exitCode = 1;
 }

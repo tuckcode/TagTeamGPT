@@ -6,7 +6,7 @@ Goal: get the skill into **ChatGPT desktop Codex**, then set up Chat and Codex t
 
 - ChatGPT desktop app (Chat · Work · Codex in one window)
 - A coding project folder you can mount in Codex
-- Optional: Node.js 20+ if you want the macOS keystroke driver / auto-loop / MCP helper
+- Optional: Node.js 20+ if you want the keystroke driver (macOS + Windows), auto-loop, or MCP helper
 
 ## 1. Get the code
 
@@ -75,7 +75,7 @@ Remap in Settings → Keyboard Shortcuts if needed.
 
 **Do not re-press Chat’s shortcut when you are already in Chat** — on macOS `Control+1` can open **New chat** and abandon your pinned planner thread.
 
-## 4. Optional: macOS driver
+## 4. Optional: keystroke driver (macOS + Windows)
 
 From the repo root, with ChatGPT desktop running:
 
@@ -84,7 +84,11 @@ node tools/codexgpt-driver.mjs to chat
 node tools/codexgpt-driver.mjs to codex
 ```
 
-Grant **Accessibility** to your terminal (or Cursor) if macOS blocks keystrokes.
+- **macOS:** grant **Accessibility** to your terminal (or Cursor) if keystrokes are blocked. Uses `Control+1/2/3`.
+- **Windows:** focuses the ChatGPT window and sends `Alt+1/2/3` + Ctrl+V. Mode verify is limited; confirm the right thread by eye.
+- **Timing** (defaults; raise on slow machines): `CODEXGPT_FOCUS_MS=200`, `CODEXGPT_MODE_SETTLE_MS=350`, `CODEXGPT_PASTE_MS=120`, `CODEXGPT_ENTER_MS=250`. Same keys may live in `.codexgpt/config.json`.
+
+`ok: true` means keys fired, not accepted. After send the driver restores your previous front app (especially macOS). Do not re-press `Control+1` / `Alt+1` when already in Chat.
 
 Manual copy/paste always works without the driver.
 
