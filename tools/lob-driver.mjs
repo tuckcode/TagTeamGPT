@@ -4,7 +4,6 @@
 //   macOS: Control+1/2/3, ⌘V
 //   Windows: Alt+1/2/3, Ctrl+V
 // Optional --verify tries an accessibility/UIA read-back (often opaque on Electron).
-// OCR/vision is off the happy path: LOB_OCR=1 or --verify-vision only.
 //
 //   node tools/lob-driver.mjs mode
 //   node tools/lob-driver.mjs to chat|work|codex [--verify] [--force-mode]
@@ -31,7 +30,6 @@ import {
   resolveTiming,
   hasC2CPrefix,
   settleBackoffMs,
-  ocrEnabled,
   parseModeLabel,
   modesMatch,
   isWorkMode,
@@ -51,7 +49,6 @@ const CAVEAT =
 
 const CFG = loadConfig();
 const TIMING = resolveTiming(CFG);
-const OCR_ON = ocrEnabled(process.argv, process.env, CFG);
 
 let macModeCache = "";
 
@@ -163,7 +160,7 @@ function classifyMacError(e) {
       ok: false,
       code: "MODE_ELEMENT_NOT_FOUND",
       detail:
-        "Mode switcher not visible to osascript (common for Electron). Hotkeys still work; skip --verify or use stuck-path OCR.",
+        "Mode switcher not visible to osascript (common for Electron). Hotkeys still work; skip --verify.",
     };
   return { ok: false, code: "OSA_ERROR", detail: msg.slice(0, 300) };
 }
@@ -292,60 +289,6 @@ function enterMac() {
   }
 }
 
-function readModeOcrMac() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-ocr-"));
-  const png = path.join(tmpDir, "chip.png");
-  try {
-    const rect = JSON.parse(
-      runInChatGPTMac(`
-        const w = p.windows[0];
-        const pos = w.position();
-        const sz = w.size();
-        JSON.stringify({ x: pos[0], y: pos[1], w: sz[0], h: sz[1] });
-      `)
-    );
-    const w = Math.max(80, Math.min(640, Number(rect.w) || 640));
-    const h = Math.max(40, Math.min(90, Number(rect.h) || 90));
-    const cap = spawnSync(
-      "screencapture",
-      ["-x", "-R", `${rect.x},${rect.y},${w},${h}`, png],
-      { encoding: "utf8", timeout: 8_000 }
-    );
-    if (cap.status !== 0) {
-      return {
-        ok: false,
-        code: "MODE_ELEMENT_NOT_FOUND",
-        detail: "OCR crop failed (screencapture).",
-      };
-    }
-    const tess = spawnSync("tesseract", [png, "stdout", "-l", "eng"], {
-      encoding: "utf8",
-      timeout: 15_000,
-    });
-    if (tess.status !== 0) {
-      return {
-        ok: false,
-        code: "MODE_ELEMENT_NOT_FOUND",
-        detail: "OCR requested but tesseract is not available. Install tesseract or skip --verify-vision.",
-      };
-    }
-    const mode = parseModeLabel(tess.stdout);
-    if (!mode) {
-      return { ok: false, code: "MODE_ELEMENT_NOT_FOUND", detail: "OCR empty — no Chat/Work/Codex in crop." };
-    }
-    return { ok: true, mode, via: "ocr", raw: tess.stdout.slice(0, 200) };
-  } catch (e) {
-    return classifyMacError(e);
-  } finally {
-    try {
-      fs.unlinkSync(png);
-      fs.rmdirSync(tmpDir);
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
 // ─── Windows (PowerShell + SendKeys + UIA) ─────────────────────────────────
 
 function classifyWinError(msg) {
@@ -419,7 +362,7 @@ Add-Type @"
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
-public class CodexGptWin {
+public class LobWin {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
   [DllImport("user32.dll")] public static extern bool AllowSetForegroundWindow(int dwProcessId);
@@ -430,8 +373,6 @@ public class CodexGptWin {
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
-  [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
-  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 }
 "@
 `;
@@ -440,36 +381,36 @@ function winPickFocus(restore) {
   return `
 $ErrorActionPreference = 'Stop'
 ${WIN_CS}
-$prevHwnd = [CodexGptWin]::GetForegroundWindow()
+$prevHwnd = [LobWin]::GetForegroundWindow()
 $procs = @(Get-Process -Name 'ChatGPT' -ErrorAction SilentlyContinue |
   Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero })
 $chosen = $null
 foreach ($pr in $procs) {
-  if ([CodexGptWin]::IsIconic($pr.MainWindowHandle)) { continue }
-  if (-not [CodexGptWin]::IsWindowVisible($pr.MainWindowHandle)) { continue }
+  if ([LobWin]::IsIconic($pr.MainWindowHandle)) { continue }
+  if (-not [LobWin]::IsWindowVisible($pr.MainWindowHandle)) { continue }
   $sb = New-Object System.Text.StringBuilder 256
-  [void][CodexGptWin]::GetWindowText($pr.MainWindowHandle, $sb, 256)
+  [void][LobWin]::GetWindowText($pr.MainWindowHandle, $sb, 256)
   $title = $sb.ToString()
   if ($title -match 'ChatGPT|Chat|Codex|PLANNER') { $chosen = $pr; break }
 }
 if (-not $chosen) { $chosen = $procs | Select-Object -First 1 }
 if (-not $chosen) { throw 'APP_NOT_RUNNING' }
 $hwnd = $chosen.MainWindowHandle
-$fg = [CodexGptWin]::GetForegroundWindow()
+$fg = [LobWin]::GetForegroundWindow()
 $dummy = 0
-$curTid = [CodexGptWin]::GetCurrentThreadId()
-$fgTid = [CodexGptWin]::GetWindowThreadProcessId($fg, [ref]$dummy)
-$tgtTid = [CodexGptWin]::GetWindowThreadProcessId($hwnd, [ref]$dummy)
-[void][CodexGptWin]::AllowSetForegroundWindow(-1)
-[void][CodexGptWin]::ShowWindow($hwnd, 9)
+$curTid = [LobWin]::GetCurrentThreadId()
+$fgTid = [LobWin]::GetWindowThreadProcessId($fg, [ref]$dummy)
+$tgtTid = [LobWin]::GetWindowThreadProcessId($hwnd, [ref]$dummy)
+[void][LobWin]::AllowSetForegroundWindow(-1)
+[void][LobWin]::ShowWindow($hwnd, 9)
 if ($fgTid -ne $tgtTid) {
-  [void][CodexGptWin]::AttachThreadInput($curTid, $tgtTid, $true)
-  [void][CodexGptWin]::AttachThreadInput($fgTid, $tgtTid, $true)
+  [void][LobWin]::AttachThreadInput($curTid, $tgtTid, $true)
+  [void][LobWin]::AttachThreadInput($fgTid, $tgtTid, $true)
 }
-[void][CodexGptWin]::SetForegroundWindow($hwnd)
+[void][LobWin]::SetForegroundWindow($hwnd)
 if ($fgTid -ne $tgtTid) {
-  [void][CodexGptWin]::AttachThreadInput($curTid, $tgtTid, $false)
-  [void][CodexGptWin]::AttachThreadInput($fgTid, $tgtTid, $false)
+  [void][LobWin]::AttachThreadInput($curTid, $tgtTid, $false)
+  [void][LobWin]::AttachThreadInput($fgTid, $tgtTid, $false)
 }
 Start-Sleep -Milliseconds ${TIMING.focus_ms}
 function Focus-Composer {
@@ -487,7 +428,7 @@ function Focus-Composer {
 function Restore-Prev {
   ${restore ? `Start-Sleep -Milliseconds ${TIMING.enter_ms}
   if ($prevHwnd -ne [IntPtr]::Zero -and $prevHwnd -ne $hwnd) {
-    [void][CodexGptWin]::SetForegroundWindow($prevHwnd)
+    [void][LobWin]::SetForegroundWindow($prevHwnd)
   }` : ""}
 }
 `;
@@ -589,9 +530,9 @@ $got = [System.Windows.Forms.Clipboard]::GetText()
 $a = ($clipText -replace "\`r\`n","\`n")
 $b = ($got -replace "\`r\`n","\`n")
 if ($a -ne $b) { throw 'CLIPBOARD_MISMATCH' }
-[void][CodexGptWin]::SetForegroundWindow($hwnd)
+[void][LobWin]::SetForegroundWindow($hwnd)
 Start-Sleep -Milliseconds ${TIMING.focus_ms}
-if ([CodexGptWin]::GetForegroundWindow() -ne $hwnd) { throw 'FOCUS_LOST' }
+if ([LobWin]::GetForegroundWindow() -ne $hwnd) { throw 'FOCUS_LOST' }
 [System.Windows.Forms.SendKeys]::SendWait('^v')
 Start-Sleep -Milliseconds ${TIMING.enter_ms}
 [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
@@ -621,72 +562,11 @@ function enterWin() {
   }
 }
 
-function readModeOcrWin() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-ocr-"));
-  const png = path.join(tmpDir, "chip.png");
-  try {
-    const out = runPowerShell(
-      winPickFocus(false) +
-        `
-Add-Type -AssemblyName System.Drawing
-$rect = New-Object CodexGptWin+RECT
-[void][CodexGptWin]::GetWindowRect($hwnd, [ref]$rect)
-$w = [Math]::Min(640, [Math]::Max(80, $rect.Right - $rect.Left))
-$h = 90
-$bmp = New-Object System.Drawing.Bitmap $w, $h
-$g = [System.Drawing.Graphics]::FromImage($bmp)
-$g.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bmp.Size)
-$bmp.Save(${JSON.stringify(png)})
-$g.Dispose(); $bmp.Dispose()
-Write-Output 'cropped'
-`
-    );
-    if (!/cropped/i.test(out)) {
-      return { ok: false, code: "MODE_ELEMENT_NOT_FOUND", detail: "OCR crop failed." };
-    }
-    const tess = spawnSync("tesseract", [png, "stdout", "-l", "eng"], {
-      encoding: "utf8",
-      timeout: 15_000,
-    });
-    if (tess.status !== 0) {
-      return {
-        ok: false,
-        code: "MODE_ELEMENT_NOT_FOUND",
-        detail: "OCR requested but tesseract/Windows OCR is not available.",
-      };
-    }
-    const mode = parseModeLabel(tess.stdout);
-    if (!mode) {
-      return { ok: false, code: "MODE_ELEMENT_NOT_FOUND", detail: "OCR empty — no Chat/Work/Codex in crop." };
-    }
-    return { ok: true, mode, via: "ocr", raw: tess.stdout.slice(0, 200) };
-  } catch (e) {
-    return {
-      ok: false,
-      code: "MODE_ELEMENT_NOT_FOUND",
-      detail: String((e && e.message) || e).slice(0, 200),
-    };
-  } finally {
-    try {
-      fs.unlinkSync(png);
-      fs.rmdirSync(tmpDir);
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
 // ─── Platform dispatch ───────────────────────────────────────────────────────
 
 function readMode() {
   if (PLATFORM === "darwin") return readModeMac();
   if (PLATFORM === "win32") return readModeWin();
-  return unsupportedPlatform();
-}
-
-function readModeOcr() {
-  if (PLATFORM === "darwin") return readModeOcrMac();
-  if (PLATFORM === "win32") return readModeOcrWin();
   return unsupportedPlatform();
 }
 
@@ -735,35 +615,12 @@ function driftResult(after, want, s) {
   };
 }
 
-async function maybeOcr(last, { verifyFails = 0 } = {}) {
-  if (!OCR_ON) return last;
-  const unknown = !last.ok || last.mode === "unknown" || last.code === "MODE_ELEMENT_NOT_FOUND";
-  if (!(unknown || verifyFails >= 2)) return last;
-  const o = readModeOcr();
-  if (o.ok && isWorkMode(o.mode)) {
-    return {
-      ok: false,
-      code: "MODE_DRIFT",
-      mode: o.mode,
-      want: last.want,
-      via: "ocr",
-      detail:
-        "OCR says Work — abort; never use Work as planner/executor. Open a live Codex project thread and retry.",
-      platform: PLATFORM,
-    };
-  }
-  return o;
-}
-
 async function switchMode(name, verify, { force = false } = {}) {
   const cfg = MODE_MAP[name];
-  let before = readMode();
-  if (!before.ok) {
-    before = await maybeOcr(before, { verifyFails: verify ? 1 : 0 });
-  }
+  const before = readMode();
   // Never re-press a mode hotkey when already there — especially Chat
   // (macOS ⌃1 / Windows Alt+1), which can open New chat / leave the pinned thread.
-  // `--force` does not override this; use `--force-mode` only when intentional.
+  // Use `--force-mode` only when intentional.
   if (before.ok && modesMatch(before.mode, cfg.want) && !force) {
     return {
       ok: true,
@@ -780,7 +637,6 @@ async function switchMode(name, verify, { force = false } = {}) {
 
   const unknown = !before.ok;
   let last = { ok: false };
-  let fails = 0;
   const attempts = verify || unknown ? 3 : 1;
   for (let i = 0; i < attempts; i++) {
     const wait = verify || unknown ? settleBackoffMs(i) : TIMING.mode_settle_ms;
@@ -796,11 +652,9 @@ async function switchMode(name, verify, { force = false } = {}) {
         platform: PLATFORM,
       };
     }
-    if (!last.ok) fails += 1;
     if (!verify && i === 0) break;
   }
 
-  last = await maybeOcr(last, { verifyFails: fails });
   if (last.ok && isWorkMode(last.mode) && cfg.want !== "Work") {
     return {
       ok: false,
@@ -820,7 +674,6 @@ async function switchMode(name, verify, { force = false } = {}) {
       verified: true,
       switched: true,
       prior_mode: before.ok ? before.mode : undefined,
-      via: last.via,
       platform: PLATFORM,
     };
   }
@@ -852,13 +705,12 @@ async function switchMode(name, verify, { force = false } = {}) {
   };
 }
 
-async function switchAndSend(name, text, verify, { force = false, forceMode = false } = {}) {
+async function switchAndSend(name, text, verify, { forceMode = false } = {}) {
   const cfg = MODE_MAP[name];
   const session = readSession();
   let before = { ok: false };
   if (verify) {
     before = readMode();
-    if (!before.ok) before = await maybeOcr(before, { verifyFails: 1 });
     if (before.ok && isWorkMode(before.mode) && name !== "work") {
       return {
         ok: false,
@@ -900,8 +752,7 @@ async function switchAndSend(name, text, verify, { force = false, forceMode = fa
   }
 
   await sleep(Math.max(TIMING.enter_ms, 400));
-  let after = readMode();
-  if (!after.ok) after = await maybeOcr(after, { verifyFails: 2 });
+  const after = readMode();
   const want = cfg.want;
   const switched = key != null;
   if (!after.ok) {
@@ -953,7 +804,6 @@ function print(obj) {
 async function main() {
   const args = process.argv.slice(2);
   const verify = args.includes("--verify");
-  const force = args.includes("--force");
   const forceMode = args.includes("--force-mode");
   let requireMode = null;
   const modeFlag = args.indexOf("--mode");
@@ -966,9 +816,7 @@ async function main() {
   const pos = args.filter(
     (a, i) =>
       a !== "--verify" &&
-      a !== "--force" &&
       a !== "--force-mode" &&
-      a !== "--verify-vision" &&
       !skipNext.has(i)
   );
   const [cmd, arg, ...rest] = pos;
@@ -977,8 +825,7 @@ async function main() {
 
   switch (cmd) {
     case "mode": {
-      let r = readMode();
-      if (!r.ok) r = await maybeOcr(r, { verifyFails: 2 });
+      const r = readMode();
       print({ ...r, platform: PLATFORM });
       process.exitCode = r.ok ? 0 : 1;
       break;
@@ -1031,7 +878,7 @@ async function main() {
         break;
       }
       const r = requireMode
-        ? await switchAndSend(requireMode, text, verify, { force, forceMode })
+        ? await switchAndSend(requireMode, text, verify, { forceMode })
         : pasteAndEnter(text);
       print({ ...r, platform: PLATFORM, caveat: CAVEAT });
       process.exitCode = r.ok ? 0 : 1;
@@ -1062,7 +909,7 @@ async function main() {
         cmd === "chat-send" ? "chat" : "codex",
         text,
         verify,
-        { force, forceMode }
+        { forceMode }
       );
       print(r);
       process.exitCode = r.ok ? 0 : 1;

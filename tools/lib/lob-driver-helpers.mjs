@@ -42,26 +42,11 @@ export function hasC2CPrefix(text) {
   return /^\s*\[C2C\]/.test(String(text ?? ""));
 }
 
-/**
- * Clipboard read-back match. Normalizes CRLF→LF; optional trim of trailing newline only.
- */
-export function clipboardMatches(expected, actual) {
-  const norm = (s) => String(s ?? "").replace(/\r\n/g, "\n");
-  return norm(expected) === norm(actual);
-}
-
 /** Verify / unknown-mode settle backoff: 200 → 400 → 800 (attempt 0..2). */
 export function settleBackoffMs(attempt) {
   const steps = [200, 400, 800];
   const i = Math.max(0, Math.min(Number(attempt) || 0, steps.length - 1));
   return steps[i];
-}
-
-/** OCR/vision stuck-path only: LOB_OCR=1 or --verify-vision. */
-export function ocrEnabled(argv = process.argv, env = process.env, cfg = {}) {
-  if (argv.includes("--verify-vision")) return true;
-  if (env.LOB_OCR === "1" || /^true$/i.test(String(env.LOB_OCR || ""))) return true;
-  return cfg.ocr === true;
 }
 
 export function parseModeLabel(raw) {
@@ -106,7 +91,7 @@ export function skipModeHotkeyBeforePaste(
 /** Last STATE: in a blob (latest assistant turn). */
 export function parseC2C(text) {
   const raw = String(text ?? "");
-  const states = [...raw.matchAll(/STATE:\s*(INIT|PLAN|EXECUTED|DONE|BLOCKED|READY)/gi)];
+  const states = [...raw.matchAll(/STATE:\s*(INIT|PLAN|EXECUTED|DONE|BLOCKED)/gi)];
   if (!states.length) return { ok: false, code: "NO_STATE", detail: "No C2C STATE found" };
   const last = states[states.length - 1];
   const state = last[1].toUpperCase();

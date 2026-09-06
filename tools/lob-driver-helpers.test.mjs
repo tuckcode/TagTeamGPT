@@ -4,9 +4,7 @@ import assert from "node:assert/strict";
 import {
   resolveTiming,
   hasC2CPrefix,
-  clipboardMatches,
   settleBackoffMs,
-  ocrEnabled,
   parseModeLabel,
   modesMatch,
   isWorkMode,
@@ -29,18 +27,10 @@ assert.equal(hasC2CPrefix("  [C2C]\n"), true);
 assert.equal(hasC2CPrefix("hello"), false);
 assert.equal(hasC2CPrefix(""), false);
 
-assert.equal(clipboardMatches("a\nb", "a\r\nb"), true);
-assert.equal(clipboardMatches("x", "y"), false);
-
 assert.equal(settleBackoffMs(0), 200);
 assert.equal(settleBackoffMs(1), 400);
 assert.equal(settleBackoffMs(2), 800);
 assert.equal(settleBackoffMs(99), 800);
-
-assert.equal(ocrEnabled([], {}, {}), false);
-assert.equal(ocrEnabled(["--verify-vision"], {}, {}), true);
-assert.equal(ocrEnabled([], { LOB_OCR: "1" }, {}), true);
-assert.equal(ocrEnabled([], {}, { ocr: true }), true);
 
 assert.equal(parseModeLabel("current mode: ChatGPT"), "ChatGPT");
 assert.equal(parseModeLabel("current mode: Work"), "Work");
@@ -81,5 +71,6 @@ assert.equal(c2c.ok, true);
 assert.equal(c2c.state, "PLAN");
 assert.equal(c2c.task_id, "c2c_ab");
 assert.equal(parseC2C("nope").ok, false);
+assert.equal(parseC2C("STATE: READY\nTASK_ID: c2c_ab\n").ok, false, "READY is not a protocol state");
 
 console.log("ok: lob-driver-helpers.test.mjs");

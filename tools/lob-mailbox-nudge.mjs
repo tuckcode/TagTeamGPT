@@ -14,12 +14,6 @@ import path from "node:path";
 import os from "node:os";
 import { loadConfig, STATE_DIR, ROOT } from "./lib/lob-config.mjs";
 
-function arg(flag, fallback = null) {
-  const i = process.argv.indexOf(flag);
-  if (i === -1) return fallback;
-  return process.argv[i + 1] ?? fallback;
-}
-
 function vaultRoot() {
   return (
     process.env.LOB_RHIZOME_VAULT ||
@@ -93,7 +87,6 @@ function main() {
     root: ROOT,
   };
   console.log(JSON.stringify(out));
-  if (nudge) process.exitCode = 0;
 }
 
 main();

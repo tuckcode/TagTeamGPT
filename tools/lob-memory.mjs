@@ -5,7 +5,6 @@
  *   node tools/lob-memory.mjs --action start --task-id c2c_xxxx --goal "…"
  *   node tools/lob-memory.mjs --action finish --task-id c2c_xxxx --goal "…" \
  *     --state DONE|BLOCKED [--snippet "…"] [--iteration N] [--mailbox-path "…"]
- *   node tools/lob-memory.mjs --action decision --task-id c2c_xxxx --decision "…"
  *
  * Env: LOB_RHIZOME_VAULT, LOB_MEMORY=0
  */
@@ -106,16 +105,15 @@ function main() {
   const state = String(arg("--state", "")).toUpperCase();
   const snippet = arg("--snippet", "");
   const iteration = arg("--iteration", "");
-  const decision = arg("--decision", "");
   const mailboxRel = arg("--mailbox-path", "");
 
-  if (!taskId || !["start", "finish", "decision"].includes(action)) {
+  if (!taskId || !["start", "finish"].includes(action)) {
     console.log(
       JSON.stringify({
         ok: false,
         code: "USAGE",
         detail:
-          "lob-memory.mjs --action start|finish|decision --task-id c2c_… [--goal …] [--state DONE|BLOCKED] [--decision …]",
+          "lob-memory.mjs --action start|finish --task-id c2c_… [--goal …] [--state DONE|BLOCKED]",
       })
     );
     process.exitCode = 1;
@@ -147,24 +145,6 @@ function main() {
       fs.writeFileSync(outPath, t, "utf8");
     }
     console.log(JSON.stringify({ ok: true, action: "start", path: rel, task_id: taskId }));
-    return;
-  }
-
-  if (action === "decision") {
-    if (!decision) {
-      console.log(JSON.stringify({ ok: false, code: "USAGE", detail: "--decision required" }));
-      process.exitCode = 1;
-      return;
-    }
-    let t = fs.existsSync(outPath) ? fs.readFileSync(outPath, "utf8") : startNote({ taskId, goal });
-    const line = `- (${date}) ${decision}`;
-    if (t.includes("_None yet._")) {
-      t = t.replace("_None yet._", line);
-    } else {
-      t = t.replace(/## Decisions\n\n/, `## Decisions\n\n${line}\n`);
-    }
-    fs.writeFileSync(outPath, t, "utf8");
-    console.log(JSON.stringify({ ok: true, action: "decision", path: rel, task_id: taskId }));
     return;
   }
 

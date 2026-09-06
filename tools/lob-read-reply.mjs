@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 // Best-effort read of the latest [C2C] STATE from ChatGPT desktop.
-// Happy path: --grab (brief focus + copy). AX scrape is slow and often empty.
+// macOS: grab (brief focus + copy). Windows: UIA dump (best-effort).
 //
 //   node tools/lob-read-reply.mjs --grab
-//   node tools/lob-read-reply.mjs
 //   → {"ok":true,"state":"PLAN","task_id":"c2c_…","snippet":"…"}
 //
-// Windows: UIA dump is best-effort; if empty, returns NO_STATE (loop still
-// polls .lob/last-reply.json). Hint:
-//   Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
+// Windows: if UIA is empty, returns NO_STATE (loop still polls
+// .lob/last-reply.json). Hint:
+//   node tools/lob-write-reply.mjs --from-clipboard
 
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { STATE_DIR } from "./lib/lob-config.mjs";
+import { parseC2C } from "./lib/lob-driver-helpers.mjs";
 
 const APP = "ChatGPT";
 const PLATFORM = process.platform;
@@ -68,29 +68,6 @@ function classifyMac(e) {
   if (/assistive|not allowed|-25211|-1719/i.test(msg))
     return { ok: false, code: "NO_ACCESSIBILITY", detail: "Grant Accessibility to Terminal/Cursor" };
   return { ok: false, code: "OSA_ERROR", detail: msg.slice(0, 400) };
-}
-
-function scrapeMac() {
-  return jxa(`
-    const se = Application('System Events');
-    const procs = se.processes.whose({ name: ${JSON.stringify(APP)} });
-    if (procs.length === 0) throw new Error('APP_NOT_RUNNING');
-    const p = procs[0];
-    const chunks = [];
-    function walk(el, d) {
-      if (d > 22 || chunks.length > 4000) return;
-      let t = '';
-      try { t = String(el.value() || ''); } catch (e) {}
-      if (!t) { try { t = String(el.description() || ''); } catch (e) {} }
-      if (!t) { try { t = String(el.name() || ''); } catch (e) {} }
-      if (t && t.length < 20000) chunks.push(t);
-      let kids = [];
-      try { kids = el.uiElements(); } catch (e) {}
-      for (let i = 0; i < kids.length; i++) walk(kids[i], d + 1);
-    }
-    for (let w = 0; w < p.windows.length; w++) walk(p.windows[w], 0);
-    chunks.join('\\n');
-  `);
 }
 
 function scrapeWin() {
@@ -156,38 +133,10 @@ try {
   }
 }
 
-function parseC2C(text) {
-  const states = [...String(text || "").matchAll(/STATE:\s*(INIT|PLAN|EXECUTED|DONE|BLOCKED|READY)/gi)];
-  if (!states.length) {
-    const hint =
-      PLATFORM === "win32"
-        ? "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard"
-        : "pbpaste | node tools/lob-write-reply.mjs --from-clipboard";
-    return {
-      ok: false,
-      code: "NO_STATE",
-      detail: "No C2C STATE found in accessibility text",
-      hint,
-    };
-  }
-  const last = states[states.length - 1];
-  const state = last[1].toUpperCase();
-  const from = last.index;
-  const window = text.slice(Math.max(0, from - 40), from + 1200);
-  const task = window.match(/TASK_ID:\s*(c2c_[a-zA-Z0-9]+)/i);
-  return {
-    ok: true,
-    state,
-    task_id: task ? task[1] : null,
-    snippet: window.slice(0, 800),
-  };
-}
-
 try {
-  const grab = process.argv.includes("--grab");
   let text = "";
   if (PLATFORM === "darwin") {
-    text = grab ? grabMac() : scrapeMac();
+    text = grabMac();
   } else if (PLATFORM === "win32") {
     text = scrapeWin();
   } else {
@@ -202,6 +151,9 @@ try {
     process.exit();
   }
   const parsed = parseC2C(text);
+  if (!parsed.ok) {
+    parsed.hint = "node tools/lob-write-reply.mjs --from-clipboard";
+  }
   if (parsed.ok) persistReply(parsed);
   console.log(JSON.stringify(parsed));
   process.exitCode = parsed.ok ? 0 : 1;
@@ -216,7 +168,7 @@ try {
         ok: false,
         code: "NO_STATE",
         detail: String(e.message || e).slice(0, 300),
-        hint: "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard",
+        hint: "node tools/lob-write-reply.mjs --from-clipboard",
       })
     );
   }
