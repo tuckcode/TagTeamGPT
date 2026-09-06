@@ -11,7 +11,7 @@ Goal: get the skill into **ChatGPT desktop Codex**, then set up Chat and Codex t
 ## 1. Get the code
 
 ```bash
-git clone https://github.com/knispo/CodexGPT.git
+git clone https://github.com/tuckcode/CodexGPT.git
 cd CodexGPT
 ```
 
