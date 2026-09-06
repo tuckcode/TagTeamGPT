@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 /**
- * CodexGPT auto-loop (macOS): Chat plans → Codex executes → Chat reviews.
+ * CodexGPT auto-loop (macOS + Windows): Chat plans → Codex executes → Chat reviews.
+ * Mode hotkeys via driver: macOS Control+1/2/3, Windows Alt+1/2/3.
  *
  *   node tools/codexgpt-loop.mjs --goal "…"
  *
  * Defaults (codexgpt.config.json / .codexgpt/config.json):
- *   codex: true   — Control+3 paste PLAN into Codex
+ *   codex: true   — paste PLAN into Codex (⌃3 / Alt+3)
  *   mailbox: true — Rhizome DONE/BLOCKED note
  *   memory: true  — Rhizome goal note
  *   boot: false   — set true or pass --boot to paste boot prompt once
  *
- * Chat (Control+1) INIT / EXECUTED is always on — that is the loop.
+ * Chat INIT / EXECUTED is always on (⌃1 / Alt+1) — that is the loop.
  * Overrides: --no-codex --no-mailbox --no-memory --codex --mailbox --memory --boot
  *
  * Stay on one pinned Chat thread — do not open New chat between turns.
+ * Driver ok:true = keys_fired; accepted = next [C2C] STATE or .codexgpt/executed.json.
  */
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -32,13 +34,13 @@ const PLAN_PATH = path.join(STATE_DIR, "last-plan.md");
 const EXEC_PATH = path.join(STATE_DIR, "executed.json");
 const REPLY_PATH = path.join(STATE_DIR, "last-reply.json");
 
+const WIN_CLIP_HINT =
+  "Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard";
+
 function arg(flag, fallback = null) {
   const i = process.argv.indexOf(flag);
   if (i === -1) return fallback;
   return process.argv[i + 1] ?? fallback;
-}
-function has(flag) {
-  return process.argv.includes(flag);
 }
 
 function runNode(script, args = []) {
@@ -98,6 +100,21 @@ async function sleep(ms) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
+function noReplyPayload(last) {
+  const hint =
+    process.platform === "win32"
+      ? WIN_CLIP_HINT
+      : "pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard";
+  return {
+    ok: false,
+    code: "NO_REPLY",
+    last,
+    hint,
+    keys_fired: true,
+    accepted: false,
+  };
+}
+
 async function waitForState(wanted, { timeoutMs = 180_000, pollMs = 2000, taskId } = {}) {
   const want = new Set(wanted.map((s) => s.toUpperCase()));
   const start = Date.now();
@@ -110,19 +127,69 @@ async function waitForState(wanted, { timeoutMs = 180_000, pollMs = 2000, taskId
       (!taskId || !last.task_id || last.task_id === taskId)
     ) {
       if (last._from_file) consumeReplyFile();
-      return last;
+      return { ...last, accepted: true };
     }
     await sleep(pollMs);
   }
   return { ok: false, code: "TIMEOUT", last };
 }
 
+/** Chat wait: on timeout, one driver enter, wait again, then NO_REPLY. */
+async function waitForChatState(wanted, opts = {}) {
+  const first = await waitForState(wanted, opts);
+  if (first.ok) return first;
+
+  console.error(
+    JSON.stringify({
+      phase: "chat-wait-miss",
+      action: "enter-once",
+      keys_fired: true,
+      accepted: false,
+    })
+  );
+  const enter = driver("enter");
+  console.error(JSON.stringify({ phase: "chat-enter-retry", ...enter, keys_fired: !!enter.ok, accepted: false }));
+
+  const second = await waitForState(wanted, {
+    ...opts,
+    timeoutMs: Math.min(opts.timeoutMs ?? 180_000, 90_000),
+  });
+  if (second.ok) return second;
+  return noReplyPayload(second.last || first.last);
+}
+
 function chatSend(text) {
-  return driver("chat-send", text);
+  const r = driver("chat-send", text);
+  console.error(
+    JSON.stringify({
+      phase: "driver",
+      cmd: "chat-send",
+      keys_fired: !!r.ok,
+      accepted: false,
+      ok: r.ok,
+      code: r.code,
+      skipped_hotkey: r.skipped_hotkey,
+      verified: r.verified,
+    })
+  );
+  return r;
 }
 
 function codexSend(text) {
-  return driver("codex-send", text);
+  const r = driver("codex-send", text);
+  console.error(
+    JSON.stringify({
+      phase: "driver",
+      cmd: "codex-send",
+      keys_fired: !!r.ok,
+      accepted: false,
+      ok: r.ok,
+      code: r.code,
+      skipped_hotkey: r.skipped_hotkey,
+      verified: r.verified,
+    })
+  );
+  return r;
 }
 
 function runHelper(script, args) {
@@ -164,7 +231,12 @@ function recordMemory(enabled, args) {
 }
 
 function buildCodexHandoff(planText, taskId, iteration) {
-  return `Execute this CodexGPT PLAN now in the open workspace.
+  return `[C2C]
+STATE: PLAN
+TASK_ID: ${taskId}
+ITERATION: ${iteration}
+
+Execute this CodexGPT PLAN now in the open workspace.
 
 HARD PREFLIGHT (do this first):
 1. Run: pwd && test -d .git && test -f package.json
@@ -172,9 +244,6 @@ HARD PREFLIGHT (do this first):
 3. If pwd is under ~/Documents/Codex/ or otherwise ≠ that path, STOP and report BLOCKED — you are in a conversation snapshot, not the git checkout. Do not treat green tests there as success.
 
 Do only the ACTIONS. Change only the listed files. When finished, stop and wait — do not invent a Chat reply.
-
-TASK_ID: ${taskId}
-ITERATION: ${iteration}
 
 ${planText}`;
 }
@@ -258,12 +327,6 @@ function validatePlan(planText) {
   if (missing.length) {
     return { ok: false, code: "PLAN_SCHEMA", missing, detail: `PLAN missing or thin: ${missing.join(", ")}` };
   }
-  // ACTIONS-only smell: rationale is basically a copy of the action list.
-  const rat = bodies.RATIONALE.replace(/\s+/g, " ").toLowerCase();
-  const act = bodies.ACTIONS.replace(/\s+/g, " ").toLowerCase();
-  if (act.length > 40 && rat.length < act.length * 0.5 && /^[\d.\-\*\s]+/.test(bodies.RATIONALE) === false) {
-    /* ok — different lengths usually means prose vs list */
-  }
   if (/^\s*(\d+[\).]|[-*])/.test(bodies.RATIONALE) && !/[a-zA-Z]{20,}/.test(bodies.RATIONALE.replace(/^\s*(\d+[\).]|[-*])\s*/gm, ""))) {
     return {
       ok: false,
@@ -291,7 +354,10 @@ async function waitForExecutedFile({ timeoutMs = 600_000, pollMs = 1500 } = {}) 
   console.error(
     JSON.stringify({
       waiting: "execution",
+      proof: "executed.json",
       write: EXEC_PATH,
+      keys_fired: true,
+      accepted: false,
       example: { result: "…", changed_files: 1, tests: "not run" },
     })
   );
@@ -316,12 +382,14 @@ async function onPlan(planText, taskId, iteration, useCodex) {
     console.error(
       JSON.stringify({
         phase: "codex-handoff",
+        keys_fired: !!r.ok,
+        accepted: false,
         ...r,
         note:
-          r.code === "MODE_UNVERIFIED"
-            ? "paste fired but mode unverified — not treating as success"
+          r.verified === false
+            ? "paste fired; mode unverified — confirm live Codex project thread by eye"
             : r.skipped_hotkey
-              ? "already in Codex — pasted without ⌃3 thrash"
+              ? "already in Codex — pasted without mode-hotkey thrash"
               : "switched to Codex then pasted — confirm live project thread, not empty Continue stub",
       })
     );
@@ -339,10 +407,15 @@ async function onPlan(planText, taskId, iteration, useCodex) {
     if (fs.existsSync(EXEC_PATH)) {
       const raw = fs.readFileSync(EXEC_PATH, "utf8");
       fs.unlinkSync(EXEC_PATH);
+      console.error(JSON.stringify({ phase: "codex-accepted", via: "hook", accepted: true, keys_fired: true }));
       return JSON.parse(raw);
     }
   }
-  return waitForExecutedFile();
+  const payload = await waitForExecutedFile();
+  if (payload) {
+    console.error(JSON.stringify({ phase: "codex-accepted", via: "executed.json", accepted: true, keys_fired: true }));
+  }
+  return payload;
 }
 
 async function main() {
@@ -390,27 +463,37 @@ async function main() {
   console.error(JSON.stringify({ phase: "memory-start", ...memStart }));
 
   if (useBoot) {
-    const b = chatSend(BOOT);
-    console.error(JSON.stringify({ phase: "boot", ...b }));
+    // Boot prose is not a C2C stub — mode switch + unrestricted send.
+    const mode = driver("to", "chat");
+    const b = mode.ok || mode.code === "MODE_ELEMENT_NOT_FOUND" ? driver("send", BOOT) : mode;
+    console.error(JSON.stringify({ phase: "boot", keys_fired: !!b.ok, accepted: false, ...b }));
     await sleep(2500);
   }
 
   let iteration = 0;
   let send = chatSend(buildInit(taskId, goal));
-  console.error(JSON.stringify({ phase: "init", ...send }));
+  console.error(JSON.stringify({ phase: "init", keys_fired: !!send.ok, accepted: false, ...send }));
   if (!send.ok) {
     process.exitCode = 1;
     return;
   }
 
   while (iteration < max) {
-    const reply = await waitForState(["PLAN", "DONE", "BLOCKED"], { taskId });
+    const reply = await waitForChatState(["PLAN", "DONE", "BLOCKED"], { taskId });
     if (!reply.ok) {
       console.log(JSON.stringify(reply));
       process.exitCode = 1;
       return;
     }
-    console.error(JSON.stringify({ phase: "chat", state: reply.state, task_id: reply.task_id }));
+    console.error(
+      JSON.stringify({
+        phase: "chat",
+        state: reply.state,
+        task_id: reply.task_id,
+        keys_fired: true,
+        accepted: true,
+      })
+    );
 
     const state = String(reply.state).toUpperCase();
     if (state === "DONE" || state === "BLOCKED") {
@@ -451,6 +534,8 @@ async function main() {
           mailbox: mail,
           memory: mem,
           mailbox_nudge: nudge,
+          keys_fired: true,
+          accepted: true,
         })
       );
       return;
@@ -460,7 +545,7 @@ async function main() {
     if (!gate.ok) {
       console.error(JSON.stringify({ phase: "plan-reject", ...gate }));
       const again = chatSend(buildPlanReprompt(taskId, iteration, gate.detail || gate.code));
-      console.error(JSON.stringify({ phase: "plan-reprompt", ...again }));
+      console.error(JSON.stringify({ phase: "plan-reprompt", keys_fired: !!again.ok, accepted: false, ...again }));
       if (!again.ok) {
         console.log(JSON.stringify({ ok: false, code: "PLAN_REPROMPT_FAILED", gate }));
         process.exitCode = 1;
@@ -472,12 +557,21 @@ async function main() {
     iteration += 1;
     const execPayload = await onPlan(reply.snippet, taskId, iteration, useCodex);
     if (!execPayload) {
-      console.log(JSON.stringify({ ok: false, code: "EXEC_TIMEOUT", plan: PLAN_PATH }));
+      console.log(
+        JSON.stringify({
+          ok: false,
+          code: "EXEC_TIMEOUT",
+          plan: PLAN_PATH,
+          keys_fired: true,
+          accepted: false,
+          detail: "No .codexgpt/executed.json — Codex proof is that file only",
+        })
+      );
       process.exitCode = 1;
       return;
     }
     send = chatSend(buildExecuted(taskId, iteration, execPayload));
-    console.error(JSON.stringify({ phase: "executed", ...send }));
+    console.error(JSON.stringify({ phase: "executed", keys_fired: !!send.ok, accepted: false, ...send }));
     if (!send.ok) {
       process.exitCode = 1;
       return;

@@ -11,7 +11,7 @@ Upstream inspiration:
 | Layer | State |
 | --- | --- |
 | v0 Skill + paste-back | Shipped (`.agents/skills/codexgpt/`) |
-| v1 Keystroke driver | Shipped (`tools/codexgpt-driver.mjs`, macOS) |
+| v1 Keystroke driver | Shipped (`tools/codexgpt-driver.mjs`, macOS Control+ / Windows Alt+) |
 | v2 Mailbox / memory | Started (`codexgpt.config.json`, vault helpers) |
 | v3 Read-only workspace MCP | Optional (`mcp/`, tunnel helper) |
 

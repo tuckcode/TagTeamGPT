@@ -35,19 +35,32 @@
 
 ## Driver reports `ok: true` but nothing happened in ChatGPT
 
-**Cause:** The driver fired keystrokes; it does not prove ChatGPT accepted them. Focus may be wrong, Accessibility denied, or the wrong session selected.
+**Cause:** The driver fired keystrokes; it does not prove ChatGPT accepted them. Common misses: wrong window focused, composer not focused, clipboard mismatch (payload did not round-trip), wrong Chat/Codex thread, Accessibility denied (macOS), or on Windows the ChatGPT window is minimized / not foreground.
 
-**Fix:** Click the intended Chat/Codex thread, grant Accessibility, retry. Confirm by looking for the next `[C2C]` reply.
+**Fix:** Click the intended thread so the composer is active. Grant Accessibility (macOS). Retry. Confirm by the next `[C2C]` **STATE** or `.codexgpt/executed.json` — not `ok: true` alone. On Windows, leave ChatGPT visible before running the driver.
 
-## Auto-loop never sees Chat’s PLAN
+## Auto-loop returns `NO_REPLY` or never sees Chat’s PLAN
 
-**Cause:** Accessibility scrape of Electron UI often returns empty (`NO_STATE`).
+**Cause:** Accessibility scrape of Electron UI often returns empty. The loop may try one extra Enter on a Chat wait miss, then give up with `NO_REPLY`.
 
 **Fix:** Manually copy Chat’s `[C2C]` reply, then:
 
 ```bash
+# macOS
 pbpaste | node tools/codexgpt-write-reply.mjs --from-clipboard
+# Windows PowerShell
+Get-Clipboard -Raw | node tools/codexgpt-write-reply.mjs --from-clipboard
 ```
+
+## Slow machine — paste lands wrong or mode switch races
+
+**Fix:** Raise timing env vars (defaults): `CODEXGPT_FOCUS_MS`, `CODEXGPT_MODE_SETTLE_MS`, `CODEXGPT_PASTE_MS`, `CODEXGPT_ENTER_MS`. Same keys may live in `.codexgpt/config.json`.
+
+## Mode verify / OCR (stuck path only)
+
+**Cause:** `--verify` read-back is optional; Electron often hides the mode chip. Windows UIA is best-effort.
+
+**Fix:** Skip `--verify` on the happy path. If mode is unknown after two `--verify` failures, try `CODEXGPT_OCR=1` or `--verify-vision` (one crop of the mode chip). If OCR says **Work**, abort — never use Work as planner/executor. Do not reach for nested `chatgpt.com` / CUA unless you are truly stuck.
 
 ## MCP / tunnel attached but Chat still can’t read files
 

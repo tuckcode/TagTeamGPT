@@ -29,11 +29,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Control plane is `[C2C]` stubs plus mode keybinds/clipboard; desktop driver prefers a keystroke path without vision; no nested browser automation.
 - Workspace MCP (`mcp/`) plus `tools/codexgpt-*` give Chat optional read-only repo eyes via an HTTPS tunnel — not the Chat↔Codex bridge (that’s keybinds/clipboard/mailbox); paste-back works without MCP; mailbox is not on the Chat MCP surface; a new tunnel URL in a C2C message does not rebind ChatGPT’s connector — edit/reload connector settings when the URL changes.
 - Codex mail/mailbox is the default durable handoff between Chat and Codex (prefer notes after build/inspection); promote lasting notes to Rhizome (standalone MD app, not Obsidian) — repo `AGENTS.md` alone is not enough for lasting product lessons.
-- Shared agent skills canonicalize under `~/.agents/skills`; the in-repo CodexGPT skill is `.agents/skills/codexgpt` and is invoked with `$codexgpt` (or “Use CodexGPT to …”).
-- Desktop mode shortcuts: macOS `Control+1/2/3` and Windows/Linux `Alt+1/2/3` for Chat / Work / Codex; archive ChatGPT threads with ⇧⌘A (not ⌘A select-all).
+- Shared agent skills canonicalize under `~/.agents/skills`; the in-repo CodexGPT skill is `.agents/skills/codexgpt` and is invoked in ChatGPT desktop Codex with `$codexgpt` (or “Use CodexGPT to …”) — `$` is not a Cursor skill picker (`/` is).
+- Desktop mode shortcuts and keystroke driver: macOS `Control+1/2/3`, Windows/Linux `Alt+1/2/3` for Chat / Work / Codex (driver uses the same OS keys); archive ChatGPT threads with ⇧⌘A (not ⌘A select-all).
 - ChatGPT desktop: local folder projects do not support Chat — keep Chat as a plain cloud thread; mount the repo only in Codex for execution.
 - Desktop Codex may still run with cwd under `~/Documents/Codex/YYYY-MM-DD/<thread>/` (conversation snapshot) even when the sidebar shows project `codexgpt` — verify `pwd` against the real git root before trusting EXECUTED.
 - Repo defaults live in `codexgpt.config.json` (e.g. MCP idle auto-stop ~60m; mailbox nudge at ~10 notes or ~14 days).
 - This repo also ships a Next.js explainer UI (`pnpm dev`, typically http://127.0.0.1:43127).
-- Cursor Origin codebase for this project: `knispo/CodexGPT` (https://cursor.com/codebase/knispo/CodexGPT).
+- Public GitHub home: `tuckcode/CodexGPT` (https://github.com/tuckcode/CodexGPT); Cursor Origin codebase remains `knispo/CodexGPT`.
 - ChatGPT desktop Chat and Codex can surface the same task across modes (Chat may expand Codex step logs via Show more; sidebars swap labels with mode keys) — paste-back does not fully isolate the two.
