@@ -1,4 +1,3 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SKILL_INVOKE, SKILL_PATH } from "@/lib/facts";
 
 export function DesktopGlue() {
@@ -23,16 +22,9 @@ export function DesktopGlue() {
           or “Use Lob to …”.
         </p>
 
-        <Tabs defaultValue="semi" className="mt-10">
-          <TabsList className="flex h-auto flex-wrap">
-            <TabsTrigger value="semi">Semi-auto (v0)</TabsTrigger>
-            <TabsTrigger value="keys">Keybind automation</TabsTrigger>
-            <TabsTrigger value="mcp">Optional MCP</TabsTrigger>
-          </TabsList>
-          <TabsContent
-            value="semi"
-            className="mt-4 rounded-xl border border-border bg-card p-5 text-sm leading-relaxed text-muted-foreground"
-          >
+        <div className="mt-10 grid gap-4">
+          <article className="rounded-xl border border-border bg-card p-5 text-sm leading-relaxed text-muted-foreground">
+            <h3 className="mb-4 font-medium text-foreground">Semi-auto (v0)</h3>
             <p className="mb-4">
               Shipped at{" "}
               <code className="font-mono text-foreground">{SKILL_PATH}</code>.
@@ -61,11 +53,11 @@ export function DesktopGlue() {
                 own harness.
               </li>
             </ol>
-          </TabsContent>
-          <TabsContent
-            value="keys"
-            className="mt-4 rounded-xl border border-border bg-card p-5 text-sm leading-relaxed text-muted-foreground"
-          >
+          </article>
+          <article className="rounded-xl border border-border bg-card p-5 text-sm leading-relaxed text-muted-foreground">
+            <h3 className="mb-4 font-medium text-foreground">
+              Keybind automation
+            </h3>
             <p>
               <strong className="font-medium text-foreground">Shipped (v1).</strong>{" "}
               From the repo root,{" "}
@@ -82,11 +74,9 @@ export function DesktopGlue() {
               New chat. Remap shortcuts in Settings if they are flaky. Manual
               paste-back always works without the driver.
             </p>
-          </TabsContent>
-          <TabsContent
-            value="mcp"
-            className="mt-4 rounded-xl border border-border bg-card p-5 text-sm leading-relaxed text-muted-foreground"
-          >
+          </article>
+          <article className="rounded-xl border border-border bg-card p-5 text-sm leading-relaxed text-muted-foreground">
+            <h3 className="mb-4 font-medium text-foreground">Optional MCP</h3>
             <p>
               <strong className="font-medium text-foreground">Optional.</strong>{" "}
               This repo ships a read-only workspace MCP at{" "}
@@ -105,8 +95,8 @@ export function DesktopGlue() {
               Without MCP, keep control messages tiny and paste only the paths
               Chat asks for. Lower automation, lower exposure.
             </p>
-          </TabsContent>
-        </Tabs>
+          </article>
+        </div>
       </div>
     </section>
   );

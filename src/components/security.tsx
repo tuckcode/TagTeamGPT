@@ -1,10 +1,3 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-
 export function Security() {
   return (
     <section id="security" className="border-t border-border/70">
@@ -20,38 +13,40 @@ export function Security() {
           need independent MCP review.
         </p>
 
-        <Accordion className="mt-10">
-          <AccordionItem value="semi">
-            <AccordionTrigger>Semi-manual (no MCP)</AccordionTrigger>
-            <AccordionContent className="text-muted-foreground">
+        <div className="mt-10 grid gap-3">
+          <article className="rounded-xl border border-border bg-card px-5 py-4">
+            <h3 className="text-sm font-medium">Semi-manual (no MCP)</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
               Chat only sees what you paste into the composer. No public
               tunnel. Best default while validating the keybind loop.
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="mcp">
-            <AccordionTrigger>With upstream MCP bridge</AccordionTrigger>
-            <AccordionContent className="text-muted-foreground">
+            </p>
+          </article>
+          <article className="rounded-xl border border-border bg-card px-5 py-4">
+            <h3 className="text-sm font-medium">With upstream MCP bridge</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
               Same posture as C2C: read-only tools only, OAuth pairing, path
               containment, sensitive-file deny list. URL alone is not enough
               without a bearer token bound to one workspace.
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="cu">
-            <AccordionTrigger>Desktop Computer Use</AccordionTrigger>
-            <AccordionContent className="text-muted-foreground">
+            </p>
+          </article>
+          <article className="rounded-xl border border-border bg-card px-5 py-4">
+            <h3 className="text-sm font-medium">Desktop Computer Use</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
               If Codex drives keybinds via Computer Use, Always-allow only
               the ChatGPT app. It can see screen content in allowed apps.
               Prefer keystrokes over broad click automation.
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="work">
-            <AccordionTrigger>Do not use Work as the brain</AccordionTrigger>
-            <AccordionContent className="text-muted-foreground">
+            </p>
+          </article>
+          <article className="rounded-xl border border-border bg-card px-5 py-4">
+            <h3 className="text-sm font-medium">
+              Do not use Work as the brain
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
               Work is agentic and billed more like Codex. Using it as the
               planner defeats the quota reason this split exists. Chat only.
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+            </p>
+          </article>
+        </div>
       </div>
     </section>
   );

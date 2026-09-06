@@ -109,14 +109,12 @@ function Plane({
   label: string;
   role: string;
   note: string;
-  tone: "think" | "work" | "muted";
+  tone: "think" | "work";
 }) {
   const toneClass =
     tone === "think"
       ? "border-primary/50 bg-primary/10"
-      : tone === "work"
-        ? "border-accent/40 bg-accent/10"
-        : "border-border bg-card";
+      : "border-accent/40 bg-accent/10";
   return (
     <div className={`rounded-xl border px-5 py-4 ${toneClass}`}>
       <p className="text-sm font-medium">{label}</p>
