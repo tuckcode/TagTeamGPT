@@ -62,6 +62,7 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 
 - Skill package: `.agents/skills/tagteam/`
 - Approach notes: `docs/approach.md`
+- Input hardening (Windows + macOS): `docs/hardening.md`
 - Explainer UI: `src/`
 - Upstream inspiration: https://github.com/XiaoDuoYa/codex-with-chatgpt
 - Public GitHub: https://github.com/tuckcode/TagTeamGPT
