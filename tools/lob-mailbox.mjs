@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Lob v2 mailbox — write DONE/BLOCKED notes into the Rhizome vault.
+ * TagTeamGPT v2 mailbox — write DONE/BLOCKED notes into the Rhizome vault.
  *
  *   node tools/lob-mailbox.mjs \
  *     --state DONE|BLOCKED --task-id c2c_xxxx --goal "…" [--snippet "…"] [--iteration N]
@@ -78,16 +78,16 @@ function main() {
   const body = `---
 type: Note
 status: Active
-tags: [lob, mailbox, c2c, ${state.toLowerCase()}]
+tags: [tagteam, mailbox, c2c, ${state.toLowerCase()}]
 task_id: ${taskId}
 loop_state: ${state}
 iteration: ${iteration}
 date: ${date}
 ---
 
-# Lob ${state}: ${taskId}
+# TagTeamGPT ${state}: ${taskId}
 
-Hub: [[../Lob|Lob]]
+Hub: [[../TagTeamGPT|TagTeamGPT]]
 
 ## Goal
 

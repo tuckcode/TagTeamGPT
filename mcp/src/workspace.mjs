@@ -79,7 +79,7 @@ export function workspaceInfo(root) {
   return {
     root,
     languages: ["TypeScript", "JavaScript", "Markdown"],
-    project_type: "Lob (Next.js explainer + Codex skill + desktop driver)",
+    project_type: "TagTeamGPT (Next.js explainer + Codex skill + desktop driver)",
     git_branch: branch,
     dirty,
   };

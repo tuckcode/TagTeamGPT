@@ -13,11 +13,13 @@ import {
   writeC2cReply,
 } from "./workspace.mjs";
 
+export const MCP_SERVER_NAME = "tagteam-workspace";
+
 export function createServer(root = resolveRoot()) {
   const server = new McpServer({
-    name: "lob-workspace",
+    name: MCP_SERVER_NAME,
     version: "0.1.0",
-    instructions: `Lob control plane (keyboard, not mouse hunting):
+    instructions: `TagTeamGPT control plane (keyboard, not mouse hunting):
 
 • One pinned Chat thread per goal — never New chat mid-loop; never use Work as planner.
 • Local folder projects do not support Chat — keep Chat as a cloud thread (no local folder); mount the repo only in Codex.

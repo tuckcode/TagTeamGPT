@@ -52,7 +52,7 @@ Same desktop app + keybinds either way. Decide at start (or when review gets thi
 **Use connector** when Chat must independently check real code after `EXECUTED`
 (multi-file edits, risky logic, SUCCESS_CRITERIA that need `git_diff` /
 `read_file`). Then: ensure MCP + HTTPS tunnel are up, connector attached in
-Chat Developer Mode, and tell Chat to prefer those tools over asking for pastes.
+Chat Developer Mode, connector name **`tagteam-workspace`**, and tell Chat to prefer those tools over asking for pastes.
 
 **Skip connector** when short `RESULT` / `CHANGED_FILES` / `TESTS` stubs are
 enough, or the user does not want background MCP/tunnel processes.
@@ -72,7 +72,7 @@ Remappable in Settings → Keyboard Shortcuts. If flaky, tell the user to remap.
 ## v1 driver (macOS + Windows)
 
 From the repo root (ChatGPT desktop running). macOS needs Accessibility for the
-shell; Windows focuses the ChatGPT window via PowerShell SendKeys.
+shell; Windows verifies ChatGPT HWND focus, then PowerShell SendKeys.
 
 ```bash
 node tools/lob-driver.mjs chat-send "$(cat <<'EOF'

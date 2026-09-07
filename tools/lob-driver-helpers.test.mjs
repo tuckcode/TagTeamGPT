@@ -13,6 +13,7 @@ import {
   isWorkMode,
   skipModeHotkeyBeforePaste,
   parseC2C,
+  parseLastJsonLine,
   TIMING_DEFAULTS,
 } from "./lib/lob-driver-helpers.mjs";
 
@@ -24,6 +25,9 @@ assert.equal(
 );
 assert.equal(resolveTiming({ paste_ms: 99 }, {}).paste_ms, 99);
 assert.equal(resolveTiming({}, { LOB_ENTER_MS: "nope" }).enter_ms, 250);
+assert.equal(resolveTiming({}, {}).focus_retries, 4);
+assert.equal(resolveTiming({}, { LOB_FOCUS_RETRY_MS: "25" }).focus_retry_ms, 25);
+assert.equal(resolveTiming({ focus_retries: 8 }, {}).focus_retries, 8);
 
 assert.equal(hasC2CPrefix("[C2C]\nSTATE: INIT"), true);
 assert.equal(hasC2CPrefix("  [C2C]\n"), true);
@@ -95,5 +99,17 @@ assert.equal(c2c.ok, true);
 assert.equal(c2c.state, "PLAN");
 assert.equal(c2c.task_id, "c2c_ab");
 assert.equal(parseC2C("nope").ok, false);
+
+assert.equal(parseLastJsonLine(""), null);
+assert.equal(parseLastJsonLine("ok\nnot json"), null);
+assert.deepEqual(parseLastJsonLine('noise\n{"ok":true,"focus_ok":true}\n'), {
+  ok: true,
+  focus_ok: true,
+});
+assert.equal(
+  parseLastJsonLine('{"ok":false}\n{"ok":true,"chatgpt_hwnd":123}').chatgpt_hwnd,
+  123,
+  "last JSON line wins"
+);
 
 console.log("ok: lob-driver-helpers.test.mjs");

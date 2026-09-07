@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Lob v1 keystroke driver (macOS + Windows).
+// TagTeamGPT v1 keystroke driver (macOS + Windows).
 // Happy path: mode hotkeys + clipboard paste + Enter. No screenshots.
 //   macOS: Control+1/2/3, ⌘V
 //   Windows: Alt+1/2/3, Ctrl+V
@@ -12,14 +12,18 @@
 //   node tools/lob-driver.mjs enter
 //   node tools/lob-driver.mjs chat-send "text" [--verify] [--force-mode]
 //   node tools/lob-driver.mjs codex-send "text" [--verify] [--force-mode]
+//   node tools/lob-driver.mjs ... --debug   (Windows focus log on stderr + JSON.win)
 //
 // Codex paste always fires Control+3 / Alt+3 in the same step as paste so a
 // prior `to codex` cannot restore Cursor and drop the next paste into Chat.
 // Chat still skips ⌃1 / Alt+1 when already in Chat (New chat).
 // The user talks in Cursor. Paste must steal ChatGPT focus and abort
 // (FOCUS_LOST) if Cursor is still frontmost at Cmd+V / Ctrl+V.
+// Windows: find ChatGPT HWND, verify GetForegroundWindow, then the same
+// Alt+tab / Ctrl+V / Enter macro, then restore. Never send keys if focus
+// is not proven. No PostMessage background injection (Electron drops it).
 // Happy path does not scan the window (no AX mode walk). Generation
-// continues unfocused after Enter; only paste/read need a ~1s burst.
+// continues unfocused after Enter; only paste/read need a short burst.
 
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -37,6 +41,7 @@ import {
   modesMatch,
   isWorkMode,
   skipModeHotkeyBeforePaste,
+  parseLastJsonLine,
 } from "./lib/lob-driver-helpers.mjs";
 
 const APP = "ChatGPT";
@@ -360,7 +365,7 @@ function enterMac() {
 }
 
 function readModeOcrMac() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-ocr-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tagteam-ocr-"));
   const png = path.join(tmpDir, "chip.png");
   try {
     const rect = JSON.parse(
@@ -415,15 +420,34 @@ function readModeOcrMac() {
 
 // ─── Windows (PowerShell + SendKeys + UIA) ─────────────────────────────────
 
-function classifyWinError(msg) {
-  const m = String(msg || "");
+function winDebugOn() {
+  return process.env.LOB_DEBUG === "1" || process.argv.includes("--debug");
+}
+
+function winLog(parsed) {
+  if (!parsed || typeof parsed !== "object") return undefined;
+  const { ok, code, ...rest } = parsed;
+  return Object.keys(rest).length ? rest : undefined;
+}
+
+function classifyWinError(msg, parsed) {
+  const m = String((parsed && (parsed.failure || parsed.code)) || msg || "");
+  const extra = {};
+  const log = winLog(parsed);
+  if (log) extra.win = log;
   if (/APP_NOT_RUNNING/i.test(m))
-    return { ok: false, code: "APP_NOT_RUNNING", detail: `${APP} is not running` };
+    return {
+      ok: false,
+      code: "APP_NOT_RUNNING",
+      detail: `${APP} is not running`,
+      ...extra,
+    };
   if (/CLIPBOARD_MISMATCH/i.test(m))
     return {
       ok: false,
       code: "CLIPBOARD_MISMATCH",
       detail: "Clipboard read-back did not match the payload.",
+      ...extra,
     };
   if (/FOCUS_LOST/i.test(m))
     return {
@@ -431,6 +455,7 @@ function classifyWinError(msg) {
       code: "FOCUS_LOST",
       detail:
         "ChatGPT was not frontmost at paste time — aborted so this did not land in Cursor. Retry the send; you can keep talking here after it finishes.",
+      ...extra,
     };
   if (/access is denied|UIAccess|SendKeys/i.test(m))
     return {
@@ -438,12 +463,13 @@ function classifyWinError(msg) {
       code: "NO_ACCESSIBILITY",
       detail:
         "Could not send keys to ChatGPT. Run the terminal elevated if needed, focus the ChatGPT window, and retry.",
+      ...extra,
     };
-  return { ok: false, code: "WIN_ERROR", detail: m.slice(0, 400) };
+  return { ok: false, code: "WIN_ERROR", detail: m.slice(0, 400), ...extra };
 }
 
 function runPowerShell(script, { clipText, timeout = 30_000 } = {}) {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tagteam-"));
   const ps1 = path.join(tmpDir, "run.ps1");
   let clipFile = null;
   try {
@@ -462,13 +488,13 @@ function runPowerShell(script, { clipText, timeout = 30_000 } = {}) {
       ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", ps1],
       { encoding: "utf8", timeout, windowsHide: true }
     );
-    const out = `${r.stdout || ""}${r.stderr || ""}`.trim();
+    const mixed = `${r.stdout || ""}\n${r.stderr || ""}`.trim();
     if (r.status !== 0) {
-      const err = new Error(out || `powershell exit ${r.status}`);
-      err.stderr = out;
+      const err = new Error(mixed || `powershell exit ${r.status}`);
+      err.stderr = mixed;
       throw err;
     }
-    return out;
+    return (r.stdout || "").trim();
   } finally {
     try {
       if (clipFile) fs.unlinkSync(clipFile);
@@ -484,11 +510,17 @@ const WIN_CS = `
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type @"
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-public class CodexGptWin {
+public class TagTeamWin {
+  public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+  [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+  [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern IntPtr SetActiveWindow(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool AllowSetForegroundWindow(int dwProcessId);
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
@@ -496,75 +528,225 @@ public class CodexGptWin {
   [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
-  [DllImport("user32.dll")] public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+  [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+  public static List<long> Acc = new List<long>();
+  public static bool EnumCb(IntPtr hWnd, IntPtr lParam) {
+    Acc.Add(hWnd.ToInt64());
+    return true;
+  }
+  public static long[] GetWindows() {
+    Acc = new List<long>();
+    EnumWindows(EnumCb, IntPtr.Zero);
+    return Acc.ToArray();
+  }
 }
 "@
 `;
 
-function winPickFocus(restore) {
+function winDefs() {
+  const retries = TIMING.focus_retries;
+  const retryMs = TIMING.focus_retry_ms;
+  const debug = winDebugOn() ? "1" : "0";
   return `
 $ErrorActionPreference = 'Stop'
+$env:LOB_DEBUG = '${debug}'
 ${WIN_CS}
-$prevHwnd = [CodexGptWin]::GetForegroundWindow()
-$procs = @(Get-Process -Name 'ChatGPT' -ErrorAction SilentlyContinue |
-  Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero })
-$chosen = $null
-foreach ($pr in $procs) {
-  if ([CodexGptWin]::IsIconic($pr.MainWindowHandle)) { continue }
-  if (-not [CodexGptWin]::IsWindowVisible($pr.MainWindowHandle)) { continue }
-  $sb = New-Object System.Text.StringBuilder 256
-  [void][CodexGptWin]::GetWindowText($pr.MainWindowHandle, $sb, 256)
-  $title = $sb.ToString()
-  if ($title -match 'ChatGPT|Chat|Codex|PLANNER') { $chosen = $pr; break }
+$script:WinLog = [ordered]@{
+  previous_hwnd = 0
+  chatgpt_hwnd = 0
+  focus_ok = $false
+  focus_attempts = 0
+  tab_shortcut = $null
+  paste_sent = $false
+  enter_sent = $false
+  restored = $false
+  failure = $null
 }
-if (-not $chosen) { $chosen = $procs | Select-Object -First 1 }
-if (-not $chosen) { throw 'APP_NOT_RUNNING' }
-$hwnd = $chosen.MainWindowHandle
-$fg = [CodexGptWin]::GetForegroundWindow()
-$dummy = 0
-$curTid = [CodexGptWin]::GetCurrentThreadId()
-$fgTid = [CodexGptWin]::GetWindowThreadProcessId($fg, [ref]$dummy)
-$tgtTid = [CodexGptWin]::GetWindowThreadProcessId($hwnd, [ref]$dummy)
-[void][CodexGptWin]::AllowSetForegroundWindow(-1)
-[void][CodexGptWin]::ShowWindow($hwnd, 9)
-if ($fgTid -ne $tgtTid) {
-  [void][CodexGptWin]::AttachThreadInput($curTid, $tgtTid, $true)
-  [void][CodexGptWin]::AttachThreadInput($fgTid, $tgtTid, $true)
+function Dbg([string]$msg) {
+  if ($env:LOB_DEBUG -eq '1') { [Console]::Error.WriteLine("win-focus: $msg") }
 }
-[void][CodexGptWin]::SetForegroundWindow($hwnd)
-if ($fgTid -ne $tgtTid) {
-  [void][CodexGptWin]::AttachThreadInput($curTid, $tgtTid, $false)
-  [void][CodexGptWin]::AttachThreadInput($fgTid, $tgtTid, $false)
+function HwndId([IntPtr]$h) {
+  if ($h -eq [IntPtr]::Zero) { return 0 }
+  return $h.ToInt64()
 }
-Start-Sleep -Milliseconds ${TIMING.focus_ms}
-function Focus-Composer {
-  try {
-    Add-Type -AssemblyName UIAutomationClient | Out-Null
-    Add-Type -AssemblyName UIAutomationTypes | Out-Null
-    $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
-    $editType = [System.Windows.Automation.ControlType]::Edit
-    $cond = New-Object System.Windows.Automation.PropertyCondition(
-      [System.Windows.Automation.AutomationElement]::ControlTypeProperty, $editType)
-    $edit = $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $cond)
-    if ($edit) { [void]$edit.SetFocus() }
-  } catch {}
+function Emit-Ok {
+  $script:WinLog.ok = $true
+  $script:WinLog | ConvertTo-Json -Compress
+}
+function Emit-Fail([string]$code) {
+  $script:WinLog.ok = $false
+  $script:WinLog.code = $code
+  if (-not $script:WinLog.failure) { $script:WinLog.failure = $code }
+  $script:WinLog | ConvertTo-Json -Compress
+}
+function Find-ChatGPTHwnd {
+  $ids = @{}
+  Get-Process -Name 'ChatGPT' -ErrorAction SilentlyContinue | ForEach-Object { $ids["$($_.Id)"] = $_ }
+  if ($ids.Count -eq 0) { return [IntPtr]::Zero }
+  $best = [IntPtr]::Zero
+  $bestScore = -1
+  foreach ($h64 in [TagTeamWin]::GetWindows()) {
+    $h = [IntPtr]$h64
+    if (-not [TagTeamWin]::IsWindow($h)) { continue }
+    $pid = [uint32]0
+    [void][TagTeamWin]::GetWindowThreadProcessId($h, [ref]$pid)
+    if (-not $ids.ContainsKey("$pid")) { continue }
+    $owner = [TagTeamWin]::GetWindow($h, 4)
+    if ($owner -ne [IntPtr]::Zero) { continue }
+    $clsSb = New-Object System.Text.StringBuilder 256
+    [void][TagTeamWin]::GetClassName($h, $clsSb, 256)
+    $cls = $clsSb.ToString()
+    $titleSb = New-Object System.Text.StringBuilder 256
+    [void][TagTeamWin]::GetWindowText($h, $titleSb, 256)
+    $title = $titleSb.ToString()
+    $rect = New-Object TagTeamWin+RECT
+    [void][TagTeamWin]::GetWindowRect($h, [ref]$rect)
+    $w = $rect.Right - $rect.Left
+    $hgt = $rect.Bottom - $rect.Top
+    if ($w -lt 80 -or $hgt -lt 80) { continue }
+    $visible = [TagTeamWin]::IsWindowVisible($h)
+    $iconic = [TagTeamWin]::IsIconic($h)
+    $score = 0
+    if ($visible) { $score += 8 }
+    if (-not $iconic) { $score += 4 }
+    if ($cls -match 'Chrome_WidgetWin') { $score += 4 }
+    if ($w -gt 400 -and $hgt -gt 300) { $score += 2 }
+    if ($title -match 'ChatGPT|Codex|Chat|PLANNER') { $score += 1 }
+    if ($score -gt $bestScore) { $bestScore = $score; $best = $h }
+  }
+  if ($best -ne [IntPtr]::Zero) { return $best }
+  foreach ($p in $ids.Values) {
+    if ($p.MainWindowHandle -ne [IntPtr]::Zero) { return $p.MainWindowHandle }
+  }
+  return [IntPtr]::Zero
+}
+function Test-ChatGPTForeground([IntPtr]$target) {
+  $fg = [TagTeamWin]::GetForegroundWindow()
+  if ($fg -eq $target) { return $true }
+  if ($fg -eq [IntPtr]::Zero) { return $false }
+  $fgPid = [uint32]0
+  $tgtPid = [uint32]0
+  [void][TagTeamWin]::GetWindowThreadProcessId($fg, [ref]$fgPid)
+  [void][TagTeamWin]::GetWindowThreadProcessId($target, [ref]$tgtPid)
+  return ($tgtPid -ne 0 -and $fgPid -eq $tgtPid)
+}
+function Acquire-ChatGPTFocus([IntPtr]$hwnd) {
+  $retries = ${retries}
+  $wait = ${retryMs}
+  for ($i = 1; $i -le $retries; $i++) {
+    $script:WinLog.focus_attempts = $i
+    Dbg ("focus attempt " + $i + " hwnd=" + (HwndId $hwnd) + " fg=" + (HwndId ([TagTeamWin]::GetForegroundWindow())))
+    if (Test-ChatGPTForeground $hwnd) {
+      $script:WinLog.focus_ok = $true
+      return $true
+    }
+    $fg = [TagTeamWin]::GetForegroundWindow()
+    $dummy = [uint32]0
+    $curTid = [TagTeamWin]::GetCurrentThreadId()
+    $fgTid = [TagTeamWin]::GetWindowThreadProcessId($fg, [ref]$dummy)
+    $tgtTid = [TagTeamWin]::GetWindowThreadProcessId($hwnd, [ref]$dummy)
+    [void][TagTeamWin]::AllowSetForegroundWindow(-1)
+    $attachedFg = $false
+    $attachedTgt = $false
+    if ($fgTid -ne 0 -and $fgTid -ne $curTid) {
+      $attachedFg = [TagTeamWin]::AttachThreadInput($curTid, $fgTid, $true)
+    }
+    if ($tgtTid -ne 0 -and $tgtTid -ne $curTid -and $tgtTid -ne $fgTid) {
+      $attachedTgt = [TagTeamWin]::AttachThreadInput($curTid, $tgtTid, $true)
+    }
+    try {
+      if ([TagTeamWin]::IsIconic($hwnd)) {
+        [void][TagTeamWin]::ShowWindow($hwnd, 9)
+      } elseif ($i -eq 1) {
+        [void][TagTeamWin]::ShowWindow($hwnd, 5)
+      } else {
+        [void][TagTeamWin]::ShowWindowAsync($hwnd, 5)
+      }
+      [void][TagTeamWin]::BringWindowToTop($hwnd)
+      [void][TagTeamWin]::SetForegroundWindow($hwnd)
+      [void][TagTeamWin]::SetActiveWindow($hwnd)
+    } finally {
+      if ($attachedTgt) { [void][TagTeamWin]::AttachThreadInput($curTid, $tgtTid, $false) }
+      if ($attachedFg) { [void][TagTeamWin]::AttachThreadInput($curTid, $fgTid, $false) }
+    }
+    if (Test-ChatGPTForeground $hwnd) {
+      $script:WinLog.focus_ok = $true
+      return $true
+    }
+    if ($i -lt $retries) { Start-Sleep -Milliseconds $wait }
+  }
+  $script:WinLog.focus_ok = $false
+  $script:WinLog.failure = 'FOCUS_LOST'
+  return $false
 }
 function Restore-Prev {
-  ${restore ? `Start-Sleep -Milliseconds ${TIMING.enter_ms}
-  if ($prevHwnd -ne [IntPtr]::Zero -and $prevHwnd -ne $hwnd) {
-    [void][CodexGptWin]::SetForegroundWindow($prevHwnd)
-  }` : ""}
+  if ($script:prevHwnd -ne [IntPtr]::Zero -and $script:prevHwnd -ne $hwnd) {
+    [void][TagTeamWin]::SetForegroundWindow($script:prevHwnd)
+    $script:WinLog.restored = $true
+    Dbg ("restored " + (HwndId $script:prevHwnd))
+  }
 }
+$script:prevHwnd = [TagTeamWin]::GetForegroundWindow()
+$hwnd = [IntPtr]::Zero
+$script:WinLog.previous_hwnd = HwndId $script:prevHwnd
+Dbg ("previous hwnd=" + $script:WinLog.previous_hwnd)
+`;
+}
+
+function runWinOp(body, opts = {}) {
+  const script = `
+${winDefs()}
+try {
+${body}
+  Restore-Prev
+  Emit-Ok
+} catch {
+  $msg = [string]$_.Exception.Message
+  if ($msg -match '^(APP_NOT_RUNNING|FOCUS_LOST|CLIPBOARD_MISMATCH)$') {
+    $script:WinLog.failure = $msg
+    Restore-Prev
+    Emit-Fail $msg
+  } else {
+    $script:WinLog.failure = $msg
+    Restore-Prev
+    Emit-Fail 'WIN_ERROR'
+  }
+  exit 1
+}
+`;
+  try {
+    const out = runPowerShell(script, opts);
+    const parsed = parseLastJsonLine(out) || { ok: true };
+    if (parsed.ok === false) {
+      return classifyWinError(parsed.failure || parsed.code, parsed);
+    }
+    return { ok: true, win: winLog(parsed) };
+  } catch (e) {
+    const raw = String((e && e.stderr) || e.message || e);
+    const parsed = parseLastJsonLine(raw);
+    return classifyWinError((parsed && (parsed.failure || parsed.code)) || raw, parsed);
+  }
+}
+
+function winAcquireBlock() {
+  return `
+$hwnd = Find-ChatGPTHwnd
+$script:WinLog.chatgpt_hwnd = HwndId $hwnd
+Dbg ("chatgpt hwnd=" + $script:WinLog.chatgpt_hwnd)
+if ($hwnd -eq [IntPtr]::Zero) { throw 'APP_NOT_RUNNING' }
+if (-not (Acquire-ChatGPTFocus $hwnd)) { throw 'FOCUS_LOST' }
+Dbg 'focus_ok'
 `;
 }
 
 function readModeWin() {
-  try {
-    const out = runPowerShell(
-      winPickFocus(false) +
-        `
+  const r = runWinOp(`
+${winAcquireBlock()}
 $found = $null
 try {
   Add-Type -AssemblyName UIAutomationClient | Out-Null
@@ -594,46 +776,40 @@ try {
     }
   }
 } catch {}
-if ($found) { Write-Output ("MODE:" + $found) } else { Write-Output 'MODE_ELEMENT_NOT_FOUND' }
-`
-    );
-    const line = out.split(/\r?\n/).filter(Boolean).pop() || "";
-    if (/MODE_ELEMENT_NOT_FOUND/i.test(line) || !line.startsWith("MODE:")) {
-      return {
-        ok: false,
-        code: "MODE_ELEMENT_NOT_FOUND",
-        detail:
-          "Mode verify is not available on Windows yet. Hotkeys still work; skip --verify and confirm Chat/Codex by eye.",
-      };
-    }
-    const raw = line.slice(5).trim();
-    const mode = parseModeLabel(raw) || "unknown";
-    return { ok: true, mode, raw };
-  } catch (e) {
-    const c = classifyWinError((e && e.stderr) || e.message || e);
-    if (c.code === "APP_NOT_RUNNING") return c;
+if ($found) { $script:WinLog.mode_raw = $found } else { $script:WinLog.mode_raw = 'MODE_ELEMENT_NOT_FOUND' }
+`);
+  if (!r.ok) {
+    if (r.code === "APP_NOT_RUNNING" || r.code === "FOCUS_LOST") return r;
     return {
       ok: false,
       code: "MODE_ELEMENT_NOT_FOUND",
       detail:
         "Mode verify is not available on Windows yet. Hotkeys still work; skip --verify and confirm Chat/Codex by eye.",
+      win: r.win,
     };
   }
+  const raw = String((r.win && r.win.mode_raw) || "");
+  if (!raw || /MODE_ELEMENT_NOT_FOUND/i.test(raw)) {
+    return {
+      ok: false,
+      code: "MODE_ELEMENT_NOT_FOUND",
+      detail:
+        "Mode verify is not available on Windows yet. Hotkeys still work; skip --verify and confirm Chat/Codex by eye.",
+      win: r.win,
+    };
+  }
+  const mode = parseModeLabel(raw) || "unknown";
+  return { ok: true, mode, raw, win: r.win };
 }
 
 function pressModeKeyWin(key) {
-  try {
-    runPowerShell(
-      winPickFocus(true) +
-        `[System.Windows.Forms.SendKeys]::SendWait('%${key}')\n` +
-        `Start-Sleep -Milliseconds ${TIMING.mode_settle_ms}\n` +
-        `Restore-Prev\n` +
-        `'ok'\n`
-    );
-    return { ok: true };
-  } catch (e) {
-    return classifyWinError((e && e.stderr) || e.message || e);
-  }
+  return runWinOp(`
+${winAcquireBlock()}
+$script:WinLog.tab_shortcut = 'Alt+${key}'
+Dbg $script:WinLog.tab_shortcut
+[System.Windows.Forms.SendKeys]::SendWait('%${key}')
+Start-Sleep -Milliseconds ${TIMING.mode_settle_ms}
+`);
 }
 
 function pasteAndEnterWin(text) {
@@ -644,61 +820,57 @@ function modeThenPasteWin(key, text, settleMs = TIMING.mode_settle_ms) {
   const hotkey =
     key == null
       ? ""
-      : `[System.Windows.Forms.SendKeys]::SendWait('%${key}')\nStart-Sleep -Milliseconds ${settleMs}\n`;
-  try {
-    runPowerShell(
-      winPickFocus(true) +
-        `
-${hotkey}Focus-Composer
+      : `
+$script:WinLog.tab_shortcut = 'Alt+${key}'
+Dbg $script:WinLog.tab_shortcut
+[System.Windows.Forms.SendKeys]::SendWait('%${key}')
+Start-Sleep -Milliseconds ${settleMs}
+if (-not (Test-ChatGPTForeground $hwnd)) { throw 'FOCUS_LOST' }
+`;
+  return runWinOp(
+    `
 [System.Windows.Forms.Clipboard]::SetText($clipText)
 Start-Sleep -Milliseconds ${TIMING.paste_ms}
 $got = [System.Windows.Forms.Clipboard]::GetText()
 $a = ($clipText -replace "\`r\`n","\`n")
 $b = ($got -replace "\`r\`n","\`n")
 if ($a -ne $b) { throw 'CLIPBOARD_MISMATCH' }
-[void][CodexGptWin]::SetForegroundWindow($hwnd)
-Start-Sleep -Milliseconds ${TIMING.focus_ms}
-if ([CodexGptWin]::GetForegroundWindow() -ne $hwnd) { throw 'FOCUS_LOST' }
+${winAcquireBlock()}
+${hotkey}if (-not (Test-ChatGPTForeground $hwnd)) { throw 'FOCUS_LOST' }
 [System.Windows.Forms.SendKeys]::SendWait('^v')
-Start-Sleep -Milliseconds ${TIMING.enter_ms}
+$script:WinLog.paste_sent = $true
+Dbg 'paste_sent'
+Start-Sleep -Milliseconds ${TIMING.paste_ms}
+if (-not (Test-ChatGPTForeground $hwnd)) { throw 'FOCUS_LOST' }
 [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
-Restore-Prev
-'sent'
+$script:WinLog.enter_sent = $true
+Dbg 'enter_sent'
+Start-Sleep -Milliseconds ${TIMING.enter_ms}
 `,
-      { clipText: text }
-    );
-    return { ok: true };
-  } catch (e) {
-    return classifyWinError((e && e.stderr) || e.message || e);
-  }
+    { clipText: text }
+  );
 }
 
 function enterWin() {
-  try {
-    runPowerShell(
-      winPickFocus(true) +
-        `Focus-Composer\n` +
-        `if ([CodexGptWin]::GetForegroundWindow() -ne $hwnd) { throw 'FOCUS_LOST' }\n` +
-        `[System.Windows.Forms.SendKeys]::SendWait('{ENTER}')\n` +
-        `Restore-Prev\n` +
-        `'ok'\n`
-    );
-    return { ok: true };
-  } catch (e) {
-    return classifyWinError((e && e.stderr) || e.message || e);
-  }
+  return runWinOp(`
+${winAcquireBlock()}
+if (-not (Test-ChatGPTForeground $hwnd)) { throw 'FOCUS_LOST' }
+[System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+$script:WinLog.enter_sent = $true
+Dbg 'enter_sent'
+Start-Sleep -Milliseconds ${TIMING.enter_ms}
+`);
 }
 
 function readModeOcrWin() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-ocr-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tagteam-ocr-"));
   const png = path.join(tmpDir, "chip.png");
   try {
-    const out = runPowerShell(
-      winPickFocus(false) +
-        `
+    const r = runWinOp(`
+${winAcquireBlock()}
 Add-Type -AssemblyName System.Drawing
-$rect = New-Object CodexGptWin+RECT
-[void][CodexGptWin]::GetWindowRect($hwnd, [ref]$rect)
+$rect = New-Object TagTeamWin+RECT
+[void][TagTeamWin]::GetWindowRect($hwnd, [ref]$rect)
 $w = [Math]::Min(640, [Math]::Max(80, $rect.Right - $rect.Left))
 $h = 90
 $bmp = New-Object System.Drawing.Bitmap $w, $h
@@ -706,11 +878,15 @@ $g = [System.Drawing.Graphics]::FromImage($bmp)
 $g.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bmp.Size)
 $bmp.Save(${JSON.stringify(png)})
 $g.Dispose(); $bmp.Dispose()
-Write-Output 'cropped'
-`
-    );
-    if (!/cropped/i.test(out)) {
-      return { ok: false, code: "MODE_ELEMENT_NOT_FOUND", detail: "OCR crop failed." };
+$script:WinLog.cropped = $true
+`);
+    if (!r.ok || !fs.existsSync(png)) {
+      return {
+        ok: false,
+        code: "MODE_ELEMENT_NOT_FOUND",
+        detail: r.ok ? "OCR crop failed." : r.detail || "OCR crop failed.",
+        win: r.win,
+      };
     }
     const tess = spawnSync("tesseract", [png, "stdout", "-l", "eng"], {
       encoding: "utf8",
@@ -721,13 +897,19 @@ Write-Output 'cropped'
         ok: false,
         code: "MODE_ELEMENT_NOT_FOUND",
         detail: "OCR requested but tesseract/Windows OCR is not available.",
+        win: r.win,
       };
     }
     const mode = parseModeLabel(tess.stdout);
     if (!mode) {
-      return { ok: false, code: "MODE_ELEMENT_NOT_FOUND", detail: "OCR empty — no Chat/Work/Codex in crop." };
+      return {
+        ok: false,
+        code: "MODE_ELEMENT_NOT_FOUND",
+        detail: "OCR empty — no Chat/Work/Codex in crop.",
+        win: r.win,
+      };
     }
-    return { ok: true, mode, via: "ocr", raw: tess.stdout.slice(0, 200) };
+    return { ok: true, mode, via: "ocr", raw: tess.stdout.slice(0, 200), win: r.win };
   } catch (e) {
     return {
       ok: false,
@@ -965,6 +1147,7 @@ async function switchAndSend(name, text, verify, { force = false, forceMode = fa
       paste: "sent",
       platform: PLATFORM,
       caveat: CAVEAT,
+      win: paste.win,
     };
   }
 
@@ -987,10 +1170,11 @@ async function switchAndSend(name, text, verify, { force = false, forceMode = fa
         ? "Paste fired; post-paste mode verify unavailable."
         : `Locked ${want} (hotkey ${key}) and paste in one step; post-paste mode verify unavailable.`,
       caveat: CAVEAT,
+      win: paste.win,
     };
   }
   if (!modesMatch(after.mode, want)) {
-    return driftResult(after, want, { switched, skipped_hotkey: skip });
+    return { ...driftResult(after, want, { switched, skipped_hotkey: skip }), win: paste.win };
   }
 
   return {
@@ -1002,6 +1186,7 @@ async function switchAndSend(name, text, verify, { force = false, forceMode = fa
     paste: "sent",
     platform: PLATFORM,
     caveat: CAVEAT,
+    win: paste.win,
   };
 }
 
@@ -1038,6 +1223,7 @@ async function main() {
       a !== "--force" &&
       a !== "--force-mode" &&
       a !== "--verify-vision" &&
+      a !== "--debug" &&
       !skipNext.has(i)
   );
   const [cmd, arg, ...rest] = pos;
@@ -1142,7 +1328,7 @@ async function main() {
         ok: false,
         code: "USAGE",
         detail:
-          "mode | to chat|work|codex [--verify] [--force-mode] | send <text|-> [--mode chat|codex] | enter | chat-send <text|-> [--verify] [--force-mode] | codex-send <text|-> [--verify] [--force-mode]",
+          "mode | to chat|work|codex [--verify] [--force-mode] | send <text|-> [--mode chat|codex] | enter | chat-send <text|-> [--verify] [--force-mode] | codex-send <text|-> [--verify] [--force-mode] | --debug",
         platform: PLATFORM,
       });
       process.exitCode = 1;

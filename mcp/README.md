@@ -46,13 +46,15 @@ ChatGPT does **not** launch local stdio MCP. It needs a **public HTTPS** MCP URL
 
 1. Keep `npm start` running (Bearer required by default).
 2. Tunnel loopback: `cloudflared tunnel --url http://127.0.0.1:8743`
-3. Add plugin with URL `https://<tunnel>/mcp`. If Create only offers
+3. Add a custom connector named **`tagteam-workspace`** (not the old
+   `codexgpt-workspace`) with URL `https://<tunnel>/mcp`. If Create only offers
    OAuth / No auth / Mixed, use **No authentication** briefly with
    `LOB_MCP_ALLOW_NO_AUTH=1`, then turn auth back on and set a Bearer
    header on the plugin if the UI allows — otherwise leave no-auth only for
    short local demos.
-4. In a **Chat** thread (not Work), ask for `workspace_info` / `git_status`.
-   The connector may not appear under composer `+`.
+4. In a **Chat** thread (not Work), enable **tagteam-workspace** in the `+`
+   menu (Settings “Connected” is not enough), then ask for `workspace_info` /
+   `git_status`.
 
 Exact connector UI labels move around; if Developer Mode is missing, your plan
 or workspace may not allow custom MCP yet.
