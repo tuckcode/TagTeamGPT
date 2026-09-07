@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Rigorous Lob MCP check (local and/or tunneled HTTPS).
+ * Rigorous TagTeamGPT MCP check (local and/or tunneled HTTPS).
  *
  *   node tools/lob-mcp-check.mjs
  *   node tools/lob-mcp-check.mjs --url https://….trycloudflare.com/mcp
@@ -142,11 +142,11 @@ async function main() {
     params: {
       protocolVersion: "2024-11-05",
       capabilities: {},
-      clientInfo: { name: "lob-mcp-check", version: "0.1" },
+      clientInfo: { name: "tagteam-mcp-check", version: "0.1" },
     },
   });
   mark(
-    init.ok && init.msg?.result?.serverInfo?.name === "lob-workspace",
+    init.ok && init.msg?.result?.serverInfo?.name === "tagteam-workspace",
     "initialize",
     {
       ms: init.ms,
@@ -216,7 +216,7 @@ async function main() {
       limit: 30,
     });
     const text = toolText(r.msg);
-    mark(r.ok && /Lob|Product/i.test(text), "read_file", {
+    mark(r.ok && /TagTeamGPT|Product/i.test(text), "read_file", {
       ms: r.ms,
       preview: text.slice(0, 180),
       error: r.error,
@@ -242,11 +242,11 @@ async function main() {
   // 9) search_workspace
   {
     const r = await callTool(14, "search_workspace", {
-      query: "Lob",
+      query: "TagTeamGPT",
       max_results: 5,
     });
     const text = toolText(r.msg);
-    mark(r.ok && /Lob/i.test(text), "search_workspace", {
+    mark(r.ok && /TagTeamGPT/i.test(text), "search_workspace", {
       ms: r.ms,
       preview: text.slice(0, 200),
       error: r.error,

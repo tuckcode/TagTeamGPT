@@ -1,5 +1,5 @@
 /**
- * Shared Lob config. Defaults make the full Chat→Codex loop the happy path.
+ * Shared TagTeamGPT config. Defaults make the full Chat→Codex loop the happy path.
  *
  * Merge order (later wins): built-in → repo `lob.config.json` → `.lob/config.json` → env.
  */
@@ -33,6 +33,8 @@ export const DEFAULTS = {
   mode_settle_ms: 350,
   paste_ms: 120,
   enter_ms: 250,
+  focus_retries: 4,
+  focus_retry_ms: 40,
   /** Stuck-path OCR of mode chip; off on happy path. LOB_OCR=1 / --verify-vision */
   ocr: false,
   /** Chat reply wait after paste (ms). Generation runs unfocused. Soul High + submit_c2c needs minutes, not 20s. */

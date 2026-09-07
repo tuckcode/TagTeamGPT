@@ -10,7 +10,7 @@
  * Set >0 to enable. Env: LOB_MCP_IDLE_MINUTES overrides.
  *
  * IMPORTANT: each Quick Tunnel restart mints a NEW https://*.trycloudflare.com
- * URL. ChatGPT Lob-gpt / custom connectors do NOT auto-update — prefer
+ * URL. ChatGPT TagTeamGPT / custom connectors do NOT auto-update — prefer
  * `status`/`start` reuse when already up; do not bounce the tunnel casually.
  *
  * Writes:

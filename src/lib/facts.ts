@@ -5,6 +5,7 @@ export const PRODUCT_NAME = "TagTeamGPT";
 export const TAGLINE = "They switch. The goal doesn't.";
 export const SKILL_PATH = ".agents/skills/tagteam";
 export const SKILL_INVOKE = "$tagteam";
+export const MCP_CONNECTOR = "tagteam-workspace";
 
 export const NAV = [
   { href: "#problem", label: "The problem" },

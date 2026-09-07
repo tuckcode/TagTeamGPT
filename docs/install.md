@@ -91,8 +91,8 @@ node tools/lob-loop.mjs --goal "…" --path /path/to/your/repo --boot
 ```
 
 - **macOS:** grant **Accessibility** to your terminal (or Cursor) if keystrokes are blocked. Uses `Control+1/2/3`.
-- **Windows:** focuses the ChatGPT window and sends `Alt+1/2/3` + Ctrl+V. Mode verify is limited; confirm the right thread by eye.
-- **Timing** (defaults; raise on slow machines): `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`, `LOB_PASTE_MS=120`, `LOB_ENTER_MS=250`. Same keys may live in `lob.config.json` or `.lob/config.json`.
+- **Windows:** finds the ChatGPT HWND, verifies foreground, then sends `Alt+1/2/3` + Ctrl+V. Aborts with `FOCUS_LOST` instead of pasting into the wrong app. Mode verify is limited; confirm the right thread by eye.
+- **Timing** (defaults; raise on slow machines): `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`, `LOB_PASTE_MS=120`, `LOB_ENTER_MS=250`. Windows focus retries: `LOB_FOCUS_RETRIES=4`, `LOB_FOCUS_RETRY_MS=40`. Same keys may live in `lob.config.json` or `.lob/config.json`.
 - **OCR/vision** is off by default (`LOB_OCR=1` / `--verify-vision` only when stuck). Happy path is keystrokes.
 - **Auto-loop** reads Chat from `.lob/last-reply.json` (`submit_c2c`), not Select-All scrape.
 
@@ -105,6 +105,8 @@ Manual copy/paste always works without the driver.
 Default loop does **not** need MCP. Add it only when Chat should pull diffs/files itself.
 
 See [mcp/README.md](../mcp/README.md) and `node tools/lob-mcp-up.mjs start`.
+Name the ChatGPT connector **`tagteam-workspace`** (rename or replace an old
+`codexgpt-workspace` entry). Enable it on the Chat thread via the `+` menu.
 
 ## Sanity check
 

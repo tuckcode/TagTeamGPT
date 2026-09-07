@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Lob read-only workspace MCP over Streamable HTTP.
+ * TagTeamGPT read-only workspace MCP over Streamable HTTP.
  *
  * Local:
  *   LOB_ROOT=/path/to/repo LOB_MCP_TOKEN=secret node src/http.mjs
@@ -15,7 +15,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { createServer } from "./create-server.mjs";
+import { createServer, MCP_SERVER_NAME } from "./create-server.mjs";
 import { resolveRoot } from "./workspace.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -44,7 +44,7 @@ const app = express();
 app.use(express.json({ limit: "2mb" }));
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, root: ROOT, name: "lob-workspace" });
+  res.json({ ok: true, root: ROOT, name: MCP_SERVER_NAME });
 });
 
 const ALLOW_NO_AUTH =

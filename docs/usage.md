@@ -93,7 +93,7 @@ Optional `--verify` tries a mode read-back. Electron often hides the mode chip f
 node tools/lob-loop.mjs --goal "…" --path /path/to/repo --boot
 ```
 
-Give the goal and the folder path once. ChatGPT is brought forward for about a second to paste, then given back. Chat and Codex keep writing while you click around. Codex done is a file (`<repo>/.lob/executed.json`) — no focus. Chat’s reply is `.lob/last-reply.json` after Chat calls MCP `submit_c2c` — the loop does not Select-All or scrape the Chat thread.
+Give the goal and the folder path once. ChatGPT is brought forward briefly to paste, then given back. On Windows the driver aborts with `FOCUS_LOST` instead of pasting if ChatGPT never actually receives focus. Chat and Codex keep writing while you click around. Codex done is a file (`<repo>/.lob/executed.json`) — no focus. Chat’s reply is `.lob/last-reply.json` after Chat calls MCP `submit_c2c` — the loop does not Select-All or scrape the Chat thread.
 
 Defaults (see `lob.config.json`): Chat + Codex handoff on; optional mailbox/memory notes.
 
@@ -113,7 +113,7 @@ See also: [Loop details](loop.md).
 When Chat must independently check code after `EXECUTED`:
 
 1. `node tools/lob-mcp-up.mjs start`
-2. Attach the HTTPS connector in ChatGPT Developer Mode / custom plugin.
+2. Attach it in ChatGPT Developer Mode as connector **`tagteam-workspace`** (rename or replace `codexgpt-workspace`). Enable it on the Chat thread via `+`.
 3. Tell Chat to prefer `git_diff` / `read_file` over asking for pastes.
 
 A new tunnel URL pasted into a `[C2C]` message does **not** rebind the connector — edit connector settings when the URL changes.

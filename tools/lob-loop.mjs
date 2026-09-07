@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Lob auto-loop (macOS + Windows): Chat plans → Codex executes → Chat reviews.
+ * TagTeamGPT auto-loop (macOS + Windows): Chat plans → Codex executes → Chat reviews.
  * Mode hotkeys via driver: macOS Control+1/2/3, Windows Alt+1/2/3.
  *
  *   node tools/lob-loop.mjs --goal "…" [--path /path/to/repo] [--boot]
@@ -170,7 +170,7 @@ STATE: PLAN
 TASK_ID: ${taskId}
 ITERATION: ${iteration}
 
-Execute this Lob PLAN now in the open workspace.
+Execute this TagTeamGPT PLAN now in the open workspace.
 
 HARD PREFLIGHT (do this first):
 1. Run: pwd && test -d .git

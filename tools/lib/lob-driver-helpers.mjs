@@ -1,5 +1,5 @@
 /**
- * Pure helpers for the Lob keystroke driver (no OS automation).
+ * Pure helpers for the TagTeamGPT keystroke driver (no OS automation).
  * Timing: env beats config beats built-in defaults.
  */
 
@@ -8,6 +8,9 @@ export const TIMING_DEFAULTS = {
   mode_settle_ms: 350,
   paste_ms: 120,
   enter_ms: 250,
+  /** Windows: retries around GetForegroundWindow, not around resending the paste. */
+  focus_retries: 4,
+  focus_retry_ms: 40,
 };
 
 const TIMING_ENV = {
@@ -15,6 +18,8 @@ const TIMING_ENV = {
   mode_settle_ms: "LOB_MODE_SETTLE_MS",
   paste_ms: "LOB_PASTE_MS",
   enter_ms: "LOB_ENTER_MS",
+  focus_retries: "LOB_FOCUS_RETRIES",
+  focus_retry_ms: "LOB_FOCUS_RETRY_MS",
 };
 
 function positiveInt(value, fallback) {
@@ -111,6 +116,24 @@ export function skipModeHotkeyBeforePaste(
   if (target === "chat") return modesMatch(mode, "ChatGPT");
   if (target === "work") return modesMatch(mode, "Work");
   return false;
+}
+
+/** Last JSON object line from a PowerShell driver script (stdout/stderr mix). */
+export function parseLastJsonLine(text) {
+  const lines = String(text ?? "")
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i];
+    if (!line.startsWith("{")) continue;
+    try {
+      return JSON.parse(line);
+    } catch {
+      /* keep scanning */
+    }
+  }
+  return null;
 }
 
 /** Last STATE: in a blob (latest assistant turn). */

@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SKILL_INVOKE, SKILL_PATH } from "@/lib/facts";
+import { MCP_CONNECTOR, SKILL_INVOKE, SKILL_PATH } from "@/lib/facts";
 
 export function DesktopGlue() {
   return (
@@ -95,7 +95,9 @@ export function DesktopGlue() {
               <code className="font-mono text-foreground">
                 node tools/lob-mcp-up.mjs start
               </code>
-              , then attach the HTTPS URL in ChatGPT Developer Mode so Chat can
+              , then attach the HTTPS URL in ChatGPT Developer Mode as connector{" "}
+              <code className="font-mono text-foreground">{MCP_CONNECTOR}</code>
+              {" "}so Chat can
               call{" "}
               <code className="font-mono text-foreground">git_diff</code> and{" "}
               <code className="font-mono text-foreground">read_file</code>.

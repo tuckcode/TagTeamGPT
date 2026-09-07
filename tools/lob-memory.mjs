@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Lob v2 memory — longer goal/decision notes in the Rhizome vault.
+ * TagTeamGPT v2 memory — longer goal/decision notes in the Rhizome vault.
  *
  *   node tools/lob-memory.mjs --action start --task-id c2c_xxxx --goal "…"
  *   node tools/lob-memory.mjs --action finish --task-id c2c_xxxx --goal "…" \
@@ -45,12 +45,12 @@ function ensureHub(root) {
       `---
 type: Note
 status: Active
-tags: [lob, memory]
+tags: [tagteam, memory]
 ---
 
-# Lob memory
+# TagTeamGPT memory
 
-Longer goal and decision notes (not every PLAN). Search: \`lob memory\`. Hub: [[../Lob|Lob]].
+Longer goal and decision notes (not every PLAN). Search: \`tagteam memory\`. Hub: [[../TagTeamGPT|TagTeamGPT]].
 `,
       "utf8"
     );
@@ -62,7 +62,7 @@ function startNote({ taskId, goal }) {
   return `---
 type: Note
 status: Active
-tags: [lob, memory, goal]
+tags: [tagteam, memory, goal]
 task_id: ${taskId}
 goal_status: active
 date: ${date}
@@ -70,7 +70,7 @@ date: ${date}
 
 # Goal: ${taskId}
 
-Hub: [[../Lob|Lob]] · Mailbox: [[../mailbox/README|mailbox]]
+Hub: [[../TagTeamGPT|TagTeamGPT]] · Mailbox: [[../mailbox/README|mailbox]]
 
 ## Goal
 
@@ -90,7 +90,7 @@ _Pending._
 
 ## Open
 
-- Run Lob loop to DONE or BLOCKED.
+- Run TagTeamGPT loop to DONE or BLOCKED.
 `;
 }
 
