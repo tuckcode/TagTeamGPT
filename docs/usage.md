@@ -93,7 +93,7 @@ Optional `--verify` tries a mode read-back. Electron often hides the mode chip f
 node tools/lob-loop.mjs --goal "…" --path /path/to/repo --boot
 ```
 
-Give the goal and the folder path once. ChatGPT is brought forward briefly to paste, then given back. On Windows the driver aborts with `FOCUS_LOST` instead of pasting if ChatGPT never actually receives focus. Chat and Codex keep writing while you click around. Codex done is a file (`<repo>/.lob/executed.json`) — no focus. Chat’s reply is `.lob/last-reply.json` after Chat calls MCP `submit_c2c` — the loop does not Select-All or scrape the Chat thread.
+Give the goal and the folder path once. ChatGPT is brought forward briefly to paste, then given back. On macOS and Windows the driver aborts with `FOCUS_LOST` instead of pasting if ChatGPT is not actually front. Chat and Codex keep writing while you click around. Codex done is a file (`<repo>/.lob/executed.json`) — no focus. Chat’s reply is `.lob/last-reply.json` after Chat calls MCP `submit_c2c` — the loop does not Select-All or scrape the Chat thread.
 
 Defaults (see `lob.config.json`): Chat + Codex handoff on; optional mailbox/memory notes.
 

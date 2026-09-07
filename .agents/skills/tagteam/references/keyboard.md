@@ -39,9 +39,11 @@ Driver / human:
 Confirmation is the next `[C2C]` STATE or `.lob/executed.json`.
 After send, the driver restores the previous front app. Paste aborts with `FOCUS_LOST` instead of landing in whatever was front if ChatGPT is not frontmost at Cmd+V / Ctrl+V.
 
-OS research and next injector steps (Windows `SendInput`, macOS HID `CGEvent`): [docs/hardening.md](../../../../docs/hardening.md).
+OS research (Windows `SendInput` done; next Mac flake path is HID `CGEvent`): [docs/hardening.md](../../../../docs/hardening.md).
 
-**Windows focus lock.** The Alt+1/3 / Ctrl+V / Enter keys are unchanged. Before those keys, the driver finds the ChatGPT desktop HWND (process + top-level window, not a title-only guess), brings it foreground, and checks `GetForegroundWindow`. If ChatGPT is missing or never actually focused, it **aborts** — it will not paste into whatever you were using. Retries are for focus only, never a second paste. After Enter, it restores the previous window. `LOB_FOCUS_RETRIES` (default 4) and `LOB_FOCUS_RETRY_MS` (default 40). `--debug` or `LOB_DEBUG=1` logs HWNDs and each step.
+**Windows focus lock.** Before Alt+1/3 / Ctrl+V / Enter, the driver finds the ChatGPT desktop HWND (process + top-level window, not a title-only guess), brings it foreground, and checks `GetForegroundWindow`. Chords are an atomic `SendInput` array with key-up, from STA PowerShell — not `SendKeys` (that leaves Alt stuck). If ChatGPT is missing or never actually focused, it **aborts** — it will not paste into whatever you were using. Retries are for focus only, never a second paste. After Enter, it restores the previous window. `LOB_FOCUS_RETRIES` (default 4) and `LOB_FOCUS_RETRY_MS` (default 40). `--debug` or `LOB_DEBUG=1` logs HWNDs and each step.
+
+**macOS focus lock.** `AXRaise` the named ChatGPT window, then poll `frontmost` instead of hoping a fixed delay is enough (`activate` returns before the app is front). Abort `FOCUS_LOST` before Control+1/3, ⌘V, or Enter if ChatGPT is not actually front. Clipboard is set before the focus steal. Paste stays clipboard + ⌘V.
 
 **Focus bursts, not a held window.** A send steals ChatGPT for ~1s (focus → paste → Enter → restore). Chat and Codex keep generating while unfocused. Codex completion is `.lob/executed.json` (no focus). Chat’s reply is `.lob/last-reply.json` via MCP `submit_c2c` — not Select-All scrape. The loop does not sit on ChatGPT waiting for generation.
 

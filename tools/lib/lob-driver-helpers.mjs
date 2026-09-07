@@ -8,7 +8,7 @@ export const TIMING_DEFAULTS = {
   mode_settle_ms: 350,
   paste_ms: 120,
   enter_ms: 250,
-  /** Windows: retries around GetForegroundWindow, not around resending the paste. */
+  /** Focus poll: Windows GetForegroundWindow; macOS frontmost. Never retry paste. */
   focus_retries: 4,
   focus_retry_ms: 40,
 };

@@ -36,9 +36,9 @@
 
 ## Driver reports `ok: true` but nothing happened in ChatGPT
 
-**Cause:** The driver fired keystrokes; it does not prove ChatGPT accepted them. Common misses: wrong window focused, composer not focused, clipboard mismatch (payload did not round-trip), wrong Chat/Codex thread, Accessibility denied (macOS), or on Windows ChatGPT never received foreground (driver returns `FOCUS_LOST` and does **not** send Ctrl+V).
+**Cause:** The driver fired keystrokes; it does not prove ChatGPT accepted them. Common misses: wrong window focused, composer not focused, clipboard mismatch (payload did not round-trip), wrong Chat/Codex thread, Accessibility denied (macOS), or ChatGPT never received foreground (driver returns `FOCUS_LOST` and does **not** send ⌘V / Ctrl+V).
 
-**Fix:** Click the intended thread so the composer is active. Grant Accessibility (macOS). Retry. Confirm by the next `[C2C]` **STATE** or `.lob/executed.json` — not `ok: true` alone. After paste the driver restores the previous front app — that is expected. On Windows, keep ChatGPT running (minimized is ok; the driver restores it). If you get `FOCUS_LOST`, retry; do not paste by hand into the wrong app. `LOB_DEBUG=1` prints the HWND log.
+**Fix:** Click the intended thread so the composer is active. Grant Accessibility (macOS). Retry. Confirm by the next `[C2C]` **STATE** or `.lob/executed.json` — not `ok: true` alone. After paste the driver restores the previous front app — that is expected. Keep ChatGPT running (minimized is ok; the driver restores it). If you get `FOCUS_LOST`, retry; do not paste by hand into the wrong app. `LOB_DEBUG=1` prints the Windows HWND log.
 
 ## Auto-loop returns `NO_REPLY` or never sees Chat’s PLAN
 
@@ -55,7 +55,7 @@ Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
 
 ## Slow machine — paste lands wrong or mode switch races
 
-**Fix:** Raise timing env vars (defaults): `LOB_FOCUS_MS`, `LOB_MODE_SETTLE_MS`, `LOB_PASTE_MS`, `LOB_ENTER_MS`. Windows focus retries: `LOB_FOCUS_RETRIES`, `LOB_FOCUS_RETRY_MS`. Same keys may live in `lob.config.json` or `.lob/config.json`.
+**Fix:** Raise timing env vars (defaults): `LOB_FOCUS_MS`, `LOB_MODE_SETTLE_MS`, `LOB_PASTE_MS`, `LOB_ENTER_MS`. Focus retries (Windows `GetForegroundWindow` / macOS `frontmost` poll): `LOB_FOCUS_RETRIES`, `LOB_FOCUS_RETRY_MS`. Same keys may live in `lob.config.json` or `.lob/config.json`.
 
 ## Mode verify / OCR (stuck path only)
 

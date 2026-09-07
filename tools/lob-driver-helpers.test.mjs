@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Tiny unit tests for driver helpers — no osascript / SendKeys. */
+/** Tiny unit tests for driver helpers — no osascript / SendInput. */
 import assert from "node:assert/strict";
 import {
   resolveTiming,
