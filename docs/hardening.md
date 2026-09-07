@@ -28,13 +28,15 @@ goal repo.
 
 Windows (`tools/lob-driver.mjs`): find ChatGPT HWND by process + top-level
 window, `GetForegroundWindow` verify, `FOCUS_LOST` abort, restore previous
-HWND after Enter. `--debug` / `LOB_DEBUG=1`. Focus retries:
-`LOB_FOCUS_RETRIES` / `LOB_FOCUS_RETRY_MS`.
+HWND after Enter. Keys are an atomic `SendInput` array (Alt+1/3 with
+key-up, Ctrl+V, Enter) from STA PowerShell (`-STA`). `--debug` /
+`LOB_DEBUG=1`. Focus retries: `LOB_FOCUS_RETRIES` / `LOB_FOCUS_RETRY_MS`.
+`SendKeys` is gone — it leaves Alt stuck.
 
-Mac: JXA System Events, `frontmost = true`, delay, `assertFront` before
-⌘V, restore previous app. Accessibility required or osascript errors.
-
-Clipboard is set **before** the focus steal so the locked burst is only keys.
+Mac: JXA System Events, `AXRaise` the named ChatGPT window, poll
+`frontmost` (abort `FOCUS_LOST`) before Control+1/3, ⌘V, or Enter.
+Clipboard is set **before** the focus steal so the locked burst is only
+keys. Accessibility required or osascript errors.
 
 ## Windows (what the auto-type people actually do)
 
@@ -78,8 +80,12 @@ MSDN: `SendInput` does **not** clear keys the user is holding — check
 
 **Next on Windows (in order)**
 
-1. Replace `SendKeys` with an atomic `SendInput` array: Alt+1/3 (with
-   key-up), Ctrl+V, Enter. STA PowerShell. Same macro.
+1. ~~Replace `SendKeys` with an atomic `SendInput` array: Alt+1/3 (with
+   key-up), Ctrl+V, Enter. STA PowerShell. Same macro.~~ **Done.** Safety
+   abort (`FOCUS_LOST`) is clearly good. Unattended Windows is still
+   **unproven** until a real `send --mode chat "ping" --debug` with another
+   window focused — Node-spawned PowerShell often has no foreground
+   permission (Chen).
 2. If focus still fails from Node, a tiny always-running helper that owns a
    `RegisterHotKey`.
 3. Refuse `EXECUTED` unless `.lob/executed.json` is in `--path` (cwd trap is
@@ -119,9 +125,10 @@ not. Do not bet the happy path on it.
 
 **Next on Mac (in order)**
 
-1. Poll frontmost (abort `FOCUS_LOST`) before Control+1/3 or ⌘V. AXRaise the
-   named ChatGPT window.
-2. Keep clipboard + ⌘V. Do not type the `[C2C]` body.
+1. ~~Poll frontmost (abort `FOCUS_LOST`) before Control+1/3 or ⌘V. AXRaise the
+   named ChatGPT window.~~ **Done.** Same abort as Windows: if ChatGPT is
+   not actually front, do not send the chord.
+2. Keep clipboard + ⌘V. Do not type the `[C2C]` body. (Already true.)
 3. If paste still flakes, HID `CGEvent` with correct modifier flags.
 
 Do not pile more AX walking onto Electron. The tree is a black box unless

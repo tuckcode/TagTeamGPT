@@ -20,8 +20,9 @@
 // The user talks in Cursor. Paste must steal ChatGPT focus and abort
 // (FOCUS_LOST) if Cursor is still frontmost at Cmd+V / Ctrl+V.
 // Windows: find ChatGPT HWND, verify GetForegroundWindow, then the same
-// Alt+tab / Ctrl+V / Enter macro, then restore. Never send keys if focus
-// is not proven. No PostMessage background injection (Electron drops it).
+// Alt+tab / Ctrl+V / Enter macro via SendInput (STA), then restore. Never
+// send keys if focus is not proven. No PostMessage background injection
+// (Electron drops it). SendKeys is gone — it leaves Alt stuck.
 // Happy path does not scan the window (no AX mode walk). Generation
 // continues unfocused after Enter; only paste/read need a short burst.
 
@@ -131,14 +132,35 @@ function runInChatGPTMac(inner) {
         try { Application(prev).activate(); } catch (e) {}
       }
     }
-    function assertFront() {
-      p.frontmost = true;
-      delay(${sec(TIMING.focus_ms)});
-      let name = '';
+    function frontName() {
       try {
         const fp = se.applicationProcesses.whose({ frontmost: true });
-        if (fp.length) name = String(fp[0].name());
+        if (fp.length) return String(fp[0].name());
       } catch (e) {}
+      return '';
+    }
+    function raiseWin() {
+      try { win.actions.byName('AXRaise').perform(); } catch (e) {}
+      try { p.frontmost = true; } catch (e) {}
+    }
+    function ensureFront() {
+      raiseWin();
+      let name = frontName();
+      if (name === ${JSON.stringify(APP)}) return;
+      const slice = ${sec(TIMING.focus_retry_ms)};
+      const budget = ${sec(TIMING.focus_ms)};
+      let waited = 0;
+      while (waited < budget) {
+        raiseWin();
+        delay(slice);
+        waited += slice;
+        name = frontName();
+        if (name === ${JSON.stringify(APP)}) return;
+      }
+      throw new Error('FOCUS_LOST:' + name);
+    }
+    function assertFront() {
+      const name = frontName();
       if (name !== ${JSON.stringify(APP)}) throw new Error('FOCUS_LOST:' + name);
     }
     function focusComposer(root) {
@@ -290,8 +312,8 @@ function pressModeKeyMac(key) {
   try {
     runInChatGPTMac(`
       const prev = prevApp();
-      p.frontmost = true;
-      delay(${sec(TIMING.focus_ms)});
+      ensureFront();
+      assertFront();
       se.keystroke(${JSON.stringify(key)}, { using: ['control down'] });
       delay(${sec(TIMING.mode_settle_ms)});
       restore(prev);
@@ -312,16 +334,13 @@ function modeThenPasteMac(key, text, settleMs = TIMING.mode_settle_ms) {
     key == null
       ? ""
       : `
+      assertFront();
       se.keystroke(${JSON.stringify(String(key))}, { using: ['control down'] });
       delay(${sec(settleMs)});
 `;
   try {
     runInChatGPTMac(`
       const prev = prevApp();
-      p.frontmost = true;
-      delay(${sec(TIMING.focus_ms)});
-      ${hotkey}
-      try { focusComposer(win); } catch (e) {}
       const app = Application.currentApplication();
       app.includeStandardAdditions = true;
       const payload = ${JSON.stringify(text)};
@@ -331,9 +350,13 @@ function modeThenPasteMac(key, text, settleMs = TIMING.mode_settle_ms) {
       try { got = String(app.theClipboard()); } catch (e) {}
       function norm(s) { return String(s).replace(/\\r\\n/g, '\\n'); }
       if (norm(got) !== norm(payload)) throw new Error('CLIPBOARD_MISMATCH');
+      ensureFront();
+      ${hotkey}
+      try { focusComposer(win); } catch (e) {}
       assertFront();
       se.keystroke('v', { using: ['command down'] });
       delay(${sec(TIMING.enter_ms)});
+      assertFront();
       se.keyCode(36);
       delay(${sec(TIMING.enter_ms)});
       restore(prev);
@@ -349,8 +372,7 @@ function enterMac() {
   try {
     runInChatGPTMac(`
       const prev = prevApp();
-      p.frontmost = true;
-      delay(${sec(TIMING.focus_ms)});
+      ensureFront();
       try { focusComposer(win); } catch (e) {}
       assertFront();
       se.keyCode(36);
@@ -418,7 +440,7 @@ function readModeOcrMac() {
   }
 }
 
-// ─── Windows (PowerShell + SendKeys + UIA) ─────────────────────────────────
+// ─── Windows (PowerShell + SendInput + UIA) ────────────────────────────────
 
 function winDebugOn() {
   return process.env.LOB_DEBUG === "1" || process.argv.includes("--debug");
@@ -457,7 +479,7 @@ function classifyWinError(msg, parsed) {
         "ChatGPT was not frontmost at paste time — aborted so this did not land in Cursor. Retry the send; you can keep talking here after it finishes.",
       ...extra,
     };
-  if (/access is denied|UIAccess|SendKeys/i.test(m))
+  if (/access is denied|UIAccess|SendKeys|SendInput/i.test(m))
     return {
       ok: false,
       code: "NO_ACCESSIBILITY",
@@ -485,7 +507,7 @@ function runPowerShell(script, { clipText, timeout = 30_000 } = {}) {
     fs.writeFileSync(ps1, body, "utf8");
     const r = spawnSync(
       "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", ps1],
+      ["-NoProfile", "-NonInteractive", "-STA", "-ExecutionPolicy", "Bypass", "-File", ps1],
       { encoding: "utf8", timeout, windowsHide: true }
     );
     const mixed = `${r.stdout || ""}\n${r.stderr || ""}`.trim();
@@ -534,6 +556,69 @@ public class TagTeamWin {
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+  [DllImport("user32.dll", SetLastError = true)] public static extern uint SendInput(uint nInputs, [In] INPUT[] pInputs, int cbSize);
+  [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int vKey);
+  public const uint INPUT_KEYBOARD = 1;
+  public const uint KEYEVENTF_KEYUP = 2;
+  public const ushort VK_SHIFT = 0x10;
+  public const ushort VK_CONTROL = 0x11;
+  public const ushort VK_MENU = 0x12;
+  public const ushort VK_RETURN = 0x0D;
+  public const ushort VK_LWIN = 0x5B;
+  public const ushort VK_RWIN = 0x5C;
+  public const ushort VK_V = 0x56;
+  [StructLayout(LayoutKind.Sequential)]
+  public struct INPUT { public uint type; public InputUnion U; }
+  [StructLayout(LayoutKind.Explicit)]
+  public struct InputUnion {
+    [FieldOffset(0)] public MOUSEINPUT mi;
+    [FieldOffset(0)] public KEYBDINPUT ki;
+    [FieldOffset(0)] public HARDWAREINPUT hi;
+  }
+  [StructLayout(LayoutKind.Sequential)]
+  public struct MOUSEINPUT {
+    public int dx; public int dy; public uint mouseData; public uint dwFlags; public uint time; public IntPtr dwExtraInfo;
+  }
+  [StructLayout(LayoutKind.Sequential)]
+  public struct KEYBDINPUT {
+    public ushort wVk; public ushort wScan; public uint dwFlags; public uint time; public IntPtr dwExtraInfo;
+  }
+  [StructLayout(LayoutKind.Sequential)]
+  public struct HARDWAREINPUT { public uint uMsg; public ushort wParamL; public ushort wParamH; }
+  static INPUT Key(ushort vk, uint flags) {
+    KEYBDINPUT ki = new KEYBDINPUT();
+    ki.wVk = vk;
+    ki.dwFlags = flags;
+    InputUnion u = new InputUnion();
+    u.ki = ki;
+    INPUT i = new INPUT();
+    i.type = INPUT_KEYBOARD;
+    i.U = u;
+    return i;
+  }
+  public static bool SendChord(int[] keys) {
+    if (keys == null || keys.Length == 0) return false;
+    int n = keys.Length * 2;
+    INPUT[] inputs = new INPUT[n];
+    int i = 0;
+    for (int k = 0; k < keys.Length; k++) inputs[i++] = Key((ushort)keys[k], 0);
+    for (int k = keys.Length - 1; k >= 0; k--) inputs[i++] = Key((ushort)keys[k], KEYEVENTF_KEYUP);
+    uint sent = SendInput((uint)n, inputs, Marshal.SizeOf(typeof(INPUT)));
+    return sent == (uint)n;
+  }
+  public static void ReleaseModifiers() {
+    ushort[] mods = new ushort[] { VK_MENU, VK_CONTROL, VK_SHIFT, VK_LWIN, VK_RWIN };
+    INPUT[] inputs = new INPUT[mods.Length];
+    for (int i = 0; i < mods.Length; i++) inputs[i] = Key(mods[i], KEYEVENTF_KEYUP);
+    SendInput((uint)mods.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+  }
+  public static bool ModifierHeld() {
+    int[] vks = new int[] { VK_SHIFT, VK_CONTROL, VK_MENU, VK_LWIN, VK_RWIN };
+    for (int i = 0; i < vks.Length; i++) {
+      if ((GetAsyncKeyState(vks[i]) & 0x8000) != 0) return true;
+    }
+    return false;
+  }
   public static List<long> Acc = new List<long>();
   public static bool EnumCb(IntPtr hWnd, IntPtr lParam) {
     Acc.Add(hWnd.ToInt64());
@@ -565,10 +650,22 @@ $script:WinLog = [ordered]@{
   paste_sent = $false
   enter_sent = $false
   restored = $false
+  injector = 'SendInput'
+  sta = [string][System.Threading.Thread]::CurrentThread.GetApartmentState()
   failure = $null
 }
 function Dbg([string]$msg) {
   if ($env:LOB_DEBUG -eq '1') { [Console]::Error.WriteLine("win-focus: $msg") }
+}
+function Send-TTChord([int[]]$keys) {
+  if ([TagTeamWin]::ModifierHeld()) {
+    Dbg 'modifier held; waiting'
+    Start-Sleep -Milliseconds ${retryMs}
+  }
+  [TagTeamWin]::ReleaseModifiers()
+  $ok = [TagTeamWin]::SendChord($keys)
+  Dbg ('SendInput chord=' + ($keys -join ',') + ' ok=' + $ok)
+  if (-not $ok) { throw 'WIN_ERROR' }
 }
 function HwndId([IntPtr]$h) {
   if ($h -eq [IntPtr]::Zero) { return 0 }
@@ -803,11 +900,12 @@ if ($found) { $script:WinLog.mode_raw = $found } else { $script:WinLog.mode_raw 
 }
 
 function pressModeKeyWin(key) {
+  const digit = String(key).charCodeAt(0);
   return runWinOp(`
 ${winAcquireBlock()}
 $script:WinLog.tab_shortcut = 'Alt+${key}'
 Dbg $script:WinLog.tab_shortcut
-[System.Windows.Forms.SendKeys]::SendWait('%${key}')
+Send-TTChord @([TagTeamWin]::VK_MENU, [ushort]${digit})
 Start-Sleep -Milliseconds ${TIMING.mode_settle_ms}
 `);
 }
@@ -817,13 +915,14 @@ function pasteAndEnterWin(text) {
 }
 
 function modeThenPasteWin(key, text, settleMs = TIMING.mode_settle_ms) {
+  const digit = key == null ? 0 : String(key).charCodeAt(0);
   const hotkey =
     key == null
       ? ""
       : `
 $script:WinLog.tab_shortcut = 'Alt+${key}'
 Dbg $script:WinLog.tab_shortcut
-[System.Windows.Forms.SendKeys]::SendWait('%${key}')
+Send-TTChord @([TagTeamWin]::VK_MENU, [ushort]${digit})
 Start-Sleep -Milliseconds ${settleMs}
 if (-not (Test-ChatGPTForeground $hwnd)) { throw 'FOCUS_LOST' }
 `;
@@ -837,12 +936,12 @@ $b = ($got -replace "\`r\`n","\`n")
 if ($a -ne $b) { throw 'CLIPBOARD_MISMATCH' }
 ${winAcquireBlock()}
 ${hotkey}if (-not (Test-ChatGPTForeground $hwnd)) { throw 'FOCUS_LOST' }
-[System.Windows.Forms.SendKeys]::SendWait('^v')
+Send-TTChord @([TagTeamWin]::VK_CONTROL, [TagTeamWin]::VK_V)
 $script:WinLog.paste_sent = $true
 Dbg 'paste_sent'
 Start-Sleep -Milliseconds ${TIMING.paste_ms}
 if (-not (Test-ChatGPTForeground $hwnd)) { throw 'FOCUS_LOST' }
-[System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+Send-TTChord @([TagTeamWin]::VK_RETURN)
 $script:WinLog.enter_sent = $true
 Dbg 'enter_sent'
 Start-Sleep -Milliseconds ${TIMING.enter_ms}
@@ -855,7 +954,7 @@ function enterWin() {
   return runWinOp(`
 ${winAcquireBlock()}
 if (-not (Test-ChatGPTForeground $hwnd)) { throw 'FOCUS_LOST' }
-[System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+Send-TTChord @([TagTeamWin]::VK_RETURN)
 $script:WinLog.enter_sent = $true
 Dbg 'enter_sent'
 Start-Sleep -Milliseconds ${TIMING.enter_ms}

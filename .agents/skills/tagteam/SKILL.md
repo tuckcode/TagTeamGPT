@@ -72,7 +72,7 @@ Remappable in Settings → Keyboard Shortcuts. If flaky, tell the user to remap.
 ## v1 driver (macOS + Windows)
 
 From the repo root (ChatGPT desktop running). macOS needs Accessibility for the
-shell; Windows verifies ChatGPT HWND focus, then PowerShell SendKeys.
+shell; Windows verifies ChatGPT HWND focus, then STA PowerShell `SendInput`.
 
 ```bash
 node tools/lob-driver.mjs chat-send "$(cat <<'EOF'
