@@ -1,7 +1,0 @@
-interface:
-  display_name: "Lob"
-  short_description: "Chat lobs. Codex dunks — desktop paste-back loop"
-  default_prompt: "Use Lob to "
-
-policy:
-  allow_implicit_invocation: true

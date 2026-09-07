@@ -1,8 +1,8 @@
-# Install Lob
+# Install TagTeamGPT
 
 Goal: get the skill into **ChatGPT desktop Codex**, then set up Chat and Codex the right way.
 
-The product is **Lob**. Invoke with `$lob`. Clone: `tuckcode/lob`.
+The product is **TagTeamGPT**. Invoke with `$tagteam`. Clone: `tuckcode/TagTeamGPT`.
 
 ## What you need
 
@@ -13,11 +13,11 @@ The product is **Lob**. Invoke with `$lob`. Clone: `tuckcode/lob`.
 ## 1. Get the code
 
 ```bash
-git clone https://github.com/tuckcode/lob.git
-cd lob
+git clone https://github.com/tuckcode/TagTeamGPT.git
+cd TagTeamGPT
 ```
 
-If the repo lives in a nested folder on your machine, `cd` into the package that contains `.agents/skills/lob`.
+If the repo lives in a nested folder on your machine, `cd` into the package that contains `.agents/skills/tagteam`.
 
 ## 2. Install the skill
 
@@ -33,22 +33,22 @@ Pick one:
 
 ```bash
 mkdir -p ~/.agents/skills
-cp -R .agents/skills/lob ~/.agents/skills/lob
+cp -R .agents/skills/tagteam ~/.agents/skills/tagteam
 ```
 
-Restart Codex or reopen the project if `$lob` does not appear.
+Restart Codex or reopen the project if `$tagteam` does not appear.
 
-If you previously copied `$codexgpt`, delete `~/.agents/skills/codexgpt` and copy `.agents/skills/lob` instead.
+If you previously copied `$codexgpt` or `$lob`, delete those skill folders and copy `.agents/skills/tagteam` instead.
 
 ### Invoke
 
 In a **Codex** composer, type:
 
 ```text
-$lob
+$tagteam
 ```
 
-or say: `Use Lob to …`
+or say: `Use TagTeamGPT to …`
 
 > Note: `$` is ChatGPT **Codex** skill syntax. Cursor’s `/` picker is a different system.
 
@@ -79,7 +79,7 @@ Remap in Settings → Keyboard Shortcuts if needed.
 
 **Do not re-press Chat’s shortcut when you are already in Chat** — on macOS `Control+1` can open **New chat** and abandon your pinned planner thread.
 
-**Mode ≠ project.** `Control+3` / `Alt+3` only flips the Codex tab. Bind the folder with `--path` (or `$lob` path + goal). Do not click the sidebar every hop. The folder must already be a Codex project from install.
+**Mode ≠ project.** `Control+3` / `Alt+3` only flips the Codex tab. Bind the folder with `--path` (or `$tagteam` path + goal). Do not click the sidebar every hop. The folder must already be a Codex project from install.
 
 ## 4. Optional: keystroke driver (macOS + Windows)
 
@@ -108,7 +108,7 @@ See [mcp/README.md](../mcp/README.md) and `node tools/lob-mcp-up.mjs start`.
 
 ## Sanity check
 
-1. Codex: `$lob` is recognized.
+1. Codex: `$tagteam` is recognized.
 2. Chat: cloud thread, no folder banner.
 3. Codex: sidebar shows **this goal’s** mounted folder; `pwd` is your real git root (not `~/Documents/Codex/…` snapshot).
 4. Hotkeys flip Chat ↔ Codex.

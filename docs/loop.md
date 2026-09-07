@@ -1,4 +1,4 @@
-# Lob loop
+# TagTeamGPT loop
 
 Run the happy path from the repository root:
 

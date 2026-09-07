@@ -12,11 +12,11 @@ Primary users: developers who already use the ChatGPT desktop app with Codex and
 
 ## Product Purpose
 
-**Lob** is a desktop-first take on “Chat lobs. Codex dunks.”: a Codex Skill plus a short `[C2C]` paste-back protocol that uses ChatGPT desktop mode keybinds and the clipboard as the control plane.
+**TagTeamGPT** is a desktop-first take on “They switch. The goal doesn't.”: a Codex Skill plus a short `[C2C]` paste-back protocol that uses ChatGPT desktop mode keybinds and the clipboard as the control plane.
 
 This repo also ships a Next.js explainer site that teaches the approach, install path, and loop.
 
-Success means: someone can understand the idea, install `$lob`, and run the Chat ↔ Codex loop without Work as the planner and without nested browser automation.
+Success means: someone can understand the idea, install `$tagteam`, and run the Chat ↔ Codex loop without Work as the planner and without nested browser automation.
 
 ## Positioning
 
@@ -31,10 +31,10 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 - **Local folder projects do not support Chat.** Chat stays a cloud thread with
   no local folder; mount the **goal repo** only in Codex. Watch for the banner
   “Local projects don't support Chat.”
-- Invoke skill with `$lob` or “Use Lob to …”.
-- Protocol lives in `.agents/skills/lob/references/protocol.md`.
+- Invoke skill with `$tagteam` or “Use TagTeamGPT to …”.
+- Protocol lives in `.agents/skills/tagteam/references/protocol.md`.
 - Explainer site: `pnpm dev` → http://127.0.0.1:43127.
-- Public GitHub: tuckcode/lob. Cursor Origin codebase: knispo/codexgpt.
+- Public GitHub: tuckcode/TagTeamGPT. Cursor Origin codebase: knispo/codexgpt.
 
 ## Capabilities and Constraints
 
@@ -51,20 +51,20 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 
 ## Brand Commitments
 
-- Name: **Lob**
-- Tagline: **Chat lobs. Codex dunks.**
-- Skill: **`$lob`**
-- Repo: `tuckcode/lob`
+- Name: **TagTeamGPT**
+- Tagline: **They switch. The goal doesn't.**
+- Skill: **`$tagteam`**
+- Repo: `tuckcode/TagTeamGPT`
 - Voice: direct, technical, personal (“my take”); do not claim OpenAI affiliation.
 - Binding references when credited: XiaoDuoYa/codex-with-chatgpt.
 
 ## Evidence on Hand
 
-- Skill package: `.agents/skills/lob/`
+- Skill package: `.agents/skills/tagteam/`
 - Approach notes: `docs/approach.md`
 - Explainer UI: `src/`
 - Upstream inspiration: https://github.com/XiaoDuoYa/codex-with-chatgpt
-- Public GitHub: https://github.com/tuckcode/lob
+- Public GitHub: https://github.com/tuckcode/TagTeamGPT
 - Origin browse: https://cursor.com/codebase/knispo/codexgpt
 - No fabricated testimonials, customers, or benchmarks — do not invent them.
 

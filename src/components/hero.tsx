@@ -14,9 +14,9 @@ export function Hero() {
           <Badge variant="outline">Desktop app take</Badge>
         </div>
         <h1 className="font-heading mt-6 max-w-3xl text-5xl leading-[1.05] tracking-tight sm:text-7xl">
-          Chat lobs.
+          They switch.
           <br />
-          <span className="italic text-primary">Codex dunks.</span>
+          <span className="italic text-primary">The goal doesn&apos;t.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
           My take on the split-brain idea from{" "}

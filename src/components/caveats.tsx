@@ -14,7 +14,7 @@ export function Caveats() {
             Upstream bridge/Skill remain theirs. This repo ships a desktop
             Skill at{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-              .agents/skills/lob
+              .agents/skills/tagteam
             </code>
             .
           </li>

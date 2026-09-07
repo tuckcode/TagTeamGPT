@@ -18,7 +18,7 @@ One **pinned Chat thread** per goal. Do not open New chat between INIT / PLAN / 
 Mount the **goal repo** only under **Codex**. Banner: “Local projects don't support Chat.”
 
 **Mode ≠ project.** `⌃3` / `Alt+3` only flips the tab. Bind the repo with
-`--path` on the loop (or `$lob` path + goal). Do not click the sidebar every hop.
+`--path` on the loop (or `$tagteam` path + goal). Do not click the sidebar every hop.
 
 ## Send (blind keystrokes)
 

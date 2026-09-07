@@ -1,13 +1,13 @@
-# Lob docs
+# TagTeamGPT docs
 
-Friendly guides for installing and using **Lob** with the **ChatGPT desktop app**.
+Friendly guides for installing and using **TagTeamGPT** with the **ChatGPT desktop app**.
 
-Invoke in Codex with `$lob`. GitHub: `tuckcode/lob`.
+Invoke in Codex with `$tagteam`. GitHub: `tuckcode/TagTeamGPT`.
 
 | Doc | What it covers |
 | --- | --- |
 | [Install](install.md) | Clone, install the skill, wire Chat + Codex correctly |
-| [Usage](usage.md) | Day-to-day loop: `$lob`, `--goal` / `--path`, driver |
+| [Usage](usage.md) | Day-to-day loop: `$tagteam`, `--goal` / `--path`, driver |
 | [Loop](loop.md) | The complete Chat-to-Codex loop |
 | [Troubleshooting](troubleshooting.md) | Common gotchas (Work mode, folder banner, wrong cwd) |
 | [Approach](approach.md) | Design notes vs upstream Codex-with-ChatGPT |
