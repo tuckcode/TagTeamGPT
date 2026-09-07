@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // Best-effort read of the latest [C2C] STATE from ChatGPT desktop.
-// Happy path: --grab (brief focus + copy). AX scrape is slow and often empty.
+// Do not Select All the thread (that highlights the prompt + reply and
+// steals the next paste). Copy is last-reply.json or a single Cmd+C.
 //
-//   node tools/lob-read-reply.mjs --grab
 //   node tools/lob-read-reply.mjs
-//   → {"ok":true,"state":"PLAN","task_id":"c2c_…","snippet":"…"}
+//   node tools/lob-read-reply.mjs --grab   # Cmd+C only, no Cmd+A
 //
 // Windows: UIA dump is best-effort; if empty, returns NO_STATE (loop still
 // polls .lob/last-reply.json). Hint:
@@ -38,9 +38,7 @@ function grabMac() {
       if (fp.length) prev = String(fp[0].name());
     } catch (e) {}
     p.frontmost = true;
-    delay(0.15);
-    se.keystroke('a', { using: ['command down'] });
-    delay(0.05);
+    delay(0.2);
     se.keystroke('c', { using: ['command down'] });
     delay(0.12);
     if (prev && prev !== ${JSON.stringify(APP)}) {
@@ -60,6 +58,24 @@ function persistReply(parsed) {
     JSON.stringify({ ok: true, state: parsed.state, task_id: parsed.task_id, snippet: parsed.snippet }, null, 2) +
       "\n"
   );
+}
+
+function peekPersistedReply() {
+  const p = path.join(STATE_DIR, "last-reply.json");
+  if (!fs.existsSync(p)) return null;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(p, "utf8"));
+    if (parsed && parsed.state) return { ok: true, ...parsed, _from_file: true };
+  } catch {
+    /* never invent PLAN */
+  }
+  return null;
+}
+
+function emptyHint() {
+  return PLATFORM === "win32"
+    ? "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard"
+    : "pbpaste | node tools/lob-write-reply.mjs --from-clipboard";
 }
 
 function classifyMac(e) {
@@ -159,15 +175,11 @@ try {
 function parseC2C(text) {
   const states = [...String(text || "").matchAll(/STATE:\s*(INIT|PLAN|EXECUTED|DONE|BLOCKED|READY)/gi)];
   if (!states.length) {
-    const hint =
-      PLATFORM === "win32"
-        ? "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard"
-        : "pbpaste | node tools/lob-write-reply.mjs --from-clipboard";
     return {
       ok: false,
       code: "NO_STATE",
       detail: "No C2C STATE found in accessibility text",
-      hint,
+      hint: emptyHint(),
     };
   }
   const last = states[states.length - 1];
@@ -203,9 +215,23 @@ try {
   }
   const parsed = parseC2C(text);
   if (parsed.ok) persistReply(parsed);
+  if (!parsed.ok) {
+    const persisted = peekPersistedReply();
+    if (persisted) {
+      console.log(JSON.stringify({ ...persisted, via: "last-reply.json" }));
+      process.exitCode = 0;
+      process.exit();
+    }
+  }
   console.log(JSON.stringify(parsed));
   process.exitCode = parsed.ok ? 0 : 1;
 } catch (e) {
+  const persisted = peekPersistedReply();
+  if (persisted) {
+    console.log(JSON.stringify({ ...persisted, via: "last-reply.json" }));
+    process.exitCode = 0;
+    process.exit();
+  }
   if (PLATFORM === "darwin") {
     console.log(JSON.stringify(classifyMac(e)));
   } else if (/APP_NOT_RUNNING/.test(String(e.message || e))) {
@@ -216,7 +242,7 @@ try {
         ok: false,
         code: "NO_STATE",
         detail: String(e.message || e).slice(0, 300),
-        hint: "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard",
+        hint: emptyHint(),
       })
     );
   }

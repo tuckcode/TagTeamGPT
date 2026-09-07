@@ -32,19 +32,19 @@
 
 **Cause:** Chat’s mode hotkey can create a new chat when already in Chat.
 
-**Fix:** Stay on the pinned planner thread. Paste with `send` / `chat-send` without forcing the mode key.
+**Fix:** Stay on the pinned planner thread. Paste with `send` / `chat-send` without `--force-mode` unless you intend to fire the Chat hotkey (New chat risk).
 
 ## Driver reports `ok: true` but nothing happened in ChatGPT
 
 **Cause:** The driver fired keystrokes; it does not prove ChatGPT accepted them. Common misses: wrong window focused, composer not focused, clipboard mismatch (payload did not round-trip), wrong Chat/Codex thread, Accessibility denied (macOS), or on Windows the ChatGPT window is minimized / not foreground.
 
-**Fix:** Click the intended thread so the composer is active. Grant Accessibility (macOS). Retry. Confirm by the next `[C2C]` **STATE** or `.lob/executed.json` — not `ok: true` alone. On Windows, leave ChatGPT visible before running the driver.
+**Fix:** Click the intended thread so the composer is active. Grant Accessibility (macOS). Retry. Confirm by the next `[C2C]` **STATE** or `.lob/executed.json` — not `ok: true` alone. After paste the driver restores the previous front app (especially macOS) — that is expected. On Windows, leave ChatGPT visible before running the driver.
 
 ## Auto-loop returns `NO_REPLY` or never sees Chat’s PLAN
 
-**Cause:** Accessibility scrape of Electron UI often returns empty. The loop now copies the Chat thread twice (about 2s and 8s after send) instead of waiting 30s.
+**Cause:** The loop does not Select-All the Chat thread (Electron scrape is empty). It waits for Chat to call `submit_c2c`, which writes `.lob/last-reply.json`.
 
-**Fix:** If that still misses, copy Chat’s `[C2C]` reply, then:
+**Fix:** Attach the workspace MCP connector and tell Chat to call `submit_c2c` after PLAN/DONE. If that still misses, copy Chat’s `[C2C]` reply, then:
 
 ```bash
 # macOS
@@ -55,7 +55,7 @@ Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
 
 ## Slow machine — paste lands wrong or mode switch races
 
-**Fix:** Raise timing env vars (defaults): `LOB_FOCUS_MS`, `LOB_MODE_SETTLE_MS`, `LOB_PASTE_MS`, `LOB_ENTER_MS`. Same keys may live in `.lob/config.json`.
+**Fix:** Raise timing env vars (defaults): `LOB_FOCUS_MS`, `LOB_MODE_SETTLE_MS`, `LOB_PASTE_MS`, `LOB_ENTER_MS`. Same keys may live in `lob.config.json` or `.lob/config.json`.
 
 ## Mode verify / OCR (stuck path only)
 

@@ -31,6 +31,7 @@ import {
   resolveTiming,
   hasC2CPrefix,
   settleBackoffMs,
+  pasteSettleMs,
   ocrEnabled,
   parseModeLabel,
   modesMatch,
@@ -53,7 +54,7 @@ const CFG = loadConfig();
 const TIMING = resolveTiming(CFG);
 const OCR_ON = ocrEnabled(process.argv, process.env, CFG);
 
-let macModeCache = "";
+let macModeCache = { blob: "", path: [] };
 
 function sec(ms) {
   return (Number(ms) / 1000).toFixed(3);
@@ -87,10 +88,32 @@ function runInChatGPTMac(inner) {
         for (let w = 0; w < ws.length; w++) {
           let t = '';
           try { t = String(ws[w].name()); } catch (e) {}
+          let mini = false;
+          try { mini = !!ws[w].miniaturized(); } catch (e) {}
+          if (mini) continue;
           if (/ChatGPT|Codex|Chat|PLANNER/i.test(t)) { p = procs[i]; }
         }
       } catch (e) {}
     }
+    function pickWindow() {
+      let fallback = null;
+      try {
+        const ws = p.windows();
+        for (let w = 0; w < ws.length; w++) {
+          let t = '';
+          try { t = String(ws[w].name()); } catch (e) {}
+          let mini = false;
+          try { mini = !!ws[w].miniaturized(); } catch (e) {}
+          if (!fallback) fallback = ws[w];
+          if (mini) continue;
+          if (/ChatGPT|Codex|Chat|PLANNER/i.test(t)) return ws[w];
+        }
+      } catch (e) {}
+      return fallback;
+    }
+    const win = pickWindow();
+    if (!win) throw new Error('APP_NOT_RUNNING');
+    try { if (win.miniaturized()) win.miniaturized = false; } catch (e) {}
     function prevApp() {
       try {
         const fp = se.applicationProcesses.whose({ frontmost: true });
@@ -169,7 +192,8 @@ function classifyMacError(e) {
 }
 
 function readModeMac() {
-  const cache = JSON.stringify(macModeCache || "");
+  const cache = JSON.stringify(macModeCache.blob || "");
+  const cachedPath = JSON.stringify(macModeCache.path || []);
   try {
     const out = runInChatGPTMac(`
       function blob(el) {
@@ -185,33 +209,73 @@ function readModeMac() {
         } catch (e) {}
         return bits.join(' ');
       }
-      function findMode(root) {
-        const q = [{ el: root, d: 0 }];
-        let seen = 0;
+      function hit(b, path) {
         const cached = ${cache};
+        if (b.indexOf('current mode:') !== -1) return { blob: b, path: path };
+        if (cached && b.indexOf(cached) !== -1 && /ChatGPT|Chat|Work|Codex/i.test(b)) {
+          return { blob: b, path: path };
+        }
+        return null;
+      }
+      function atPath(root, path) {
+        if (!path || !path.length) return null;
+        let el = root;
+        for (let i = 0; i < path.length; i++) {
+          let kids = [];
+          try { kids = el.uiElements(); } catch (e) { return null; }
+          el = kids[path[i]];
+          if (!el) return null;
+        }
+        return hit(blob(el), path);
+      }
+      function findMode(root) {
+        const q = [{ el: root, d: 0, path: [] }];
+        let seen = 0;
         while (q.length && seen < 12000) {
-          const { el, d } = q.shift();
+          const { el, d, path } = q.shift();
           seen++;
-          const b = blob(el);
-          if (b.indexOf('current mode:') !== -1) return b;
-          if (cached && b.indexOf(cached) !== -1 && /ChatGPT|Chat|Work|Codex/i.test(b)) return b;
+          const got = hit(blob(el), path);
+          if (got) return got;
           if (d < 18) {
             let kids = [];
             try { kids = el.uiElements(); } catch (e) {}
-            for (let i = 0; i < kids.length; i++) q.push({ el: kids[i], d: d + 1 });
+            for (let i = 0; i < kids.length; i++) {
+              q.push({ el: kids[i], d: d + 1, path: path.concat([i]) });
+            }
           }
         }
         return null;
       }
+      function scan() {
+        const path = ${cachedPath};
+        let found = atPath(win, path);
+        if (found) return found;
+        found = findMode(win);
+        if (found) return found;
+        for (let w = 0; w < p.windows.length; w++) {
+          try {
+            if (p.windows[w].name() === String(win.name())) continue;
+          } catch (e) {}
+          found = findMode(p.windows[w]);
+          if (found) return found;
+        }
+        return null;
+      }
       p.frontmost = true;
-      let found = null;
-      for (let w = 0; w < p.windows.length && !found; w++) found = findMode(p.windows[w]);
+      let found = scan();
+      if (!found) {
+        delay(0.200);
+        p.frontmost = true;
+        found = scan();
+      }
       if (!found) throw new Error('MODE_ELEMENT_NOT_FOUND');
-      found;
+      JSON.stringify(found);
     `);
-    const mode = parseModeLabel(out) || "unknown";
-    macModeCache = out;
-    return { ok: true, mode, raw: out };
+    const parsed = JSON.parse(out);
+    const raw = parsed.blob || out;
+    const mode = parseModeLabel(raw) || "unknown";
+    macModeCache = { blob: raw, path: Array.isArray(parsed.path) ? parsed.path : [] };
+    return { ok: true, mode, raw };
   } catch (e) {
     return classifyMacError(e);
   }
@@ -238,13 +302,13 @@ function pasteAndEnterMac(text) {
   return modeThenPasteMac(null, text);
 }
 
-function modeThenPasteMac(key, text) {
+function modeThenPasteMac(key, text, settleMs = TIMING.mode_settle_ms) {
   const hotkey =
     key == null
       ? ""
       : `
       se.keystroke(${JSON.stringify(String(key))}, { using: ['control down'] });
-      delay(${sec(TIMING.mode_settle_ms)});
+      delay(${sec(settleMs)});
 `;
   try {
     runInChatGPTMac(`
@@ -252,6 +316,7 @@ function modeThenPasteMac(key, text) {
       p.frontmost = true;
       delay(${sec(TIMING.focus_ms)});
       ${hotkey}
+      try { focusComposer(win); } catch (e) {}
       const app = Application.currentApplication();
       app.includeStandardAdditions = true;
       const payload = ${JSON.stringify(text)};
@@ -259,7 +324,8 @@ function modeThenPasteMac(key, text) {
       delay(${sec(TIMING.paste_ms)});
       let got = '';
       try { got = String(app.theClipboard()); } catch (e) {}
-      if (got !== payload) throw new Error('CLIPBOARD_MISMATCH');
+      function norm(s) { return String(s).replace(/\\r\\n/g, '\\n'); }
+      if (norm(got) !== norm(payload)) throw new Error('CLIPBOARD_MISMATCH');
       assertFront();
       se.keystroke('v', { using: ['command down'] });
       delay(${sec(TIMING.enter_ms)});
@@ -280,7 +346,8 @@ function enterMac() {
       const prev = prevApp();
       p.frontmost = true;
       delay(${sec(TIMING.focus_ms)});
-      try { focusComposer(p.windows[0]); } catch (e) {}
+      try { focusComposer(win); } catch (e) {}
+      assertFront();
       se.keyCode(36);
       delay(${sec(TIMING.enter_ms)});
       restore(prev);
@@ -298,7 +365,7 @@ function readModeOcrMac() {
   try {
     const rect = JSON.parse(
       runInChatGPTMac(`
-        const w = p.windows[0];
+        const w = win;
         const pos = w.position();
         const sz = w.size();
         JSON.stringify({ x: pos[0], y: pos[1], w: sz[0], h: sz[1] });
@@ -573,11 +640,11 @@ function pasteAndEnterWin(text) {
   return modeThenPasteWin(null, text);
 }
 
-function modeThenPasteWin(key, text) {
+function modeThenPasteWin(key, text, settleMs = TIMING.mode_settle_ms) {
   const hotkey =
     key == null
       ? ""
-      : `[System.Windows.Forms.SendKeys]::SendWait('%${key}')\nStart-Sleep -Milliseconds ${TIMING.mode_settle_ms}\n`;
+      : `[System.Windows.Forms.SendKeys]::SendWait('%${key}')\nStart-Sleep -Milliseconds ${settleMs}\n`;
   try {
     runPowerShell(
       winPickFocus(true) +
@@ -611,6 +678,7 @@ function enterWin() {
     runPowerShell(
       winPickFocus(true) +
         `Focus-Composer\n` +
+        `if ([CodexGptWin]::GetForegroundWindow() -ne $hwnd) { throw 'FOCUS_LOST' }\n` +
         `[System.Windows.Forms.SendKeys]::SendWait('{ENTER}')\n` +
         `Restore-Prev\n` +
         `'ok'\n`
@@ -702,9 +770,9 @@ function pasteAndEnter(text) {
   return unsupportedPlatform();
 }
 
-function modeThenPaste(key, text) {
-  if (PLATFORM === "darwin") return modeThenPasteMac(key, text);
-  if (PLATFORM === "win32") return modeThenPasteWin(key, text);
+function modeThenPaste(key, text, settleMs = TIMING.mode_settle_ms) {
+  if (PLATFORM === "darwin") return modeThenPasteMac(key, text, settleMs);
+  if (PLATFORM === "win32") return modeThenPasteWin(key, text, settleMs);
   return unsupportedPlatform();
 }
 
@@ -880,7 +948,8 @@ async function switchAndSend(name, text, verify, { force = false, forceMode = fa
     force: forceMode,
   });
   const key = skip ? null : cfg.key;
-  const paste = modeThenPaste(key, text);
+  const settle = pasteSettleMs(TIMING, { verify, hotkey: key != null });
+  const paste = modeThenPaste(key, text, settle);
   if (!paste.ok) return { ...paste, caveat: CAVEAT, platform: PLATFORM };
 
   writeSession({ last_mode: cfg.want });

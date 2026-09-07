@@ -24,9 +24,10 @@ Invoke in ChatGPT desktop **Codex** with **`$lob`** — not Cursor’s `/` picke
    Fall back to v0 paste-back if the driver fails or OS blocks keystrokes.
 2. **Never** open nested `chatgpt.com`, hunt connector settings, or mouse-hunt
    the web ChatGPT UI. That is upstream C2C’s path, not this skill.
-3. **Connector is optional.** Default is paste-back `[C2C]` only. Do not require
-   tunnels/OAuth for v0/v1. Read-only workspace MCP (`mcp/`, v3) is for when
-   Chat should pull diffs/files itself. Rhizome mailbox is v2.
+3. **Connector is optional for review.** The auto-loop needs Chat to call
+   `submit_c2c` after PLAN/DONE so it can hop without copying. Paste-back still
+   works if the connector is off. Read-only repo tools stay as they were; this
+   one write is only `.lob/last-reply.json`. Rhizome mailbox is v2.
 4. **Never** use **Work** as the planning brain. Chat only.
 5. Keep every Codex→Chat control message under ~1 KB. No full diffs or file dumps.
 6. Prefer the keyboard workflow in `references/keyboard.md` (⌃1 / ⌃3 + clipboard).
@@ -85,11 +86,15 @@ node tools/lob-driver.mjs send --mode codex "execute this PLAN"
 
 `codex-send` / `send --mode codex` fire Control+3 / Alt+3 and paste in **one**
 step. Do not `to codex` then `send` later — that restores Cursor in between and
-can paste into Chat. `chat-send` / `codex-send` require `[C2C]`. `ok: true` =
-keys fired, not accepted. Do not re-press ⌃1 / Alt+1 when already in Chat.
+can paste into Chat. `chat-send` / `codex-send` require a payload starting with
+`[C2C]`; clipboard is set then read back before paste. `ok: true` = keys fired,
+not accepted (next `[C2C]` STATE or `.lob/executed.json`). After send the driver
+restores the previous front app. Do not re-press ⌃1 / Alt+1 when already in
+Chat; `--force-mode` only when you mean it (New chat risk).
 
 Timing defaults: `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`,
-`LOB_PASTE_MS=120`, `LOB_ENTER_MS=250` (or `.lob/config.json`).
+`LOB_PASTE_MS=120`, `LOB_ENTER_MS=250` (or `lob.config.json` /
+`.lob/config.json`).
 
 Add `--verify` only for optional mode read-back (Electron often opaque; Windows
 UIA best-effort). OCR/vision off by default — `LOB_OCR=1` or
@@ -105,7 +110,8 @@ node tools/lob-loop.mjs --goal "…" --path /path/to/repo --boot
 Give **goal** and **path** once. The loop hops Chat ↔ Codex after that.
 `--path` defaults to this repo if omitted. Overrides: `--no-codex` `--no-mailbox` `--no-memory`. Config: `lob.config.json` or `.lob/config.json`.
 
-Polls Chat for PLAN / DONE / BLOCKED. On PLAN writes `.lob/last-plan.md`
+Polls `.lob/last-reply.json` (Chat MCP `submit_c2c`) for PLAN / DONE / BLOCKED
+— not Select-All scrape of the Chat thread. On PLAN writes `.lob/last-plan.md`
 and (by default) pastes into **Codex**. Waits for `.lob/executed.json`,
 then EXECUTED back to the **same** Chat. DONE/BLOCKED → vault mailbox + memory.
 
@@ -116,10 +122,8 @@ DONE when 10 new notes **or** 14 days: `node tools/lob-mailbox-nudge.mjs`
 
 Do **not** open New chat between turns — one thread per goal.
 
-On Chat wait miss the loop tries one extra Enter, then `NO_REPLY`. Windows:
-if scrape is empty, copy reply → `Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard`.
-
-If the loop cannot see Chat text, dump replies yourself:
+On Chat wait miss the loop tries one extra Enter, then `NO_REPLY`. If
+`.lob/last-reply.json` never appears, dump the reply yourself:
 
 ```bash
 # copy Chat’s [C2C] reply, then:

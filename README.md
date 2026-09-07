@@ -4,7 +4,7 @@
 
 ![Lob loop](docs/lob-loop-diagram.png)
 
-*Placeholder diagram. Real dunk art later.*
+This is the current dunk poster.
 
 **Lob** is the product name. Invoke it in Codex with **`$lob`**. GitHub: `tuckcode/lob`.
 
@@ -49,6 +49,7 @@ Full walkthrough: **[docs/install.md](docs/install.md)** → **[docs/usage.md](d
 | --- | --- |
 | [Install](docs/install.md) | Skill install + Chat/Codex setup |
 | [Usage](docs/usage.md) | Manual loop, driver, auto-loop, MCP |
+| [Loop](docs/loop.md) | The complete Chat-to-Codex loop |
 | [Troubleshooting](docs/troubleshooting.md) | Folder banner, Work mode, cwd trap |
 | [Approach](docs/approach.md) | Design notes |
 | [MCP](mcp/README.md) | Optional read-only repo connector |

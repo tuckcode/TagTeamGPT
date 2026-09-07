@@ -10,6 +10,7 @@ import {
   searchWorkspace,
   gitStatus,
   gitDiff,
+  writeC2cReply,
 } from "./workspace.mjs";
 
 export function createServer(root = resolveRoot()) {
@@ -23,8 +24,8 @@ export function createServer(root = resolveRoot()) {
 • Modes (macOS): Control+1 Chat, Control+2 Work (avoid), Control+3 Codex. Win/Linux: Alt+1/2/3.
 • Loop: Chat receives [C2C] INIT → reply PLAN → human/driver Control+3 pastes PLAN into Codex → Codex works → Control+1 pastes [C2C] EXECUTED back into the same Chat → you reply DONE, PLAN, or BLOCKED.
 • Always reply with structured [C2C] STATE headers only for state changes. Keep messages tiny (~1KB). No full file dumps.
+• After every PLAN, DONE, BLOCKED, or READY, call submit_c2c with the full [C2C] message so the auto-loop can read .lob/last-reply.json. Do not wait for a human to copy.
 • After EXECUTED: prefer these tools (git_diff, read_file, git_status, workspace_info) over asking Codex to paste. Keep pulls small and paginated.
-• Humans dump your reply into the auto-loop via Chat’s copy control, then: pbpaste | node tools/lob-write-reply.mjs --from-clipboard (AX scrape is unreliable on Electron).
 • Trust keystroke send (clipboard+Enter); do not require screenshots/CUA for the happy path.`,
 
   });
@@ -142,6 +143,26 @@ export function createServer(root = resolveRoot()) {
     async (args) => {
       try {
         return textResult(gitDiff(root, args || {}));
+      } catch (e) {
+        return errorResult(e);
+      }
+    }
+  );
+
+  server.registerTool(
+    "submit_c2c",
+    {
+      title: "Submit C2C state",
+      description:
+        "Write a [C2C] PLAN, DONE, BLOCKED, or READY message to .lob/last-reply.json so the auto-loop can hop without copying the Chat thread.",
+      inputSchema: {
+        message: z.string().min(12).describe("Full [C2C] message including STATE header"),
+      },
+      annotations: { readOnlyHint: false, openWorldHint: false },
+    },
+    async ({ message }) => {
+      try {
+        return textResult(writeC2cReply(root, message));
       } catch (e) {
         return errorResult(e);
       }

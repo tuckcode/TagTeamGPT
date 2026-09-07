@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { parseC2C } from "../../tools/lib/lob-driver-helpers.mjs";
 
 const DENY_NAME = new Set([
   ".env",
@@ -276,4 +277,23 @@ export function gitDiff(root, { staged = false, path: rel, offset = 0, limit = 2
     includes_untracked: !staged,
     diff: lines.slice(start, end).join("\n"),
   };
+}
+
+/** Chat posts [C2C] PLAN/DONE/BLOCKED/READY here so the auto-loop can proceed without Select All. */
+export function writeC2cReply(root, message) {
+  const parsed = parseC2C(message);
+  if (!parsed.ok) throw new Error(parsed.detail || "No C2C STATE found");
+  const dir = path.join(root, ".lob");
+  fs.mkdirSync(dir, { recursive: true });
+  const reply = {
+    ok: true,
+    state: parsed.state,
+    task_id: parsed.task_id,
+    snippet: parsed.snippet,
+  };
+  fs.writeFileSync(path.join(dir, "last-reply.json"), JSON.stringify(reply, null, 2) + "\n");
+  if (parsed.state === "PLAN") {
+    fs.writeFileSync(path.join(dir, "last-plan.md"), `${String(message).trim()}\n`);
+  }
+  return reply;
 }

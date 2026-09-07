@@ -51,12 +51,38 @@ const ALLOW_NO_AUTH =
   process.env.LOB_MCP_ALLOW_NO_AUTH === "1" ||
   process.env.LOB_MCP_ALLOW_NO_AUTH === "true";
 
+function logHit(kind, req, extra = {}) {
+  try {
+    const line =
+      JSON.stringify({
+        t: new Date().toISOString(),
+        kind,
+        method: req.method,
+        path: req.path,
+        ...extra,
+      }) + "\n";
+    fs.appendFileSync(path.join(ROOT, ".lob", "mcp.access.log"), line);
+  } catch {
+    /* ignore */
+  }
+}
+
 app.use((req, res, next) => {
   if (req.path === "/health") return next();
-  if (ALLOW_NO_AUTH) return next();
+  if (ALLOW_NO_AUTH) {
+    touchActivity();
+    logHit("no_auth", req);
+    return next();
+  }
   const hdr = req.headers.authorization || "";
   const got = hdr.startsWith("Bearer ") ? hdr.slice(7) : "";
   if (!got || got !== TOKEN) {
+    touchActivity();
+    logHit("auth_fail", req, {
+      has_authorization: !!hdr,
+      bearer_len: got ? got.length : 0,
+      expect_len: TOKEN.length,
+    });
     res.status(401).json({ error: "unauthorized" });
     return;
   }

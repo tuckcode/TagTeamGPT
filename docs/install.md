@@ -92,9 +92,11 @@ node tools/lob-loop.mjs --goal "…" --path /path/to/your/repo --boot
 
 - **macOS:** grant **Accessibility** to your terminal (or Cursor) if keystrokes are blocked. Uses `Control+1/2/3`.
 - **Windows:** focuses the ChatGPT window and sends `Alt+1/2/3` + Ctrl+V. Mode verify is limited; confirm the right thread by eye.
-- **Timing** (defaults; raise on slow machines): `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`, `LOB_PASTE_MS=120`, `LOB_ENTER_MS=250`. Same keys may live in `.lob/config.json`.
+- **Timing** (defaults; raise on slow machines): `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`, `LOB_PASTE_MS=120`, `LOB_ENTER_MS=250`. Same keys may live in `lob.config.json` or `.lob/config.json`.
+- **OCR/vision** is off by default (`LOB_OCR=1` / `--verify-vision` only when stuck). Happy path is keystrokes.
+- **Auto-loop** reads Chat from `.lob/last-reply.json` (`submit_c2c`), not Select-All scrape.
 
-`ok: true` means keys fired, not accepted. After send the driver restores your previous front app (especially macOS). Do not re-press `Control+1` / `Alt+1` when already in Chat.
+`ok: true` means keys fired, not accepted (next `[C2C]` STATE or `.lob/executed.json`). `chat-send` / `codex-send` need a `[C2C]` payload; clipboard is read back before paste. `codex-send` fires the Codex hotkey and paste in one step. After send the driver restores your previous front app (especially macOS). Do not re-press `Control+1` / `Alt+1` when already in Chat; `--force-mode` only when you mean it (New chat risk).
 
 Manual copy/paste always works without the driver.
 

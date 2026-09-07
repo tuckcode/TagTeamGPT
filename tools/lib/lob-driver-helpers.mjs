@@ -57,6 +57,16 @@ export function settleBackoffMs(attempt) {
   return steps[i];
 }
 
+/**
+ * Delay after a mode hotkey before paste. Hotkey+paste stay one step;
+ * --verify waits the last backoff (800ms) so we never paste mid-animation.
+ */
+export function pasteSettleMs(timing = TIMING_DEFAULTS, { verify = false, hotkey = false } = {}) {
+  if (!hotkey) return 0;
+  if (verify) return settleBackoffMs(2);
+  return positiveInt(timing.mode_settle_ms, TIMING_DEFAULTS.mode_settle_ms);
+}
+
 /** OCR/vision stuck-path only: LOB_OCR=1 or --verify-vision. */
 export function ocrEnabled(argv = process.argv, env = process.env, cfg = {}) {
   if (argv.includes("--verify-vision")) return true;

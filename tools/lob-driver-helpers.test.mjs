@@ -6,6 +6,7 @@ import {
   hasC2CPrefix,
   clipboardMatches,
   settleBackoffMs,
+  pasteSettleMs,
   ocrEnabled,
   parseModeLabel,
   modesMatch,
@@ -36,8 +37,12 @@ assert.equal(settleBackoffMs(0), 200);
 assert.equal(settleBackoffMs(1), 400);
 assert.equal(settleBackoffMs(2), 800);
 assert.equal(settleBackoffMs(99), 800);
+assert.equal(pasteSettleMs({}, { hotkey: true }), 350);
+assert.equal(pasteSettleMs({}, { hotkey: true, verify: true }), 800);
+assert.equal(pasteSettleMs({}, { hotkey: false, verify: true }), 0);
 
 assert.equal(ocrEnabled([], {}, {}), false);
+assert.equal(ocrEnabled(["--verify"], {}, {}), false, "--verify is not OCR");
 assert.equal(ocrEnabled(["--verify-vision"], {}, {}), true);
 assert.equal(ocrEnabled([], { LOB_OCR: "1" }, {}), true);
 assert.equal(ocrEnabled([], {}, { ocr: true }), true);
@@ -74,6 +79,15 @@ assert.equal(
   skipModeHotkeyBeforePaste("chat", { beforeOk: false }),
   false,
   "unknown mode still presses Control+1 so we leave Codex"
+);
+assert.equal(
+  skipModeHotkeyBeforePaste("chat", {
+    beforeOk: true,
+    beforeMode: "ChatGPT",
+    force: true,
+  }),
+  false,
+  "--force-mode still fires Control+1"
 );
 
 const c2c = parseC2C("x\n[C2C]\nSTATE: PLAN\nTASK_ID: c2c_ab\n");

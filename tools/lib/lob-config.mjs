@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ocrEnabled, resolveTiming } from "./lob-driver-helpers.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
@@ -25,8 +26,8 @@ export const DEFAULTS = {
   mailbox_nudge_count: 10,
   /** Mailbox nudge: days since last --ack */
   mailbox_nudge_days: 14,
-  /** MCP+tunnel idle auto-stop (minutes). 0 = disabled */
-  mcp_idle_minutes: 60,
+  /** MCP+tunnel idle auto-stop (minutes). 0 = disabled — keep Quick Tunnel URL stable */
+  mcp_idle_minutes: 0,
   /** Driver timing (ms). Env LOB_*_MS overrides these. */
   focus_ms: 200,
   mode_settle_ms: 350,
@@ -34,8 +35,8 @@ export const DEFAULTS = {
   enter_ms: 250,
   /** Stuck-path OCR of mode chip; off on happy path. LOB_OCR=1 / --verify-vision */
   ocr: false,
-  /** Chat reply wait after paste (ms). Generation runs unfocused. */
-  chat_wait_ms: 10_000,
+  /** Chat reply wait after paste (ms). Generation runs unfocused. Soul High + submit_c2c needs minutes, not 20s. */
+  chat_wait_ms: 180_000,
 };
 
 function readJson(p) {
@@ -50,7 +51,13 @@ function readJson(p) {
 export function loadConfig() {
   const repo = readJson(path.join(ROOT, "lob.config.json"));
   const local = readJson(path.join(STATE_DIR, "config.json"));
-  return { ...DEFAULTS, ...repo, ...local };
+  const merged = { ...DEFAULTS, ...repo, ...local };
+  const timing = resolveTiming(merged);
+  return {
+    ...merged,
+    ...timing,
+    ocr: ocrEnabled([], process.env, merged),
+  };
 }
 
 /** CLI flag wins over config. --no-X forces off; --X forces on. */

@@ -5,8 +5,13 @@
  *   node tools/lob-mcp-up.mjs start|stop|status
  *
  * Idle auto-stop (no cron): after mcp_idle_minutes with no /mcp traffic,
- * stops MCP + tunnel. Config: lob.config.json → mcp_idle_minutes (default 60).
- * Set 0 to disable. Env: LOB_MCP_IDLE_MINUTES overrides.
+ * stops MCP + tunnel. Config: lob.config.json → mcp_idle_minutes (default 0 =
+ * leave running so the Quick Tunnel URL stays stable for ChatGPT connectors).
+ * Set >0 to enable. Env: LOB_MCP_IDLE_MINUTES overrides.
+ *
+ * IMPORTANT: each Quick Tunnel restart mints a NEW https://*.trycloudflare.com
+ * URL. ChatGPT Lob-gpt / custom connectors do NOT auto-update — prefer
+ * `status`/`start` reuse when already up; do not bounce the tunnel casually.
  *
  * Writes:
  *   .lob/mcp.pids.json
