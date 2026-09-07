@@ -11,6 +11,7 @@ Invoke in Codex with `$tagteam`. GitHub: `tuckcode/TagTeamGPT`.
 | [Loop](loop.md) | The complete Chat-to-Codex loop |
 | [Troubleshooting](troubleshooting.md) | Common gotchas (Work mode, folder banner, wrong cwd) |
 | [Approach](approach.md) | Design notes vs upstream Codex-with-ChatGPT |
+| [Input hardening](hardening.md) | Windows + macOS focus/key research — keep the macro, fix the injector |
 | [MCP connector](../mcp/README.md) | Optional read-only repo eyes for Chat |
 
 Start with the root [README](../README.md) if you just want the short path.

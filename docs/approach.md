@@ -74,6 +74,9 @@ INIT → PLAN → EXECUTING → EXECUTED → REVIEW → PLAN | DONE | BLOCKED
 
 See [install.md](install.md) and [usage.md](usage.md).
 
+Desktop focus + key injection (Windows `SendInput` vs `SendKeys`, macOS
+`CGEvent` vs System Events): [hardening.md](hardening.md).
+
 - Open this repo as a Codex project → skill auto-loads from `.agents/skills`.
 - Or copy to `~/.agents/skills/tagteam` for all projects.
 - Invoke: `$tagteam` or “Use TagTeamGPT to …”.

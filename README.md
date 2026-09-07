@@ -133,6 +133,7 @@ node tools/lob-mcp-up.mjs start
 | [Loop](docs/loop.md) | The complete state loop |
 | [Troubleshooting](docs/troubleshooting.md) | Folder banner, Work mode, and working-directory traps |
 | [Approach](docs/approach.md) | Design decisions and architecture |
+| [Input hardening](docs/hardening.md) | Windows and macOS focus and key injection |
 | [MCP](mcp/README.md) | Optional read-only workspace connector |
 
 ## Explainer site

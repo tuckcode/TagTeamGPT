@@ -37,7 +37,9 @@ Driver / human:
 
 `ok: true` from the driver means **keys fired**, not “Chat/Codex accepted.”
 Confirmation is the next `[C2C]` STATE or `.lob/executed.json`.
-After send, the driver restores the previous front app so you can keep talking in Cursor. Paste aborts with `FOCUS_LOST` instead of landing here if ChatGPT is not frontmost at Cmd+V / Ctrl+V.
+After send, the driver restores the previous front app. Paste aborts with `FOCUS_LOST` instead of landing in whatever was front if ChatGPT is not frontmost at Cmd+V / Ctrl+V.
+
+OS research and next injector steps (Windows `SendInput`, macOS HID `CGEvent`): [docs/hardening.md](../../../../docs/hardening.md).
 
 **Windows focus lock.** The Alt+1/3 / Ctrl+V / Enter keys are unchanged. Before those keys, the driver finds the ChatGPT desktop HWND (process + top-level window, not a title-only guess), brings it foreground, and checks `GetForegroundWindow`. If ChatGPT is missing or never actually focused, it **aborts** — it will not paste into whatever you were using. Retries are for focus only, never a second paste. After Enter, it restores the previous window. `LOB_FOCUS_RETRIES` (default 4) and `LOB_FOCUS_RETRY_MS` (default 40). `--debug` or `LOB_DEBUG=1` logs HWNDs and each step.
 
