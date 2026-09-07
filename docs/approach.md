@@ -1,11 +1,11 @@
-# Lob — desktop-app approach
+# TagTeamGPT — desktop-app approach
 
 Personal take on the “ChatGPT thinks, Codex works” split, adapted for the
 unified ChatGPT desktop app (Chat · Work · Codex in one window).
 
-**Chat lobs. Codex dunks.**
+**They switch. The goal doesn't.**
 
-The product is **Lob**. Invoke with `$lob`. GitHub: `tuckcode/lob`.
+The product is **TagTeamGPT**. Invoke with `$tagteam`. GitHub: `tuckcode/TagTeamGPT`.
 
 Upstream inspiration:
 [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-with-chatgpt).
@@ -14,7 +14,7 @@ Upstream inspiration:
 
 | Layer | State |
 | --- | --- |
-| v0 Skill + paste-back | Shipped (`.agents/skills/lob/`) |
+| v0 Skill + paste-back | Shipped (`.agents/skills/tagteam/`) |
 | v1 Keystroke driver | Shipped (`tools/lob-driver.mjs`, macOS Control+ / Windows Alt+) |
 | v2 Mailbox / memory | Started (`lob.config.json`, vault helpers) |
 | v3 Read-only workspace MCP | Optional (`mcp/`, tunnel helper) |
@@ -30,7 +30,7 @@ Upstream inspiration:
 
 ## What we change
 
-| Original C2C | Lob (desktop take) |
+| Original C2C | TagTeamGPT (desktop take) |
 | --- | --- |
 | Codex drives nested `chatgpt.com` via in-app browser | Codex and Chat are modes in the same desktop app |
 | Mouse / DOM automation for connectors and chat | Mode keybinds + clipboard paste (human or driver) |
@@ -44,7 +44,7 @@ Documented desktop shortcuts (Settings → Keyboard Shortcuts; remappable):
 - macOS: `⌃1` Chat · `⌃2` Work · `⌃3` Codex
 - Windows / Linux: `Alt+1` · `Alt+2` · `Alt+3`
 
-Mode keys only flip the tab. Bind the repo with `--path` on the loop (or `$lob` path + goal). Do not click the sidebar every hop.
+Mode keys only flip the tab. Bind the repo with `--path` on the loop (or `$tagteam` path + goal). Do not click the sidebar every hop.
 
 Loop:
 
@@ -54,7 +54,7 @@ Loop:
 4. Codex writes `<repo>/.lob/executed.json`; the loop pastes EXECUTED back to Chat.
 5. Chat replies DONE, another PLAN, or BLOCKED.
 
-Protocol templates: [`.agents/skills/lob/references/protocol.md`](../.agents/skills/lob/references/protocol.md).
+Protocol templates: [`.agents/skills/tagteam/references/protocol.md`](../.agents/skills/tagteam/references/protocol.md).
 
 ## Data plane
 
@@ -75,8 +75,8 @@ INIT → PLAN → EXECUTING → EXECUTED → REVIEW → PLAN | DONE | BLOCKED
 See [install.md](install.md) and [usage.md](usage.md).
 
 - Open this repo as a Codex project → skill auto-loads from `.agents/skills`.
-- Or copy to `~/.agents/skills/lob` for all projects.
-- Invoke: `$lob` or “Use Lob to …”.
+- Or copy to `~/.agents/skills/tagteam` for all projects.
+- Invoke: `$tagteam` or “Use TagTeamGPT to …”.
 
 ## Credit
 

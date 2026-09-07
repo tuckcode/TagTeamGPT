@@ -1,10 +1,10 @@
-# Using Lob
+# Using TagTeamGPT
 
 ChatGPT **Chat** plans and reviews. **Codex** edits, runs shells, and tests. You (or the keystroke driver) move short `[C2C]` messages between them.
 
-![Lob loop](lob-loop-diagram.png)
+![TagTeamGPT loop](lob-loop-diagram.png)
 
-*Placeholder diagram. Real dunk art later.*
+*Placeholder diagram.*
 
 `[C2C]` is the Chat-to-Codex handshake tag from upstream, not “clipboard-to-clipboard.”
 
@@ -26,8 +26,8 @@ Keep control messages under ~1 KB. Do not dump full diffs into Chat unless Chat 
 
 Use this when the driver cannot run — no Accessibility, no tunnels.
 
-1. In **Codex**, run `$lob` and give the repo path plus the goal.
-2. First time: paste the **boot prompt** from [protocol.md](../.agents/skills/lob/references/protocol.md) into your pinned Chat thread.
+1. In **Codex**, run `$tagteam` and give the repo path plus the goal.
+2. First time: paste the **boot prompt** from [protocol.md](../.agents/skills/tagteam/references/protocol.md) into your pinned Chat thread.
 3. Copy each `INIT` / `EXECUTED` stub → `Control+1` / `Alt+1` → paste → send.
 4. Copy Chat’s `PLAN` / `DONE` / `BLOCKED` → `Control+3` / `Alt+3` into the Codex thread for that path → paste → send.
 5. Repeat until Chat says **DONE**.
@@ -133,7 +133,7 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 ## Protocol reference
 
-Full templates: [`.agents/skills/lob/references/protocol.md`](../.agents/skills/lob/references/protocol.md)  
-Keyboard notes: [`.agents/skills/lob/references/keyboard.md`](../.agents/skills/lob/references/keyboard.md)
+Full templates: [`.agents/skills/tagteam/references/protocol.md`](../.agents/skills/tagteam/references/protocol.md)  
+Keyboard notes: [`.agents/skills/tagteam/references/keyboard.md`](../.agents/skills/tagteam/references/keyboard.md)
 
 Stuck? See [Troubleshooting](troubleshooting.md).

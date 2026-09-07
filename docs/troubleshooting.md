@@ -10,17 +10,17 @@
 
 **Cause:** Work mode was used as planner/executor.
 
-**Fix:** Treat that as a failed handoff. Go back to **Codex** under the mounted project thread. Never use Work for Lob planning.
+**Fix:** Treat that as a failed handoff. Go back to **Codex** under the mounted project thread. Never use Work for TagTeamGPT planning.
 
-## `$lob` does nothing / skill missing
+## `$tagteam` does nothing / skill missing
 
 **Checks:**
 
-1. Skill folder exists at `.agents/skills/lob` (project) or `~/.agents/skills/lob` (user).
+1. Skill folder exists at `.agents/skills/tagteam` (project) or `~/.agents/skills/tagteam` (user).
 2. You are in **Codex**, not Chat or Cursor.
-3. You used **`$lob`**, not `/lob` (slash is Cursor).
+3. You used **`$tagteam`**, not `/tagteam` (slash is Cursor).
 4. Restart Codex / reopen the project.
-5. If you still have `~/.agents/skills/codexgpt`, delete it and copy `.agents/skills/lob` instead.
+5. If you still have `~/.agents/skills/codexgpt` or `~/.agents/skills/lob`, delete them and copy `.agents/skills/tagteam` instead.
 
 ## Codex says tests passed but files did not change in my repo
 

@@ -1,0 +1,7 @@
+interface:
+  display_name: "TagTeamGPT"
+  short_description: "They switch. The goal doesn't — desktop paste-back loop"
+  default_prompt: "Use TagTeamGPT to "
+
+policy:
+  allow_implicit_invocation: true

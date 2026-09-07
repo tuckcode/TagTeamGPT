@@ -1,10 +1,10 @@
 export const UPSTREAM_REPO = "https://github.com/XiaoDuoYa/codex-with-chatgpt";
-export const GITHUB_REPO = "https://github.com/tuckcode/lob";
+export const GITHUB_REPO = "https://github.com/tuckcode/TagTeamGPT";
 export const THIS_REPO = GITHUB_REPO;
-export const PRODUCT_NAME = "Lob";
-export const TAGLINE = "Chat lobs. Codex dunks.";
-export const SKILL_PATH = ".agents/skills/lob";
-export const SKILL_INVOKE = "$lob";
+export const PRODUCT_NAME = "TagTeamGPT";
+export const TAGLINE = "They switch. The goal doesn't.";
+export const SKILL_PATH = ".agents/skills/tagteam";
+export const SKILL_INVOKE = "$tagteam";
 
 export const NAV = [
   { href: "#problem", label: "The problem" },

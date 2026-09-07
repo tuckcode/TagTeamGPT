@@ -20,9 +20,9 @@ const instrument = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Lob — Chat lobs. Codex dunks.",
+  title: "TagTeamGPT — They switch. The goal doesn't.",
   description:
-    "A desktop-app take on the ChatGPT + Codex split: Chat lobs the plan, Codex dunks the code. Keybind control plane, optional MCP data plane. Not affiliated with OpenAI.",
+    "A desktop-app take on the ChatGPT + Codex split: Chat and Codex take turns on one goal. Keybind control plane, optional MCP data plane. Not affiliated with OpenAI.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

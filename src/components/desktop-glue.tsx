@@ -20,7 +20,7 @@ export function DesktopGlue() {
           <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
             {SKILL_INVOKE}
           </code>{" "}
-          or “Use Lob to …”.
+          or “Use TagTeamGPT to …”.
         </p>
 
         <Tabs defaultValue="semi" className="mt-10">
@@ -38,7 +38,7 @@ export function DesktopGlue() {
               <code className="font-mono text-foreground">{SKILL_PATH}</code>.
               Open this repo as a Codex project (auto-load) or copy to{" "}
               <code className="font-mono text-foreground">
-                ~/.agents/skills/lob
+                ~/.agents/skills/tagteam
               </code>
               .
             </p>
@@ -46,7 +46,7 @@ export function DesktopGlue() {
               <li>
                 In Codex, run{" "}
                 <code className="font-mono text-foreground">{SKILL_INVOKE}</code>{" "}
-                (or “Use Lob to implement X”).
+                (or “Use TagTeamGPT to implement X”).
               </li>
               <li>
                 Pin one Chat thread. Paste the boot prompt once when the Skill

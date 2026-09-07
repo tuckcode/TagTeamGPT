@@ -1,21 +1,21 @@
 ---
-name: lob
+name: tagteam
 description: >
-  Run the Lob desktop workflow: Chat lobs (plans/reviews), Codex dunks (executes).
-  Use when the user says Lob, $lob, C2C, desktop Chat/Codex split,
+  Run the TagTeamGPT desktop workflow: Chat plans and reviews. Codex executes. They tag in.
+  Use when the user says TagTeamGPT, $tagteam, C2C, desktop Chat/Codex split,
   or asks to plan in Chat and implement in Codex with paste-back [C2C] messages.
   Do not use for ordinary coding that stays only in Codex with no Chat planner.
   Do not automate chatgpt.com in a nested browser. Do not use Work as the planner.
 ---
 
-# Lob (v0 paste-back · v1 keystroke driver)
+# TagTeamGPT (v0 paste-back · v1 keystroke driver)
 
-Chat lobs. Codex dunks. One ChatGPT desktop app.
+They switch. The goal doesn't. One ChatGPT desktop app.
 
 You (Codex) own execution: editing, shell, git, tests, recovery.
 Chat owns planning and review.
 
-Invoke in ChatGPT desktop **Codex** with **`$lob`** — not Cursor’s `/` picker.
+Invoke in ChatGPT desktop **Codex** with **`$tagteam`** — not Cursor’s `/` picker.
 
 ## Golden rules
 
@@ -37,10 +37,10 @@ Invoke in ChatGPT desktop **Codex** with **`$lob`** — not Cursor’s `/` picke
    thread (no local folder). Mount the **goal repo** only in **Codex** for
    execution. Banner: “Local projects don't support Chat.”
 9. **Codex mode ≠ Codex project.** `Control+3` / `Alt+3` only flips the tab.
-   The user gives the repo **path** with the goal (`--path` / `$lob` path).
+   The user gives the repo **path** with the goal (`--path` / `$tagteam` path).
    The loop binds that path and Codex must `pwd` there. Do not click the
    sidebar on every hop. The folder must already exist as a Codex project
-   (install once). Public users run Lob *inside their own repo*.
+   (install once). Public users run TagTeamGPT *inside their own repo*.
 10. **Codex cwd trap:** sidebar project name ≠ guarantee of writable git root.
    If Codex `pwd` is under `~/Documents/Codex/…`, it is a conversation snapshot
    — green tests there do not update the real checkout. Preflight `pwd`.
@@ -139,7 +139,7 @@ Or write `.lob/last-reply.json` with `{ "ok": true, "state": "PLAN", "task_id": 
 
 ### 0. Start
 
-When invoked (“Use Lob to …”, `$lob`, etc.):
+When invoked (“Use TagTeamGPT to …”, `$tagteam`, etc.):
 
 1. Confirm: desktop **Chat** + **Codex** tabs; user will paste between them.
 2. Remind the Chat / Codex keybinds for their OS.
@@ -154,7 +154,7 @@ If this is a new ChatGPT Chat thread for the task:
 2. Tell the user: pin that Chat thread; paste the boot prompt once; send; then
    come back here.
 
-Skip if the user says the Chat thread is already booted for Lob.
+Skip if the user says the Chat thread is already booted for TagTeamGPT.
 
 ### 2. Send INIT
 
@@ -201,7 +201,7 @@ At iteration 12 without `DONE`, ask: “12 iterations done — continue?”
 ## Forbidden
 
 - Nested in-app browser to `chatgpt.com` / mouse Computer Use on the web UI
-- Treating tunnels/connectors as required for every Lob run
+- Treating tunnels/connectors as required for every TagTeamGPT run
 - Calling or installing upstream `c2c` / MCP bridge as if it were v0/v1
 - Treating Work mode as the planner
 - Vision / OCR / screenshot loops on the happy path (hotkeys first; OCR only when stuck)
