@@ -13,6 +13,7 @@ don’t paste them into the composer. Control plane stays keybinds + `[C2C]`.
 | `search_workspace` | ripgrep or fallback |
 | `git_status` | Staged / unstaged / untracked |
 | `git_diff` | Paginated diff (post-EXECUTED review) |
+| `submit_c2c` | Chat writes PLAN/DONE/BLOCKED/READY to `.lob/last-reply.json` so the loop can hop |
 
 ## Run locally
 

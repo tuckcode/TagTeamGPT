@@ -7,8 +7,9 @@
  *
  * You give the goal and the folder path once. The loop hops Chat ↔ Codex
  * after that. ChatGPT is stolen for ~1s per paste, then given back.
- * Chat/Codex keep generating while you click around. Codex done = .lob/executed.json
- * (no focus). Chat reply = wait up to 10s, then one copy burst.
+ * Chat/Codex keep generating while you click around. Codex done = <repo>/.lob/executed.json
+ * (no focus). Chat reply = poll .lob/last-reply.json (submit_c2c). One Enter on timeout,
+ * then NO_REPLY — never Select All, never invent a PLAN.
  *
  * Defaults (lob.config.json / .lob/config.json):
  *   codex: true   — paste PLAN into Codex (⌃3 / Alt+3)
@@ -28,18 +29,20 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
 import { loadConfig, flagOrConfig, readSession, writeSession, ROOT, STATE_DIR } from "./lib/lob-config.mjs";
+import {
+  chatReplyPaths,
+  executedJsonPath,
+  waitForChatStateWithRetry,
+  waitForExecutedFile,
+} from "./lib/lob-loop-proof.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DRIVER = path.join(__dirname, "lob-driver.mjs");
-const READER = path.join(__dirname, "lob-read-reply.mjs");
 const MAILBOX = path.join(__dirname, "lob-mailbox.mjs");
 const MEMORY = path.join(__dirname, "lob-memory.mjs");
 const NUDGE = path.join(__dirname, "lob-mailbox-nudge.mjs");
 const PLAN_PATH = path.join(STATE_DIR, "last-plan.md");
 const REPLY_PATH = path.join(STATE_DIR, "last-reply.json");
-
-const WIN_CLIP_HINT =
-  "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard";
 
 function arg(flag, fallback = null) {
   const i = process.argv.indexOf(flag);
@@ -73,93 +76,20 @@ function driver(...args) {
   }
 }
 
-function peekReplyFile() {
-  if (!fs.existsSync(REPLY_PATH)) return null;
-  try {
-    const parsed = JSON.parse(fs.readFileSync(REPLY_PATH, "utf8"));
-    if (parsed && parsed.state) return { ok: true, ...parsed, _from_file: true };
-  } catch {
-    /* ignore */
-  }
-  return null;
-}
-
-function consumeReplyFile() {
-  if (fs.existsSync(REPLY_PATH)) {
-    try {
-      fs.unlinkSync(REPLY_PATH);
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
-function grabReply() {
-  try {
-    return JSON.parse(runNode(READER, ["--grab"]));
-  } catch (e) {
-    const msg = String(e.stdout || e.message || e);
-    try {
-      return JSON.parse(msg);
-    } catch {
-      return { ok: false, code: "GRAB_FAILED", detail: msg.slice(0, 300) };
-    }
-  }
-}
-
-function replyMatches(last, want, taskId) {
-  return (
-    last?.ok &&
-    want.has(String(last.state).toUpperCase()) &&
-    (!taskId || !last.task_id || last.task_id === taskId)
-  );
-}
-
-async function sleep(ms) {
-  await new Promise((r) => setTimeout(r, ms));
-}
-
-function noReplyPayload(last) {
-  const hint =
-    process.platform === "win32"
-      ? WIN_CLIP_HINT
-      : "pbpaste | node tools/lob-write-reply.mjs --from-clipboard";
+function waitOpts(extra = {}) {
   return {
-    ok: false,
-    code: "NO_REPLY",
-    last,
-    hint,
-    keys_fired: true,
-    accepted: false,
+    replyPath: REPLY_PATH,
+    replyPaths: chatReplyPaths(REPLY_PATH, extra.repoPath),
+    timeoutMs: extra.timeoutMs ?? loadConfig().chat_wait_ms ?? 10_000,
+    taskId: extra.taskId,
+    enterOnce: () => driver("enter"),
+    log: (obj) => console.error(JSON.stringify(obj)),
   };
 }
 
-/** Chat wait: poll a reply file, then 1–2 copy bursts. Generation stays unfocused. */
+/** Chat wait + at most one Enter retry. Never scrapes the thread. */
 async function waitForChatState(wanted, opts = {}) {
-  const timeoutMs = opts.timeoutMs ?? loadConfig().chat_wait_ms ?? 10_000;
-  const taskId = opts.taskId;
-  const want = new Set(wanted.map((s) => s.toUpperCase()));
-  const start = Date.now();
-  const grabAt = [2_000, 8_000];
-  let gi = 0;
-  let last = null;
-  while (Date.now() - start < timeoutMs) {
-    last = peekReplyFile();
-    if (replyMatches(last, want, taskId)) {
-      consumeReplyFile();
-      return { ...last, accepted: true };
-    }
-    if (gi < grabAt.length && Date.now() - start >= grabAt[gi]) {
-      last = grabReply();
-      gi += 1;
-      if (replyMatches(last, want, taskId)) {
-        consumeReplyFile();
-        return { ...last, accepted: true };
-      }
-    }
-    await sleep(300);
-  }
-  return noReplyPayload(last);
+  return waitForChatStateWithRetry(wanted, waitOpts(opts));
 }
 
 function chatSend(text) {
@@ -275,7 +205,10 @@ Rules:
 6. Always return structured [C2C] messages with STATE headers.
 7. Be substantive: PLAN needs GOAL, RATIONALE (prose reasoning — not a
    restatement of the checklist), ACTIONS, FILES_LIKELY_INVOLVED, TESTS, and
-   SUCCESS_CRITERIA. Never reply with a bare one-liner or ACTIONS-only list.`;
+   SUCCESS_CRITERIA. Never reply with a bare one-liner or ACTIONS-only list.
+8. After every PLAN, DONE, BLOCKED, or READY, call the workspace tool submit_c2c
+   with your full [C2C] message so the auto-loop can proceed. Do not wait for a
+   human to copy.`;
 
 function buildInit(taskId, goal, repoPath) {
   return `[C2C]
@@ -291,7 +224,7 @@ ${repoPath}
 
 INSTRUCTION:
 Create an implementation PLAN for Codex to run in that repo path. Keep it finite and executable.
-Reply with a C2C PLAN message.`;
+Reply with a C2C PLAN message, then call submit_c2c with that full PLAN text.`;
 }
 
 function buildExecuted(taskId, iteration, payload) {
@@ -355,35 +288,10 @@ Previous PLAN was rejected (${detail}). Reply again with a full C2C PLAN:
 GOAL, RATIONALE as prose (not a restatement of ACTIONS), ACTIONS, FILES_LIKELY_INVOLVED, TESTS, SUCCESS_CRITERIA.`;
 }
 
-async function waitForExecutedFile(execPath, { timeoutMs = 600_000, pollMs = 1500 } = {}) {
-  const start = Date.now();
-  fs.mkdirSync(path.dirname(execPath), { recursive: true });
-  if (fs.existsSync(execPath)) fs.unlinkSync(execPath);
-  console.error(
-    JSON.stringify({
-      waiting: "execution",
-      proof: "executed.json",
-      write: execPath,
-      keys_fired: true,
-      accepted: false,
-      example: { result: "…", changed_files: 1, tests: "not run" },
-    })
-  );
-  while (Date.now() - start < timeoutMs) {
-    if (fs.existsSync(execPath)) {
-      const raw = fs.readFileSync(execPath, "utf8");
-      fs.unlinkSync(execPath);
-      return JSON.parse(raw);
-    }
-    await sleep(pollMs);
-  }
-  return null;
-}
-
 async function onPlan(planText, taskId, iteration, useCodex, repoPath) {
   fs.mkdirSync(STATE_DIR, { recursive: true });
   fs.writeFileSync(PLAN_PATH, planText, "utf8");
-  const execPath = path.join(repoPath, ".lob", "executed.json");
+  const execPath = executedJsonPath(repoPath);
 
   if (useCodex) {
     const handoff = buildCodexHandoff(planText, taskId, iteration, repoPath);
@@ -421,6 +329,16 @@ async function onPlan(planText, taskId, iteration, useCodex, repoPath) {
       return JSON.parse(raw);
     }
   }
+  console.error(
+    JSON.stringify({
+      waiting: "execution",
+      proof: "executed.json",
+      write: execPath,
+      keys_fired: true,
+      accepted: false,
+      example: { result: "…", changed_files: 1, tests: "not run" },
+    })
+  );
   const payload = await waitForExecutedFile(execPath);
   if (payload) {
     console.error(JSON.stringify({ phase: "codex-accepted", via: "executed.json", accepted: true, keys_fired: true }));
@@ -467,6 +385,13 @@ async function main() {
   const taskId = arg("--task-id", `c2c_${randomBytes(2).toString("hex")}`);
   fs.mkdirSync(STATE_DIR, { recursive: true });
   writeSession({ goal, pwd: repoPath, task_id: taskId });
+  for (const p of chatReplyPaths(REPLY_PATH, repoPath)) {
+    try {
+      fs.unlinkSync(p);
+    } catch {
+      /* ignore */
+    }
+  }
 
   console.error(
     JSON.stringify({
@@ -491,7 +416,8 @@ async function main() {
   if (useBoot) {
     const b = driver("send", "--mode", "chat", BOOT);
     console.error(JSON.stringify({ phase: "boot", keys_fired: !!b.ok, accepted: false, ...b }));
-    await sleep(400);
+    const ready = await waitForChatState(["READY"], { timeoutMs: 20_000, repoPath });
+    console.error(JSON.stringify({ phase: "boot-wait", keys_fired: true, accepted: !!ready.ok, state: ready.state, code: ready.code }));
   }
 
   let iteration = 0;
@@ -503,7 +429,7 @@ async function main() {
   }
 
   while (iteration < max) {
-    const reply = await waitForChatState(["PLAN", "DONE", "BLOCKED"], { taskId });
+    const reply = await waitForChatState(["PLAN", "DONE", "BLOCKED"], { taskId, repoPath });
     if (!reply.ok) {
       console.log(JSON.stringify(reply));
       process.exitCode = 1;

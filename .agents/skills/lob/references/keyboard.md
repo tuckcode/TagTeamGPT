@@ -39,10 +39,11 @@ Driver / human:
 Confirmation is the next `[C2C]` STATE or `.lob/executed.json`.
 After send, the driver restores the previous front app (especially macOS) so you can keep talking in Cursor. Paste aborts with `FOCUS_LOST` instead of landing here if ChatGPT is not frontmost at Cmd+V.
 
-**Focus bursts, not a held window.** A send steals ChatGPT for ~1s (focus → paste → Enter → restore). Chat and Codex keep generating while unfocused. Codex completion is `.lob/executed.json` (no focus). Chat’s reply is one copy burst after ~2s, again at ~8s if needed. The loop does not sit on ChatGPT for 30s.
+**Focus bursts, not a held window.** A send steals ChatGPT for ~1s (focus → paste → Enter → restore). Chat and Codex keep generating while unfocused. Codex completion is `.lob/executed.json` (no focus). Chat’s reply is `.lob/last-reply.json` via MCP `submit_c2c` — not Select-All scrape. The loop does not sit on ChatGPT waiting for generation.
 
 `chat-send` / `codex-send` require `[C2C]` at the start; clipboard is set then
-read back before paste.
+read back before paste. `codex-send` fires the Codex hotkey and paste in one
+step.
 
 The driver **skips** the mode hotkey when already in the target mode.
 **Do not re-press ⌃1 / Alt+1 while already in Chat** — it can open **New chat**
@@ -50,7 +51,8 @@ and leave the pinned thread. Prefer `send` / `chat-send` / `codex-send` without
 `--force-mode`. `enter` sends Enter only when the composer is already focused.
 
 Timing defaults: `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`,
-`LOB_PASTE_MS=120`, `LOB_ENTER_MS=250` (or `.lob/config.json`).
+`LOB_PASTE_MS=120`, `LOB_ENTER_MS=250` (or `lob.config.json` /
+`.lob/config.json`).
 
 Optional `--verify` for mode read-back — often opaque on Electron; Windows UIA is
 best-effort. **OCR/vision is off by default** (`LOB_OCR=1` or
@@ -65,6 +67,6 @@ when post-paste mode is not the target.
 ## Do not
 
 - Use Work for planning  
-- Depend on AX scrape (Electron often empty → `NO_STATE`)  
+- Select-All / AX-scrape the Chat thread (loop reads `.lob/last-reply.json`)  
 - Use CUA/screenshots/OCR on the happy path (slow; OCR only when stuck)  
 - Paste full diffs into Chat when the workspace MCP can `git_diff` / `read_file`

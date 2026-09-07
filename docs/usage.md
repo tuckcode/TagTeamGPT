@@ -79,11 +79,11 @@ On Windows PowerShell you can also: `Get-Content stub.txt -Raw | node tools/lob-
 
 `ok: true` means **keys fired**, not “Chat accepted the message.” Confirmation is the next `[C2C]` **STATE** or `.lob/executed.json` (or another expected file side-effect). After send, the driver restores the previous front app (especially on macOS).
 
-Prefer `chat-send` / `codex-send` / `send --mode chat|codex`. **Do not re-press `Control+1` / `Alt+1` when already in Chat** — it can open New chat and abandon your pinned planner thread.
+Prefer `chat-send` / `codex-send` / `send --mode chat|codex`. **Do not re-press `Control+1` / `Alt+1` when already in Chat** — it can open New chat and abandon your pinned planner thread. Use `--force-mode` only when you mean to fire the Chat hotkey anyway.
 
 Optional `--verify` tries a mode read-back. Electron often hides the mode chip from accessibility; Windows UIA is best-effort. Skip verify on the happy path and confirm the thread by eye.
 
-**Timing** (slow machine? raise these): `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`, `LOB_PASTE_MS=120`, `LOB_ENTER_MS=250`. Same keys may live in `.lob/config.json`.
+**Timing** (slow machine? raise these): `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`, `LOB_PASTE_MS=120`, `LOB_ENTER_MS=250`. Same keys may live in `lob.config.json` or `.lob/config.json`.
 
 **Vision / OCR is off by default.** Use `LOB_OCR=1` or `--verify-vision` only when `--verify` fails twice or mode is unknown — one crop of the mode chip. If OCR says Work, abort. No nested `chatgpt.com` / CUA on the happy path.
 
@@ -93,7 +93,7 @@ Optional `--verify` tries a mode read-back. Electron often hides the mode chip f
 node tools/lob-loop.mjs --goal "…" --path /path/to/repo --boot
 ```
 
-Give the goal and the folder path once. ChatGPT is brought forward for about a second to paste, then given back. Chat and Codex keep writing while you click around. Codex done is a file (`<repo>/.lob/executed.json`) — no focus. Chat’s reply is copied in a short burst, up to 10 seconds after send.
+Give the goal and the folder path once. ChatGPT is brought forward for about a second to paste, then given back. Chat and Codex keep writing while you click around. Codex done is a file (`<repo>/.lob/executed.json`) — no focus. Chat’s reply is `.lob/last-reply.json` after Chat calls MCP `submit_c2c` — the loop does not Select-All or scrape the Chat thread.
 
 Defaults (see `lob.config.json`): Chat + Codex handoff on; optional mailbox/memory notes.
 
@@ -105,6 +105,8 @@ pbpaste | node tools/lob-write-reply.mjs --from-clipboard
 # Windows PowerShell
 Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
 ```
+
+See also: [Loop details](loop.md).
 
 ## Optional MCP review
 

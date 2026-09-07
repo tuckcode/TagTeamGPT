@@ -41,24 +41,36 @@ function parseC2C(text) {
   };
 }
 
+function readStdinIfPiped() {
+  if (process.stdin.isTTY) return "";
+  try {
+    return fs.readFileSync(0, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+function readClipboard() {
+  const piped = readStdinIfPiped();
+  if (piped && piped.trim()) return piped;
+  if (process.platform === "darwin") {
+    return execFileSync("pbpaste", { encoding: "utf8" });
+  }
+  if (process.platform === "win32") {
+    return execFileSync(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-Command", "Get-Clipboard -Raw"],
+      { encoding: "utf8", windowsHide: true }
+    );
+  }
+  return null;
+}
+
 function main() {
   let payload = null;
   if (has("--from-clipboard")) {
-    let text = "";
-    if (process.platform === "darwin") {
-      text = execFileSync("pbpaste", { encoding: "utf8" });
-    } else if (process.platform === "win32") {
-      text = execFileSync(
-        "powershell.exe",
-        [
-          "-NoProfile",
-          "-NonInteractive",
-          "-Command",
-          "Get-Clipboard -Raw",
-        ],
-        { encoding: "utf8", windowsHide: true }
-      );
-    } else {
+    const text = readClipboard();
+    if (text == null) {
       console.log(
         JSON.stringify({
           ok: false,

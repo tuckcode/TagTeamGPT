@@ -50,6 +50,8 @@ Rules:
 7. Be substantive: PLAN needs GOAL, RATIONALE (prose reasoning — not a
    restatement of the checklist), ACTIONS, FILES_LIKELY_INVOLVED, TESTS, and
    SUCCESS_CRITERIA. Never reply with a bare one-liner or ACTIONS-only list.
+8. After every PLAN, DONE, BLOCKED, or READY, call the workspace tool
+   `submit_c2c` with your full [C2C] message so the auto-loop can proceed.
 ```
 
 ## INIT (Codex → Chat)

@@ -5,6 +5,7 @@
   "boot": false,
   "mailbox_nudge_count": 10,
   "mailbox_nudge_days": 14,
-  "mcp_idle_minutes": 60,
-  "_comment": "Chat (Control+1) always on. codex=Control+3. mailbox/memory=vault. Nudge at 10 notes OR 14 days. MCP idle stop after 60m with no /mcp traffic."
+  "mcp_idle_minutes": 0,
+  "chat_wait_ms": 25000,
+  "_comment": "Chat (Control+1) always on. codex=Control+3. mailbox/memory=vault. mcp_idle_minutes=0 keeps tunnel URL stable. Chat wait 25s max; returns early on last-reply.json."
 }
