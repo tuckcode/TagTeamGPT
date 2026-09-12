@@ -2,7 +2,7 @@
 
 **They switch. The goal doesn't.** One ChatGPT desktop app.
 
-![TagTeamGPT loop](docs/lob-loop-diagram.png)
+![TagTeamGPT — Plan in Chat. Build in Codex.](docs/tagteamgpt-banner.png)
 
 This is the current loop poster.
 
