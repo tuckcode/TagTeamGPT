@@ -48,8 +48,6 @@ Under the hood, the loop uses a small state protocol:
 INIT → PLAN → EXECUTING → EXECUTED → REVIEW → PLAN | DONE | BLOCKED
 ```
 
-![TagTeamGPT handoff loop](docs/lob-loop-diagram.png)
-
 The default transport is deliberately simple: ChatGPT desktop mode keybinds plus clipboard handoffs. The optional driver automates those brief switches, and `.lob/executed.json` provides a durable signal that Codex finished its turn.
 
 ## Quick start
