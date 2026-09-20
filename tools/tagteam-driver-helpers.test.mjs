@@ -15,18 +15,18 @@ import {
   parseC2C,
   parseLastJsonLine,
   TIMING_DEFAULTS,
-} from "./lib/lob-driver-helpers.mjs";
+} from "./lib/tagteam-driver-helpers.mjs";
 
 assert.deepEqual(resolveTiming({}, {}), TIMING_DEFAULTS);
 assert.equal(
-  resolveTiming({ focus_ms: 500 }, { LOB_FOCUS_MS: "90" }).focus_ms,
+  resolveTiming({ focus_ms: 500 }, { TAGTEAM_FOCUS_MS: "90" }).focus_ms,
   90,
   "env beats config"
 );
 assert.equal(resolveTiming({ paste_ms: 99 }, {}).paste_ms, 99);
-assert.equal(resolveTiming({}, { LOB_ENTER_MS: "nope" }).enter_ms, 250);
+assert.equal(resolveTiming({}, { TAGTEAM_ENTER_MS: "nope" }).enter_ms, 250);
 assert.equal(resolveTiming({}, {}).focus_retries, 4);
-assert.equal(resolveTiming({}, { LOB_FOCUS_RETRY_MS: "25" }).focus_retry_ms, 25);
+assert.equal(resolveTiming({}, { TAGTEAM_FOCUS_RETRY_MS: "25" }).focus_retry_ms, 25);
 assert.equal(resolveTiming({ focus_retries: 8 }, {}).focus_retries, 8);
 
 assert.equal(hasC2CPrefix("[C2C]\nSTATE: INIT"), true);
@@ -48,7 +48,7 @@ assert.equal(pasteSettleMs({}, { hotkey: false, verify: true }), 0);
 assert.equal(ocrEnabled([], {}, {}), false);
 assert.equal(ocrEnabled(["--verify"], {}, {}), false, "--verify is not OCR");
 assert.equal(ocrEnabled(["--verify-vision"], {}, {}), true);
-assert.equal(ocrEnabled([], { LOB_OCR: "1" }, {}), true);
+assert.equal(ocrEnabled([], { TAGTEAM_OCR: "1" }, {}), true);
 assert.equal(ocrEnabled([], {}, { ocr: true }), true);
 
 assert.equal(parseModeLabel("current mode: ChatGPT"), "ChatGPT");
@@ -112,4 +112,4 @@ assert.equal(
   "last JSON line wins"
 );
 
-console.log("ok: lob-driver-helpers.test.mjs");
+console.log("ok: tagteam-driver-helpers.test.mjs");

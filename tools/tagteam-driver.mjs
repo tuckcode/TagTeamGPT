@@ -4,15 +4,15 @@
 //   macOS: Control+1/2/3, ⌘V
 //   Windows: Alt+1/2/3, Ctrl+V
 // Optional --verify tries an accessibility/UIA read-back (often opaque on Electron).
-// OCR/vision is off the happy path: LOB_OCR=1 or --verify-vision only.
+// OCR/vision is off the happy path: TAGTEAM_OCR=1 or --verify-vision only.
 //
-//   node tools/lob-driver.mjs mode
-//   node tools/lob-driver.mjs to chat|work|codex [--verify] [--force-mode]
-//   node tools/lob-driver.mjs send "text" | send - [--mode chat|codex]
-//   node tools/lob-driver.mjs enter
-//   node tools/lob-driver.mjs chat-send "text" [--verify] [--force-mode]
-//   node tools/lob-driver.mjs codex-send "text" [--verify] [--force-mode]
-//   node tools/lob-driver.mjs ... --debug   (Windows focus log on stderr + JSON.win)
+//   node tools/tagteam-driver.mjs mode
+//   node tools/tagteam-driver.mjs to chat|work|codex [--verify] [--force-mode]
+//   node tools/tagteam-driver.mjs send "text" | send - [--mode chat|codex]
+//   node tools/tagteam-driver.mjs enter
+//   node tools/tagteam-driver.mjs chat-send "text" [--verify] [--force-mode]
+//   node tools/tagteam-driver.mjs codex-send "text" [--verify] [--force-mode]
+//   node tools/tagteam-driver.mjs ... --debug   (Windows focus log on stderr + JSON.win)
 //
 // Codex paste always fires Control+3 / Alt+3 in the same step as paste so a
 // prior `to codex` cannot restore Cursor and drop the next paste into Chat.
@@ -31,7 +31,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { stdin as input } from "node:process";
-import { loadConfig, readSession, writeSession } from "./lib/lob-config.mjs";
+import { loadConfig, readSession, writeSession } from "./lib/tagteam-config.mjs";
 import {
   resolveTiming,
   hasC2CPrefix,
@@ -43,7 +43,7 @@ import {
   isWorkMode,
   skipModeHotkeyBeforePaste,
   parseLastJsonLine,
-} from "./lib/lob-driver-helpers.mjs";
+} from "./lib/tagteam-driver-helpers.mjs";
 
 const APP = "ChatGPT";
 const PLATFORM = process.platform;
@@ -443,7 +443,7 @@ function readModeOcrMac() {
 // ─── Windows (PowerShell + SendInput + UIA) ────────────────────────────────
 
 function winDebugOn() {
-  return process.env.LOB_DEBUG === "1" || process.argv.includes("--debug");
+  return process.env.TAGTEAM_DEBUG === "1" || process.argv.includes("--debug");
 }
 
 function winLog(parsed) {
@@ -639,7 +639,7 @@ function winDefs() {
   const debug = winDebugOn() ? "1" : "0";
   return `
 $ErrorActionPreference = 'Stop'
-$env:LOB_DEBUG = '${debug}'
+$env:TAGTEAM_DEBUG = '${debug}'
 ${WIN_CS}
 $script:WinLog = [ordered]@{
   previous_hwnd = 0
@@ -655,7 +655,7 @@ $script:WinLog = [ordered]@{
   failure = $null
 }
 function Dbg([string]$msg) {
-  if ($env:LOB_DEBUG -eq '1') { [Console]::Error.WriteLine("win-focus: $msg") }
+  if ($env:TAGTEAM_DEBUG -eq '1') { [Console]::Error.WriteLine("win-focus: $msg") }
 }
 function Send-TTChord([int[]]$keys) {
   if ([TagTeamWin]::ModifierHeld()) {

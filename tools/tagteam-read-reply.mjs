@@ -3,18 +3,18 @@
 // Do not Select All the thread (that highlights the prompt + reply and
 // steals the next paste). Copy is last-reply.json or a single Cmd+C.
 //
-//   node tools/lob-read-reply.mjs
-//   node tools/lob-read-reply.mjs --grab   # Cmd+C only, no Cmd+A
+//   node tools/tagteam-read-reply.mjs
+//   node tools/tagteam-read-reply.mjs --grab   # Cmd+C only, no Cmd+A
 //
 // Windows: UIA dump is best-effort; if empty, returns NO_STATE (loop still
-// polls .lob/last-reply.json). Hint:
-//   Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
+// polls .tagteam/last-reply.json). Hint:
+//   Get-Clipboard -Raw | node tools/tagteam-write-reply.mjs --from-clipboard
 
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { STATE_DIR } from "./lib/lob-config.mjs";
+import { STATE_DIR } from "./lib/tagteam-config.mjs";
 
 const APP = "ChatGPT";
 const PLATFORM = process.platform;
@@ -74,8 +74,8 @@ function peekPersistedReply() {
 
 function emptyHint() {
   return PLATFORM === "win32"
-    ? "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard"
-    : "pbpaste | node tools/lob-write-reply.mjs --from-clipboard";
+    ? "Get-Clipboard -Raw | node tools/tagteam-write-reply.mjs --from-clipboard"
+    : "pbpaste | node tools/tagteam-write-reply.mjs --from-clipboard";
 }
 
 function classifyMac(e) {
@@ -110,7 +110,7 @@ function scrapeMac() {
 }
 
 function scrapeWin() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-read-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tagteam-read-"));
   const ps1 = path.join(tmpDir, "read.ps1");
   const script = `
 $ErrorActionPreference = 'Stop'

@@ -18,10 +18,10 @@ import {
   waitForChatState,
   waitForChatStateWithRetry,
   waitForExecutedFile,
-} from "./lib/lob-loop-proof.mjs";
+} from "./lib/tagteam-loop-proof.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const WRITE_REPLY = path.join(__dirname, "lob-write-reply.mjs");
+const WRITE_REPLY = path.join(__dirname, "tagteam-write-reply.mjs");
 
 function fakeClock() {
   let t = 0;
@@ -40,23 +40,23 @@ assert.equal(nr.accepted, false);
 assert.equal(nr.keys_fired, true);
 assert.equal(nr.hint, WIN_CLIP_HINT);
 assert.match(nr.hint, /Get-Clipboard -Raw/);
-assert.match(nr.hint, /lob-write-reply\.mjs --from-clipboard/);
+assert.match(nr.hint, /tagteam-write-reply\.mjs --from-clipboard/);
 assert.equal(noReplyPayload(null, "darwin").hint, POSIX_CLIP_HINT);
 assert.equal(clipboardHint("win32"), WIN_CLIP_HINT);
 
-assert.equal(executedJsonPath("/tmp/goal-repo"), path.join("/tmp/goal-repo", ".lob", "executed.json"));
+assert.equal(executedJsonPath("/tmp/goal-repo"), path.join("/tmp/goal-repo", ".tagteam", "executed.json"));
 
-const stateReply = "/tmp/lob-tool/.lob/last-reply.json";
+const stateReply = "/tmp/tagteam-tool/.tagteam/last-reply.json";
 const paths = chatReplyPaths(stateReply, "/tmp/goal-repo");
 assert.equal(paths.length, 2);
-assert.ok(paths.includes(path.join("/tmp/goal-repo", ".lob", "last-reply.json")));
-assert.equal(chatReplyPaths(stateReply, "/tmp/lob-tool").length, 1);
+assert.ok(paths.includes(path.join("/tmp/goal-repo", ".tagteam", "last-reply.json")));
+assert.equal(chatReplyPaths(stateReply, "/tmp/tagteam-tool").length, 1);
 
 assert.equal(replyMatches({ ok: true, state: "PLAN" }, ["PLAN"], null), true);
 assert.equal(replyMatches({ ok: true, state: "DONE" }, ["PLAN", "DONE"], "c2c_ab"), true);
 assert.equal(replyMatches({ ok: true, state: "PLAN", task_id: "c2c_zz" }, ["PLAN"], "c2c_ab"), false);
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-proof-"));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tagteam-proof-"));
 const replyPath = path.join(dir, "last-reply.json");
 assert.equal(peekReplyFile(replyPath), null);
 fs.writeFileSync(replyPath, "{not json", "utf8");
@@ -206,7 +206,7 @@ const noState = spawnSync(
 assert.match(noState.stdout, /NO_STATE/);
 assert.notEqual(noState.status, 0, "write-reply does not fake PLAN from empty clipboard text");
 
-const liveReply = path.join(__dirname, "..", ".lob", "last-reply.json");
+const liveReply = path.join(__dirname, "..", ".tagteam", "last-reply.json");
 const backup = fs.existsSync(liveReply) ? fs.readFileSync(liveReply, "utf8") : null;
 try {
   const piped = spawnSync(process.execPath, [WRITE_REPLY, "--from-clipboard"], {
@@ -228,4 +228,4 @@ try {
 }
 
 fs.rmSync(dir, { recursive: true, force: true });
-console.log("ok: lob-loop-proof.test.mjs");
+console.log("ok: tagteam-loop-proof.test.mjs");

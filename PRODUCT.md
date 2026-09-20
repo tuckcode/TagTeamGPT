@@ -41,8 +41,8 @@ Not affiliated with OpenAI. Inspired by XiaoDuoYa/codex-with-chatgpt (MIT); this
 - **v0 (shipped):** Skill + protocol; human (or agent-driven) paste-back between Chat and Codex.
 - **v1 (shipped):** keystroke driver + auto-loop — `--goal` and `--path` once, then Chat ↔ Codex hops with ~1s focus bursts. No nested `chatgpt.com`.
 - **v2 (started):** Rhizome **mailbox** + **memory** — loop defaults write DONE/BLOCKED
-  receipts to `projects/lob/mailbox/` and goal notes to `projects/lob/memory/`.
-  Chat + Codex handoff are also **on by default** (`lob.config.json`). Vault writes
+  receipts to `projects/tagteam/mailbox/` and goal notes to `projects/tagteam/memory/`.
+  Chat + Codex handoff are also **on by default** (`tagteam.config.json`). Vault writes
   stay with Codex/Cursor tools — **not** the Chat-facing workspace MCP.
 - **v3 (in progress):** read-only workspace MCP (`mcp/`) over Streamable HTTP so Chat can `git_diff` / `read_file` without paste. Needs HTTPS tunnel + ChatGPT Developer Mode connector; optional (paste-back works without it); human still on BLOCKED. Keep this MCP **repo-read-only** — no vault writes through the tunnel.
 - Never use Work as the planning brain (coding-quota adjacent).

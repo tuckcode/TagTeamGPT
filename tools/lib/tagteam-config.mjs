@@ -1,16 +1,16 @@
 /**
  * Shared TagTeamGPT config. Defaults make the full Chat→Codex loop the happy path.
  *
- * Merge order (later wins): built-in → repo `lob.config.json` → `.lob/config.json` → env.
+ * Merge order (later wins): built-in → repo `tagteam.config.json` → `.tagteam/config.json` → env.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ocrEnabled, resolveTiming } from "./lob-driver-helpers.mjs";
+import { ocrEnabled, resolveTiming } from "./tagteam-driver-helpers.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
-const STATE_DIR = path.join(ROOT, ".lob");
+const STATE_DIR = path.join(ROOT, ".tagteam");
 const SESSION_PATH = path.join(STATE_DIR, "session.json");
 
 export const DEFAULTS = {
@@ -28,14 +28,14 @@ export const DEFAULTS = {
   mailbox_nudge_days: 14,
   /** MCP+tunnel idle auto-stop (minutes). 0 = disabled — keep Quick Tunnel URL stable */
   mcp_idle_minutes: 0,
-  /** Driver timing (ms). Env LOB_*_MS overrides these. */
+  /** Driver timing (ms). Env TAGTEAM_*_MS overrides these. */
   focus_ms: 200,
   mode_settle_ms: 350,
   paste_ms: 120,
   enter_ms: 250,
   focus_retries: 4,
   focus_retry_ms: 40,
-  /** Stuck-path OCR of mode chip; off on happy path. LOB_OCR=1 / --verify-vision */
+  /** Stuck-path OCR of mode chip; off on happy path. TAGTEAM_OCR=1 / --verify-vision */
   ocr: false,
   /** Chat reply wait after paste (ms). Generation runs unfocused. Soul High + submit_c2c needs minutes, not 20s. */
   chat_wait_ms: 180_000,
@@ -51,7 +51,7 @@ function readJson(p) {
 }
 
 export function loadConfig() {
-  const repo = readJson(path.join(ROOT, "lob.config.json"));
+  const repo = readJson(path.join(ROOT, "tagteam.config.json"));
   const local = readJson(path.join(STATE_DIR, "config.json"));
   const merged = { ...DEFAULTS, ...repo, ...local };
   const timing = resolveTiming(merged);

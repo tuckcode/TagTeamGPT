@@ -1,29 +1,29 @@
 /**
  * Loop proof helpers. Driver ok:true = keys_fired; accepted = next [C2C]
- * STATE in last-reply.json (Chat) or <repo>/.lob/executed.json (Codex).
+ * STATE in last-reply.json (Chat) or <repo>/.tagteam/executed.json (Codex).
  * Chat wait never Select-Alls the thread. One Enter retry on timeout, then NO_REPLY.
  */
 import fs from "node:fs";
 import path from "node:path";
 
 export const WIN_CLIP_HINT =
-  "Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard";
+  "Get-Clipboard -Raw | node tools/tagteam-write-reply.mjs --from-clipboard";
 export const POSIX_CLIP_HINT =
-  "pbpaste | node tools/lob-write-reply.mjs --from-clipboard";
+  "pbpaste | node tools/tagteam-write-reply.mjs --from-clipboard";
 
 export function clipboardHint(platform = process.platform) {
   return platform === "win32" ? WIN_CLIP_HINT : POSIX_CLIP_HINT;
 }
 
 export function executedJsonPath(repoPath) {
-  return path.join(repoPath, ".lob", "executed.json");
+  return path.join(repoPath, ".tagteam", "executed.json");
 }
 
 export function chatReplyPaths(stateReplyPath, repoPath) {
   const paths = [];
   if (stateReplyPath) paths.push(stateReplyPath);
   if (repoPath) {
-    const alt = path.join(repoPath, ".lob", "last-reply.json");
+    const alt = path.join(repoPath, ".tagteam", "last-reply.json");
     if (!paths.some((p) => path.resolve(p) === path.resolve(alt))) paths.push(alt);
   }
   return paths;

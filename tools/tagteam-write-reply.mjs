@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Write .lob/last-reply.json for the auto-loop (when AX scrape fails).
+ * Write .tagteam/last-reply.json for the auto-loop (when AX scrape fails).
  *
- *   node tools/lob-write-reply.mjs --state PLAN --task-id c2c_xxxx [--snippet "…"]
- *   pbpaste | node tools/lob-write-reply.mjs --from-clipboard          # macOS
- *   Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard  # Windows
- *   node tools/lob-write-reply.mjs --from-text "$(cat reply.md)"
+ *   node tools/tagteam-write-reply.mjs --state PLAN --task-id c2c_xxxx [--snippet "…"]
+ *   pbpaste | node tools/tagteam-write-reply.mjs --from-clipboard          # macOS
+ *   Get-Clipboard -Raw | node tools/tagteam-write-reply.mjs --from-clipboard  # Windows
+ *   node tools/tagteam-write-reply.mjs --from-text "$(cat reply.md)"
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -14,7 +14,7 @@ import { execFileSync } from "node:child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const OUT = path.join(ROOT, ".lob", "last-reply.json");
+const OUT = path.join(ROOT, ".tagteam", "last-reply.json");
 
 function arg(flag, fallback = null) {
   const i = process.argv.indexOf(flag);
@@ -102,7 +102,7 @@ function main() {
           ok: false,
           code: "USAGE",
           detail:
-            "lob-write-reply.mjs --state PLAN --task-id c2c_… [--snippet …] | --from-clipboard | --from-text …",
+            "tagteam-write-reply.mjs --state PLAN --task-id c2c_… [--snippet …] | --from-clipboard | --from-text …",
         })
       );
       process.exitCode = 1;

@@ -3,11 +3,11 @@
  * TagTeamGPT read-only workspace MCP over Streamable HTTP.
  *
  * Local:
- *   LOB_ROOT=/path/to/repo LOB_MCP_TOKEN=secret node src/http.mjs
+ *   TAGTEAM_ROOT=/path/to/repo TAGTEAM_MCP_TOKEN=secret node src/http.mjs
  *   → http://127.0.0.1:8743/mcp
  *
  * ChatGPT Chat connector needs a public HTTPS URL (tunnel) + Developer Mode.
- * Auth: Authorization: Bearer <LOB_MCP_TOKEN>
+ * Auth: Authorization: Bearer <TAGTEAM_MCP_TOKEN>
  */
 import express from "express";
 import fs from "node:fs";
@@ -21,15 +21,15 @@ import { resolveRoot } from "./workspace.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultRoot = path.resolve(__dirname, "../..");
 
-const PORT = Number(process.env.PORT || process.env.LOB_MCP_PORT || 8743);
-const HOST = process.env.LOB_MCP_HOST || "127.0.0.1";
-const ROOT = resolveRoot(process.env.LOB_ROOT || defaultRoot);
+const PORT = Number(process.env.PORT || process.env.TAGTEAM_MCP_PORT || 8743);
+const HOST = process.env.TAGTEAM_MCP_HOST || "127.0.0.1";
+const ROOT = resolveRoot(process.env.TAGTEAM_ROOT || defaultRoot);
 const TOKEN =
-  process.env.LOB_MCP_TOKEN ||
+  process.env.TAGTEAM_MCP_TOKEN ||
   process.env.MCP_BEARER_TOKEN ||
   randomBytes(24).toString("hex");
 
-const ACTIVITY = path.join(ROOT, ".lob", "mcp.last-activity");
+const ACTIVITY = path.join(ROOT, ".tagteam", "mcp.last-activity");
 
 function touchActivity() {
   try {
@@ -48,8 +48,8 @@ app.get("/health", (_req, res) => {
 });
 
 const ALLOW_NO_AUTH =
-  process.env.LOB_MCP_ALLOW_NO_AUTH === "1" ||
-  process.env.LOB_MCP_ALLOW_NO_AUTH === "true";
+  process.env.TAGTEAM_MCP_ALLOW_NO_AUTH === "1" ||
+  process.env.TAGTEAM_MCP_ALLOW_NO_AUTH === "true";
 
 function logHit(kind, req, extra = {}) {
   try {
@@ -61,7 +61,7 @@ function logHit(kind, req, extra = {}) {
         path: req.path,
         ...extra,
       }) + "\n";
-    fs.appendFileSync(path.join(ROOT, ".lob", "mcp.access.log"), line);
+    fs.appendFileSync(path.join(ROOT, ".tagteam", "mcp.access.log"), line);
   } catch {
     /* ignore */
   }
@@ -121,11 +121,11 @@ app.listen(PORT, HOST, () => {
       hint: "Tunnel this URL over HTTPS, then add as a ChatGPT custom MCP connector (Developer Mode). Send Authorization: Bearer <token>.",
     })
   );
-  if (!process.env.LOB_MCP_TOKEN && !process.env.MCP_BEARER_TOKEN) {
+  if (!process.env.TAGTEAM_MCP_TOKEN && !process.env.MCP_BEARER_TOKEN) {
     console.error(
       JSON.stringify({
         warning:
-          "LOB_MCP_TOKEN was not set; generated an ephemeral token for this process (not printed — read .lob/mcp.token or set the env)",
+          "TAGTEAM_MCP_TOKEN was not set; generated an ephemeral token for this process (not printed — read .tagteam/mcp.token or set the env)",
         token_set: true,
       })
     );

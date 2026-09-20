@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const src = fs.readFileSync(
-  path.join(path.dirname(fileURLToPath(import.meta.url)), "lob-driver.mjs"),
+  path.join(path.dirname(fileURLToPath(import.meta.url)), "tagteam-driver.mjs"),
   "utf8"
 );
 
@@ -21,4 +21,4 @@ assert.match(src, /function ensureFront/, "macOS polls frontmost before keys");
 assert.match(src, /AXRaise/, "macOS raises the named ChatGPT window");
 assert.match(src, /assertFront\(\);\s*\n\s*se\.keystroke\('v'/, "macOS checks frontmost immediately before ⌘V");
 
-console.log("ok: lob-driver.test.mjs");
+console.log("ok: tagteam-driver.test.mjs");

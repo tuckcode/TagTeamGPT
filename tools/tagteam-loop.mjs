@@ -3,15 +3,15 @@
  * TagTeamGPT auto-loop (macOS + Windows): Chat plans → Codex executes → Chat reviews.
  * Mode hotkeys via driver: macOS Control+1/2/3, Windows Alt+1/2/3.
  *
- *   node tools/lob-loop.mjs --goal "…" [--path /path/to/repo] [--boot]
+ *   node tools/tagteam-loop.mjs --goal "…" [--path /path/to/repo] [--boot]
  *
  * You give the goal and the folder path once. The loop hops Chat ↔ Codex
  * after that. ChatGPT is stolen for ~1s per paste, then given back.
- * Chat/Codex keep generating while you click around. Codex done = <repo>/.lob/executed.json
- * (no focus). Chat reply = poll .lob/last-reply.json (submit_c2c). One Enter on timeout,
+ * Chat/Codex keep generating while you click around. Codex done = <repo>/.tagteam/executed.json
+ * (no focus). Chat reply = poll .tagteam/last-reply.json (submit_c2c). One Enter on timeout,
  * then NO_REPLY — never Select All, never invent a PLAN.
  *
- * Defaults (lob.config.json / .lob/config.json):
+ * Defaults (tagteam.config.json / .tagteam/config.json):
  *   codex: true   — paste PLAN into Codex (⌃3 / Alt+3)
  *   mailbox: true — Rhizome DONE/BLOCKED note
  *   memory: true  — Rhizome goal note
@@ -21,26 +21,26 @@
  * Overrides: --no-codex --no-mailbox --no-memory --codex --mailbox --memory --boot
  *
  * Stay on one pinned Chat thread — do not open New chat between turns.
- * Driver ok:true = keys_fired; accepted = next [C2C] STATE or .lob/executed.json.
+ * Driver ok:true = keys_fired; accepted = next [C2C] STATE or .tagteam/executed.json.
  */
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
-import { loadConfig, flagOrConfig, readSession, writeSession, ROOT, STATE_DIR } from "./lib/lob-config.mjs";
+import { loadConfig, flagOrConfig, readSession, writeSession, ROOT, STATE_DIR } from "./lib/tagteam-config.mjs";
 import {
   chatReplyPaths,
   executedJsonPath,
   waitForChatStateWithRetry,
   waitForExecutedFile,
-} from "./lib/lob-loop-proof.mjs";
+} from "./lib/tagteam-loop-proof.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DRIVER = path.join(__dirname, "lob-driver.mjs");
-const MAILBOX = path.join(__dirname, "lob-mailbox.mjs");
-const MEMORY = path.join(__dirname, "lob-memory.mjs");
-const NUDGE = path.join(__dirname, "lob-mailbox-nudge.mjs");
+const DRIVER = path.join(__dirname, "tagteam-driver.mjs");
+const MAILBOX = path.join(__dirname, "tagteam-mailbox.mjs");
+const MEMORY = path.join(__dirname, "tagteam-memory.mjs");
+const NUDGE = path.join(__dirname, "tagteam-mailbox-nudge.mjs");
 const PLAN_PATH = path.join(STATE_DIR, "last-plan.md");
 const REPLY_PATH = path.join(STATE_DIR, "last-reply.json");
 
@@ -140,7 +140,7 @@ function runHelper(script, args) {
 }
 
 function recordMailbox({ enabled, state, taskId, goal, snippet, iteration }) {
-  if (!enabled || process.env.LOB_MAILBOX === "0") {
+  if (!enabled || process.env.TAGTEAM_MAILBOX === "0") {
     return { ok: true, skipped: true };
   }
   return runHelper(MAILBOX, [
@@ -158,7 +158,7 @@ function recordMailbox({ enabled, state, taskId, goal, snippet, iteration }) {
 }
 
 function recordMemory(enabled, args) {
-  if (!enabled || process.env.LOB_MEMORY === "0") {
+  if (!enabled || process.env.TAGTEAM_MEMORY === "0") {
     return { ok: true, skipped: true };
   }
   return runHelper(MEMORY, args);
@@ -314,13 +314,13 @@ async function onPlan(planText, taskId, iteration, useCodex, repoPath) {
     if (!r.ok) return null;
   }
 
-  const hook = process.env.LOB_ON_PLAN;
+  const hook = process.env.TAGTEAM_ON_PLAN;
   if (hook) {
     execFileSync(hook, [PLAN_PATH, taskId, String(iteration)], {
       cwd: repoPath,
       stdio: "inherit",
       shell: true,
-      env: { ...process.env, LOB_PLAN: PLAN_PATH, LOB_TASK_ID: taskId, LOB_REPO: repoPath },
+      env: { ...process.env, TAGTEAM_PLAN: PLAN_PATH, TAGTEAM_TASK_ID: taskId, TAGTEAM_REPO: repoPath },
     });
     if (fs.existsSync(execPath)) {
       const raw = fs.readFileSync(execPath, "utf8");
@@ -354,7 +354,7 @@ async function main() {
         ok: false,
         code: "USAGE",
         detail:
-          'node tools/lob-loop.mjs --goal "…" [--path /path/to/repo] [--boot]',
+          'node tools/tagteam-loop.mjs --goal "…" [--path /path/to/repo] [--boot]',
       })
     );
     process.exitCode = 1;
@@ -514,7 +514,7 @@ async function main() {
           plan: PLAN_PATH,
           keys_fired: true,
           accepted: false,
-          detail: "No .lob/executed.json — Codex proof is that file only",
+          detail: "No .tagteam/executed.json — Codex proof is that file only",
         })
       );
       process.exitCode = 1;
