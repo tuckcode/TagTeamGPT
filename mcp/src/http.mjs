@@ -67,6 +67,18 @@ function logHit(kind, req, extra = {}) {
   }
 }
 
+// OAuth discovery probes /.well-known/* to decide whether this server speaks
+// OAuth. This server does not — it uses a static Bearer token. Answering those
+// probes with 401 makes a client read the error body as malformed protected
+// resource metadata; a clean 404 lets discovery conclude "no OAuth" and move on.
+// Only the discovery paths are exempt. /mcp still requires the Bearer token.
+app.use((req, res, next) => {
+  if (req.path.startsWith("/.well-known/")) {
+    return res.status(404).json({ error: "not_found" });
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   if (req.path === "/health") return next();
   if (ALLOW_NO_AUTH) {
