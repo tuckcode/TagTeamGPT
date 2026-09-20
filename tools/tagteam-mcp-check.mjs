@@ -2,10 +2,10 @@
 /**
  * Rigorous TagTeamGPT MCP check (local and/or tunneled HTTPS).
  *
- *   node tools/lob-mcp-check.mjs
- *   node tools/lob-mcp-check.mjs --url https://….trycloudflare.com/mcp
+ *   node tools/tagteam-mcp-check.mjs
+ *   node tools/tagteam-mcp-check.mjs --url https://….trycloudflare.com/mcp
  *
- * Reads Bearer token from LOB_MCP_TOKEN or .lob/mcp.token (never prints it).
+ * Reads Bearer token from TAGTEAM_MCP_TOKEN or .tagteam/mcp.token (never prints it).
  * Exit 0 only if every case passes.
  */
 import fs from "node:fs";
@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const STATE = path.join(ROOT, ".lob");
+const STATE = path.join(ROOT, ".tagteam");
 
 function arg(flag, fallback = null) {
   const i = process.argv.indexOf(flag);
@@ -23,9 +23,9 @@ function arg(flag, fallback = null) {
 }
 
 function loadToken() {
-  if (process.env.LOB_MCP_TOKEN) return process.env.LOB_MCP_TOKEN.trim();
+  if (process.env.TAGTEAM_MCP_TOKEN) return process.env.TAGTEAM_MCP_TOKEN.trim();
   const p = path.join(STATE, "mcp.token");
-  if (!fs.existsSync(p)) throw new Error("missing .lob/mcp.token");
+  if (!fs.existsSync(p)) throw new Error("missing .tagteam/mcp.token");
   return fs.readFileSync(p, "utf8").trim();
 }
 
@@ -190,7 +190,7 @@ async function main() {
   {
     const r = await callTool(10, "workspace_info", {});
     const text = toolText(r.msg);
-    mark(r.ok && /lob|branch|dirty/i.test(text), "workspace_info", {
+    mark(r.ok && /tagteam|branch|dirty/i.test(text), "workspace_info", {
       ms: r.ms,
       preview: text.slice(0, 200),
       error: r.error,
@@ -293,7 +293,49 @@ async function main() {
   process.exitCode = failed ? 1 : 0;
 }
 
+function describeFatal(e) {
+  const code = e?.cause?.code || e?.code || null;
+  const host = (() => {
+    try {
+      return new URL(arg("--url", loadDefaultUrl())).hostname;
+    } catch {
+      return null;
+    }
+  })();
+  if (code === "ENOTFOUND" || code === "EAI_AGAIN") {
+    return {
+      code: "DNS_UNRESOLVED",
+      detail: `This machine cannot resolve ${host}.`,
+      hint:
+        "The tunnel may still be healthy. Some routers return SERVFAIL for " +
+        "*.trycloudflare.com. Compare `dig +short <host>` with " +
+        "`dig +short @1.1.1.1 <host>`. If only the public resolver answers, " +
+        "point this Mac at 1.1.1.1/8.8.8.8, or test with " +
+        "`curl --resolve <host>:443:<ip>`. ChatGPT resolves from its own " +
+        "servers, so the connector can work even while this check fails.",
+    };
+  }
+  if (code === "ECONNREFUSED") {
+    return {
+      code: "MCP_DOWN",
+      detail: `Nothing accepted the connection at ${host}.`,
+      hint: "Run `node tools/tagteam-mcp-up.mjs status`, then `start` if it is down.",
+    };
+  }
+  return { code: "FATAL", detail: String(e?.message || e), hint: null };
+}
+
 main().catch((e) => {
-  console.log(JSON.stringify({ ok: false, case: "fatal", error: String(e.message || e) }));
+  const d = describeFatal(e);
+  console.log(
+    JSON.stringify({
+      ok: false,
+      case: "fatal",
+      code: d.code,
+      error: String(e?.message || e),
+      detail: d.detail,
+      ...(d.hint ? { hint: d.hint } : {}),
+    })
+  );
   process.exitCode = 1;
 });

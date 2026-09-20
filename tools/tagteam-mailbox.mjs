@@ -2,12 +2,12 @@
 /**
  * TagTeamGPT v2 mailbox — write DONE/BLOCKED notes into the Rhizome vault.
  *
- *   node tools/lob-mailbox.mjs \
+ *   node tools/tagteam-mailbox.mjs \
  *     --state DONE|BLOCKED --task-id c2c_xxxx --goal "…" [--snippet "…"] [--iteration N]
  *
  * Env:
- *   LOB_RHIZOME_VAULT  vault root (default: ~/Documents/Rhizome Vault)
- *   LOB_MAILBOX=0      disable (loop honors this too)
+ *   TAGTEAM_RHIZOME_VAULT  vault root (default: ~/Documents/Rhizome Vault)
+ *   TAGTEAM_MAILBOX=0      disable (loop honors this too)
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -21,7 +21,7 @@ function arg(flag, fallback = null) {
 
 function vaultRoot() {
   return (
-    process.env.LOB_RHIZOME_VAULT ||
+    process.env.TAGTEAM_RHIZOME_VAULT ||
     path.join(os.homedir(), "Documents", "Rhizome Vault")
   );
 }
@@ -37,8 +37,8 @@ function stamp() {
 }
 
 function main() {
-  if (process.env.LOB_MAILBOX === "0") {
-    console.log(JSON.stringify({ ok: true, skipped: true, reason: "LOB_MAILBOX=0" }));
+  if (process.env.TAGTEAM_MAILBOX === "0") {
+    console.log(JSON.stringify({ ok: true, skipped: true, reason: "TAGTEAM_MAILBOX=0" }));
     return;
   }
 
@@ -54,7 +54,7 @@ function main() {
         ok: false,
         code: "USAGE",
         detail:
-          "lob-mailbox.mjs --state DONE|BLOCKED --task-id c2c_… [--goal …] [--snippet …] [--iteration N]",
+          "tagteam-mailbox.mjs --state DONE|BLOCKED --task-id c2c_… [--goal …] [--snippet …] [--iteration N]",
       })
     );
     process.exitCode = 1;
@@ -62,7 +62,7 @@ function main() {
   }
 
   const root = vaultRoot();
-  const mailboxDir = path.join(root, "projects", "lob", "mailbox");
+  const mailboxDir = path.join(root, "projects", "tagteam", "mailbox");
   if (!fs.existsSync(root)) {
     console.log(JSON.stringify({ ok: false, code: "NO_VAULT", detail: root }));
     process.exitCode = 1;
@@ -101,7 +101,7 @@ ${(snippet || "").trim() || "(no snippet)"}
 
 ## Search
 
-\`lob mailbox\` · \`task_id: ${taskId}\` · \`${state}\`
+\`tagteam mailbox\` · \`task_id: ${taskId}\` · \`${state}\`
 `;
 
   if (fs.existsSync(outPath)) {

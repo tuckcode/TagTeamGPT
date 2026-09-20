@@ -14,12 +14,12 @@ export const TIMING_DEFAULTS = {
 };
 
 const TIMING_ENV = {
-  focus_ms: "LOB_FOCUS_MS",
-  mode_settle_ms: "LOB_MODE_SETTLE_MS",
-  paste_ms: "LOB_PASTE_MS",
-  enter_ms: "LOB_ENTER_MS",
-  focus_retries: "LOB_FOCUS_RETRIES",
-  focus_retry_ms: "LOB_FOCUS_RETRY_MS",
+  focus_ms: "TAGTEAM_FOCUS_MS",
+  mode_settle_ms: "TAGTEAM_MODE_SETTLE_MS",
+  paste_ms: "TAGTEAM_PASTE_MS",
+  enter_ms: "TAGTEAM_ENTER_MS",
+  focus_retries: "TAGTEAM_FOCUS_RETRIES",
+  focus_retry_ms: "TAGTEAM_FOCUS_RETRY_MS",
 };
 
 function positiveInt(value, fallback) {
@@ -72,10 +72,10 @@ export function pasteSettleMs(timing = TIMING_DEFAULTS, { verify = false, hotkey
   return positiveInt(timing.mode_settle_ms, TIMING_DEFAULTS.mode_settle_ms);
 }
 
-/** OCR/vision stuck-path only: LOB_OCR=1 or --verify-vision. */
+/** OCR/vision stuck-path only: TAGTEAM_OCR=1 or --verify-vision. */
 export function ocrEnabled(argv = process.argv, env = process.env, cfg = {}) {
   if (argv.includes("--verify-vision")) return true;
-  if (env.LOB_OCR === "1" || /^true$/i.test(String(env.LOB_OCR || ""))) return true;
+  if (env.TAGTEAM_OCR === "1" || /^true$/i.test(String(env.TAGTEAM_OCR || ""))) return true;
   return cfg.ocr === true;
 }
 

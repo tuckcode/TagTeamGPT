@@ -48,7 +48,7 @@ Under the hood, the loop uses a small state protocol:
 INIT → PLAN → EXECUTING → EXECUTED → REVIEW → PLAN | DONE | BLOCKED
 ```
 
-The default transport is deliberately simple: ChatGPT desktop mode keybinds plus clipboard handoffs. The optional driver automates those brief switches, and `.lob/executed.json` provides a durable signal that Codex finished its turn.
+The default transport is deliberately simple: ChatGPT desktop mode keybinds plus clipboard handoffs. The optional driver automates those brief switches, and `.tagteam/executed.json` provides a durable signal that Codex finished its turn.
 
 ## Quick start
 
@@ -83,7 +83,7 @@ You can also say `Use TagTeamGPT to …` and provide the goal plus the path to y
 ### 3. Run the loop
 
 ```bash
-node tools/lob-loop.mjs \
+node tools/tagteam-loop.mjs \
   --goal "Describe the outcome you want" \
   --path /path/to/your/repo \
   --boot
@@ -115,13 +115,13 @@ The manual copy-and-paste workflow remains available even when the driver or MCP
 
 ```bash
 # Switch to Chat with the desktop driver
-node tools/lob-driver.mjs to chat
+node tools/tagteam-driver.mjs to chat
 
 # Start the automated relay
-node tools/lob-loop.mjs --goal "…" --path /path/to/your/repo --boot
+node tools/tagteam-loop.mjs --goal "…" --path /path/to/your/repo --boot
 
 # Start the optional read-only workspace connector
-node tools/lob-mcp-up.mjs start
+node tools/tagteam-mcp-up.mjs start
 ```
 
 ## Documentation

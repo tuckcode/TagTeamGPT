@@ -15,8 +15,8 @@ Upstream inspiration:
 | Layer | State |
 | --- | --- |
 | v0 Skill + paste-back | Shipped (`.agents/skills/tagteam/`) |
-| v1 Keystroke driver | Shipped (`tools/lob-driver.mjs`, macOS Control+ / Windows Alt+) |
-| v2 Mailbox / memory | Started (`lob.config.json`, vault helpers) |
+| v1 Keystroke driver | Shipped (`tools/tagteam-driver.mjs`, macOS Control+ / Windows Alt+) |
+| v2 Mailbox / memory | Started (`tagteam.config.json`, vault helpers) |
 | v3 Read-only workspace MCP | Optional (`mcp/`, tunnel helper) |
 
 ## What we keep from C2C
@@ -51,7 +51,7 @@ Loop:
 1. You give `--goal` and `--path` once (`--boot` on a new Chat thread).
 2. The driver pastes INIT into Chat (~1s focus burst).
 3. Chat replies PLAN; the loop pastes that into Codex.
-4. Codex writes `<repo>/.lob/executed.json`; the loop pastes EXECUTED back to Chat.
+4. Codex writes `<repo>/.tagteam/executed.json`; the loop pastes EXECUTED back to Chat.
 5. Chat replies DONE, another PLAN, or BLOCKED.
 
 Protocol templates: [`.agents/skills/tagteam/references/protocol.md`](../.agents/skills/tagteam/references/protocol.md).

@@ -27,7 +27,7 @@ Invoke in ChatGPT desktop **Codex** with **`$tagteam`** — not Cursor’s `/` p
 3. **Connector is optional for review.** The auto-loop needs Chat to call
    `submit_c2c` after PLAN/DONE so it can hop without copying. Paste-back still
    works if the connector is off. Read-only repo tools stay as they were; this
-   one write is only `.lob/last-reply.json`. Rhizome mailbox is v2.
+   one write is only `.tagteam/last-reply.json`. Rhizome mailbox is v2.
 4. **Never** use **Work** as the planning brain. Chat only.
 5. Keep every Codex→Chat control message under ~1 KB. No full diffs or file dumps.
 6. Prefer the keyboard workflow in `references/keyboard.md` (⌃1 / ⌃3 + clipboard).
@@ -75,65 +75,65 @@ From the repo root (ChatGPT desktop running). macOS needs Accessibility for the
 shell; Windows verifies ChatGPT HWND focus, then STA PowerShell `SendInput`.
 
 ```bash
-node tools/lob-driver.mjs chat-send "$(cat <<'EOF'
+node tools/tagteam-driver.mjs chat-send "$(cat <<'EOF'
 [C2C]
 STATE: INIT
 ...
 EOF
 )"
-node tools/lob-driver.mjs send --mode codex "execute this PLAN"
+node tools/tagteam-driver.mjs send --mode codex "execute this PLAN"
 ```
 
 `codex-send` / `send --mode codex` fire Control+3 / Alt+3 and paste in **one**
 step. Do not `to codex` then `send` later — that restores Cursor in between and
 can paste into Chat. `chat-send` / `codex-send` require a payload starting with
 `[C2C]`; clipboard is set then read back before paste. `ok: true` = keys fired,
-not accepted (next `[C2C]` STATE or `.lob/executed.json`). After send the driver
+not accepted (next `[C2C]` STATE or `.tagteam/executed.json`). After send the driver
 restores the previous front app. Do not re-press ⌃1 / Alt+1 when already in
 Chat; `--force-mode` only when you mean it (New chat risk).
 
-Timing defaults: `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`,
-`LOB_PASTE_MS=120`, `LOB_ENTER_MS=250` (or `lob.config.json` /
-`.lob/config.json`).
+Timing defaults: `TAGTEAM_FOCUS_MS=200`, `TAGTEAM_MODE_SETTLE_MS=350`,
+`TAGTEAM_PASTE_MS=120`, `TAGTEAM_ENTER_MS=250` (or `tagteam.config.json` /
+`.tagteam/config.json`).
 
 Add `--verify` only for optional mode read-back (Electron often opaque; Windows
-UIA best-effort). OCR/vision off by default — `LOB_OCR=1` or
+UIA best-effort). OCR/vision off by default — `TAGTEAM_OCR=1` or
 `--verify-vision` only when `--verify` fails twice / mode unknown; abort if OCR
 says Work. No nested `chatgpt.com` / CUA on the happy path.
 
 ## Auto-loop (macOS + Windows)
 
 ```bash
-node tools/lob-loop.mjs --goal "…" --path /path/to/repo --boot
+node tools/tagteam-loop.mjs --goal "…" --path /path/to/repo --boot
 ```
 
 Give **goal** and **path** once. The loop hops Chat ↔ Codex after that.
-`--path` defaults to this repo if omitted. Overrides: `--no-codex` `--no-mailbox` `--no-memory`. Config: `lob.config.json` or `.lob/config.json`.
+`--path` defaults to this repo if omitted. Overrides: `--no-codex` `--no-mailbox` `--no-memory`. Config: `tagteam.config.json` or `.tagteam/config.json`.
 
-Polls `.lob/last-reply.json` (Chat MCP `submit_c2c`) for PLAN / DONE / BLOCKED
-— not Select-All scrape of the Chat thread. On PLAN writes `.lob/last-plan.md`
-and (by default) pastes into **Codex**. Waits for `.lob/executed.json`,
+Polls `.tagteam/last-reply.json` (Chat MCP `submit_c2c`) for PLAN / DONE / BLOCKED
+— not Select-All scrape of the Chat thread. On PLAN writes `.tagteam/last-plan.md`
+and (by default) pastes into **Codex**. Waits for `.tagteam/executed.json`,
 then EXECUTED back to the **same** Chat. DONE/BLOCKED → vault mailbox + memory.
 
-MCP tunnel helper: `node tools/lob-mcp-up.mjs start|stop|status`
+MCP tunnel helper: `node tools/tagteam-mcp-up.mjs start|stop|status`
 (idle auto-stop after `mcp_idle_minutes`, default 60). Mailbox skim nudge after
-DONE when 10 new notes **or** 14 days: `node tools/lob-mailbox-nudge.mjs`
+DONE when 10 new notes **or** 14 days: `node tools/tagteam-mailbox-nudge.mjs`
 (`--ack` after you skim).
 
 Do **not** open New chat between turns — one thread per goal.
 
 On Chat wait miss the loop tries one extra Enter, then `NO_REPLY`. If
-`.lob/last-reply.json` never appears, dump the reply yourself:
+`.tagteam/last-reply.json` never appears, dump the reply yourself:
 
 ```bash
 # copy Chat’s [C2C] reply, then:
 # macOS:
-pbpaste | node tools/lob-write-reply.mjs --from-clipboard
+pbpaste | node tools/tagteam-write-reply.mjs --from-clipboard
 # Windows (PowerShell):
-Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
+Get-Clipboard -Raw | node tools/tagteam-write-reply.mjs --from-clipboard
 ```
 
-Or write `.lob/last-reply.json` with `{ "ok": true, "state": "PLAN", "task_id": "…", "snippet": "…" }`.
+Or write `.tagteam/last-reply.json` with `{ "ok": true, "state": "PLAN", "task_id": "…", "snippet": "…" }`.
 
 ## Workflow
 

@@ -20,7 +20,7 @@
 2. You are in **Codex**, not Chat or Cursor.
 3. You used **`$tagteam`**, not `/tagteam` (slash is Cursor).
 4. Restart Codex / reopen the project.
-5. If you still have `~/.agents/skills/codexgpt` or `~/.agents/skills/lob`, delete them and copy `.agents/skills/tagteam` instead.
+5. If you still have `~/.agents/skills/codexgpt` or `~/.agents/skills/tagteam`, delete them and copy `.agents/skills/tagteam` instead.
 
 ## Codex says tests passed but files did not change in my repo
 
@@ -38,36 +38,36 @@
 
 **Cause:** The driver fired keystrokes; it does not prove ChatGPT accepted them. Common misses: wrong window focused, composer not focused, clipboard mismatch (payload did not round-trip), wrong Chat/Codex thread, Accessibility denied (macOS), or ChatGPT never received foreground (driver returns `FOCUS_LOST` and does **not** send ⌘V / Ctrl+V).
 
-**Fix:** Click the intended thread so the composer is active. Grant Accessibility (macOS). Retry. Confirm by the next `[C2C]` **STATE** or `.lob/executed.json` — not `ok: true` alone. After paste the driver restores the previous front app — that is expected. Keep ChatGPT running (minimized is ok; the driver restores it). If you get `FOCUS_LOST`, retry; do not paste by hand into the wrong app. `LOB_DEBUG=1` prints the Windows HWND log.
+**Fix:** Click the intended thread so the composer is active. Grant Accessibility (macOS). Retry. Confirm by the next `[C2C]` **STATE** or `.tagteam/executed.json` — not `ok: true` alone. After paste the driver restores the previous front app — that is expected. Keep ChatGPT running (minimized is ok; the driver restores it). If you get `FOCUS_LOST`, retry; do not paste by hand into the wrong app. `TAGTEAM_DEBUG=1` prints the Windows HWND log.
 
 ## Auto-loop returns `NO_REPLY` or never sees Chat’s PLAN
 
-**Cause:** The loop does not Select-All the Chat thread (Electron scrape is empty). It waits for Chat to call `submit_c2c`, which writes `.lob/last-reply.json`.
+**Cause:** The loop does not Select-All the Chat thread (Electron scrape is empty). It waits for Chat to call `submit_c2c`, which writes `.tagteam/last-reply.json`.
 
 **Fix:** Attach the workspace MCP connector and tell Chat to call `submit_c2c` after PLAN/DONE. If that still misses, copy Chat’s `[C2C]` reply, then:
 
 ```bash
 # macOS
-pbpaste | node tools/lob-write-reply.mjs --from-clipboard
+pbpaste | node tools/tagteam-write-reply.mjs --from-clipboard
 # Windows PowerShell
-Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
+Get-Clipboard -Raw | node tools/tagteam-write-reply.mjs --from-clipboard
 ```
 
 ## Slow machine — paste lands wrong or mode switch races
 
-**Fix:** Raise timing env vars (defaults): `LOB_FOCUS_MS`, `LOB_MODE_SETTLE_MS`, `LOB_PASTE_MS`, `LOB_ENTER_MS`. Focus retries (Windows `GetForegroundWindow` / macOS `frontmost` poll): `LOB_FOCUS_RETRIES`, `LOB_FOCUS_RETRY_MS`. Same keys may live in `lob.config.json` or `.lob/config.json`.
+**Fix:** Raise timing env vars (defaults): `TAGTEAM_FOCUS_MS`, `TAGTEAM_MODE_SETTLE_MS`, `TAGTEAM_PASTE_MS`, `TAGTEAM_ENTER_MS`. Focus retries (Windows `GetForegroundWindow` / macOS `frontmost` poll): `TAGTEAM_FOCUS_RETRIES`, `TAGTEAM_FOCUS_RETRY_MS`. Same keys may live in `tagteam.config.json` or `.tagteam/config.json`.
 
 ## Mode verify / OCR (stuck path only)
 
 **Cause:** `--verify` read-back is optional; Electron often hides the mode chip. Windows UIA is best-effort.
 
-**Fix:** Skip `--verify` on the happy path. If mode is unknown after two `--verify` failures, try `LOB_OCR=1` or `--verify-vision` (one crop of the mode chip). If OCR says **Work**, abort — never use Work as planner/executor. Do not reach for nested `chatgpt.com` / CUA unless you are truly stuck.
+**Fix:** Skip `--verify` on the happy path. If mode is unknown after two `--verify` failures, try `TAGTEAM_OCR=1` or `--verify-vision` (one crop of the mode chip). If OCR says **Work**, abort — never use Work as planner/executor. Do not reach for nested `chatgpt.com` / CUA unless you are truly stuck.
 
 ## MCP / tunnel attached but Chat still can’t read files
 
 **Checks:**
 
-1. Tunnel process still running (`node tools/lob-mcp-up.mjs status`).
+1. Tunnel process still running (`node tools/tagteam-mcp-up.mjs status`).
 2. Connector URL matches the **current** tunnel (pasting a URL into chat does not rebind settings).
 3. You are in a **Chat** cloud thread with the **tagteam-workspace** connector enabled in the `+` menu (an old `codexgpt-workspace` name will not match).
 4. Ask Chat to call `workspace_info` first.

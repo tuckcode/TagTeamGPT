@@ -9,7 +9,7 @@ weak points are: **did ChatGPT actually get focus**, **did the composer
 see a real key chord**, and **did Codex then run in `--path`**.
 
 `ok: true` still means **keys left the driver**, not accepted. Accepted is
-`.lob/last-reply.json` (Chat `submit_c2c`) or `.lob/executed.json` under the
+`.tagteam/last-reply.json` (Chat `submit_c2c`) or `.tagteam/executed.json` under the
 goal repo.
 
 ## Rules we keep
@@ -26,11 +26,11 @@ goal repo.
 
 ## Already in the driver
 
-Windows (`tools/lob-driver.mjs`): find ChatGPT HWND by process + top-level
+Windows (`tools/tagteam-driver.mjs`): find ChatGPT HWND by process + top-level
 window, `GetForegroundWindow` verify, `FOCUS_LOST` abort, restore previous
 HWND after Enter. Keys are an atomic `SendInput` array (Alt+1/3 with
 key-up, Ctrl+V, Enter) from STA PowerShell (`-STA`). `--debug` /
-`LOB_DEBUG=1`. Focus retries: `LOB_FOCUS_RETRIES` / `LOB_FOCUS_RETRY_MS`.
+`TAGTEAM_DEBUG=1`. Focus retries: `TAGTEAM_FOCUS_RETRIES` / `TAGTEAM_FOCUS_RETRY_MS`.
 `SendKeys` is gone — it leaves Alt stuck.
 
 Mac: JXA System Events, `AXRaise` the named ChatGPT window, poll
@@ -88,7 +88,7 @@ MSDN: `SendInput` does **not** clear keys the user is holding — check
    permission (Chen).
 2. If focus still fails from Node, a tiny always-running helper that owns a
    `RegisterHotKey`.
-3. Refuse `EXECUTED` unless `.lob/executed.json` is in `--path` (cwd trap is
+3. Refuse `EXECUTED` unless `.tagteam/executed.json` is in `--path` (cwd trap is
    not a hotkey bug).
 
 ## macOS (same three holes)
@@ -140,8 +140,8 @@ the text field.”
 | Check | Meaning |
 | --- | --- |
 | Driver `ok: true` | Keys fired at the OS |
-| Chat `.lob/last-reply.json` | Chat accepted PLAN/DONE/BLOCKED |
-| Codex `.lob/executed.json` **in `--path`** | Codex finished in the goal repo, not a `Documents/Codex/…` snapshot |
+| Chat `.tagteam/last-reply.json` | Chat accepted PLAN/DONE/BLOCKED |
+| Codex `.tagteam/executed.json` **in `--path`** | Codex finished in the goal repo, not a `Documents/Codex/…` snapshot |
 
 Alt+3 / ⌃3 only flips the tab. Mode ≠ project.
 

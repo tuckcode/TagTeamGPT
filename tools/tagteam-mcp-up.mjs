@@ -2,36 +2,36 @@
 /**
  * Start/stop the local MCP server + Cloudflare Quick Tunnel.
  *
- *   node tools/lob-mcp-up.mjs start|stop|status
+ *   node tools/tagteam-mcp-up.mjs start|stop|status
  *
  * Idle auto-stop (no cron): after mcp_idle_minutes with no /mcp traffic,
- * stops MCP + tunnel. Config: lob.config.json → mcp_idle_minutes (default 0 =
+ * stops MCP + tunnel. Config: tagteam.config.json → mcp_idle_minutes (default 0 =
  * leave running so the Quick Tunnel URL stays stable for ChatGPT connectors).
- * Set >0 to enable. Env: LOB_MCP_IDLE_MINUTES overrides.
+ * Set >0 to enable. Env: TAGTEAM_MCP_IDLE_MINUTES overrides.
  *
  * IMPORTANT: each Quick Tunnel restart mints a NEW https://*.trycloudflare.com
  * URL. ChatGPT TagTeamGPT / custom connectors do NOT auto-update — prefer
  * `status`/`start` reuse when already up; do not bounce the tunnel casually.
  *
  * Writes:
- *   .lob/mcp.pids.json
- *   .lob/mcp.connector-url
- *   .lob/mcp.last-activity
+ *   .tagteam/mcp.pids.json
+ *   .tagteam/mcp.connector-url
+ *   .tagteam/mcp.last-activity
  */
 import { spawn, execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadConfig } from "./lib/lob-config.mjs";
+import { loadConfig } from "./lib/tagteam-config.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const STATE = path.join(ROOT, ".lob");
+const STATE = path.join(ROOT, ".tagteam");
 const PIDS = path.join(STATE, "mcp.pids.json");
 const URL_FILE = path.join(STATE, "mcp.connector-url");
 const ACTIVITY = path.join(STATE, "mcp.last-activity");
 const MCP_DIR = path.join(ROOT, "mcp");
-const PORT = process.env.LOB_MCP_PORT || "8743";
+const PORT = process.env.TAGTEAM_MCP_PORT || "8743";
 
 function print(obj) {
   console.log(JSON.stringify(obj));
@@ -78,8 +78,8 @@ function ensureToken() {
 }
 
 function idleMinutes() {
-  if (process.env.LOB_MCP_IDLE_MINUTES != null) {
-    return Number(process.env.LOB_MCP_IDLE_MINUTES);
+  if (process.env.TAGTEAM_MCP_IDLE_MINUTES != null) {
+    return Number(process.env.TAGTEAM_MCP_IDLE_MINUTES);
   }
   return Number(loadConfig().mcp_idle_minutes ?? 60);
 }
@@ -93,7 +93,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const activity = ${JSON.stringify(ACTIVITY)};
 const stopCmd = ${JSON.stringify(process.execPath)};
-const stopArgs = ${JSON.stringify([path.join(__dirname, "lob-mcp-up.mjs"), "stop"])};
+const stopArgs = ${JSON.stringify([path.join(__dirname, "tagteam-mcp-up.mjs"), "stop"])};
 const idleMs = ${ms};
 const poll = 30000;
 function last() {
@@ -136,7 +136,7 @@ async function start() {
   }
 
   const token = ensureToken();
-  const allowNoAuth = process.env.LOB_MCP_ALLOW_NO_AUTH === "1";
+  const allowNoAuth = process.env.TAGTEAM_MCP_ALLOW_NO_AUTH === "1";
   const idle = idleMinutes();
 
   const mcpLog = path.join(STATE, "mcp.server.log");
@@ -150,10 +150,10 @@ async function start() {
     cwd: MCP_DIR,
     env: {
       ...process.env,
-      LOB_ROOT: ROOT,
-      LOB_MCP_TOKEN: token,
-      LOB_MCP_PORT: PORT,
-      ...(allowNoAuth ? { LOB_MCP_ALLOW_NO_AUTH: "1" } : {}),
+      TAGTEAM_ROOT: ROOT,
+      TAGTEAM_MCP_TOKEN: token,
+      TAGTEAM_MCP_PORT: PORT,
+      ...(allowNoAuth ? { TAGTEAM_MCP_ALLOW_NO_AUTH: "1" } : {}),
     },
     stdio: ["ignore", mcpOut, mcpOut],
     detached: true,
@@ -213,8 +213,8 @@ async function start() {
     pids,
     idle_minutes: idle,
     note: allowNoAuth
-      ? "No-auth allowed (LOB_MCP_ALLOW_NO_AUTH=1)"
-      : "Bearer required; token in .lob/mcp.token",
+      ? "No-auth allowed (TAGTEAM_MCP_ALLOW_NO_AUTH=1)"
+      : "Bearer required; token in .tagteam/mcp.token",
   });
 }
 
@@ -256,6 +256,6 @@ if (cmd === "start") start();
 else if (cmd === "stop") stop();
 else if (cmd === "status") status();
 else {
-  print({ ok: false, code: "USAGE", detail: "lob-mcp-up.mjs start|stop|status" });
+  print({ ok: false, code: "USAGE", detail: "tagteam-mcp-up.mjs start|stop|status" });
   process.exitCode = 1;
 }

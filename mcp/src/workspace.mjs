@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { parseC2C } from "../../tools/lib/lob-driver-helpers.mjs";
+import { parseC2C } from "../../tools/lib/tagteam-driver-helpers.mjs";
 
 const DENY_NAME = new Set([
   ".env",
@@ -22,11 +22,11 @@ const DENY_PART = [
   "/.gnupg/",
   "/.aws/",
   "/.cursor/hooks/state/",
-  "/.lob/",
+  "/.tagteam/",
   "/.codexgpt/",
 ];
 
-export function resolveRoot(cwd = process.env.LOB_ROOT || process.cwd()) {
+export function resolveRoot(cwd = process.env.TAGTEAM_ROOT || process.cwd()) {
   return path.resolve(cwd);
 }
 
@@ -283,7 +283,7 @@ export function gitDiff(root, { staged = false, path: rel, offset = 0, limit = 2
 export function writeC2cReply(root, message) {
   const parsed = parseC2C(message);
   if (!parsed.ok) throw new Error(parsed.detail || "No C2C STATE found");
-  const dir = path.join(root, ".lob");
+  const dir = path.join(root, ".tagteam");
   fs.mkdirSync(dir, { recursive: true });
   const reply = {
     ok: true,

@@ -2,12 +2,12 @@
 /**
  * TagTeamGPT v2 memory — longer goal/decision notes in the Rhizome vault.
  *
- *   node tools/lob-memory.mjs --action start --task-id c2c_xxxx --goal "…"
- *   node tools/lob-memory.mjs --action finish --task-id c2c_xxxx --goal "…" \
+ *   node tools/tagteam-memory.mjs --action start --task-id c2c_xxxx --goal "…"
+ *   node tools/tagteam-memory.mjs --action finish --task-id c2c_xxxx --goal "…" \
  *     --state DONE|BLOCKED [--snippet "…"] [--iteration N] [--mailbox-path "…"]
- *   node tools/lob-memory.mjs --action decision --task-id c2c_xxxx --decision "…"
+ *   node tools/tagteam-memory.mjs --action decision --task-id c2c_xxxx --decision "…"
  *
- * Env: LOB_RHIZOME_VAULT, LOB_MEMORY=0
+ * Env: TAGTEAM_RHIZOME_VAULT, TAGTEAM_MEMORY=0
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -21,7 +21,7 @@ function arg(flag, fallback = null) {
 
 function vaultRoot() {
   return (
-    process.env.LOB_RHIZOME_VAULT ||
+    process.env.TAGTEAM_RHIZOME_VAULT ||
     path.join(os.homedir(), "Documents", "Rhizome Vault")
   );
 }
@@ -32,11 +32,11 @@ function today() {
 }
 
 function memoryPath(root, taskId) {
-  return path.join(root, "projects", "lob", "memory", `${taskId}.md`);
+  return path.join(root, "projects", "tagteam", "memory", `${taskId}.md`);
 }
 
 function ensureHub(root) {
-  const memDir = path.join(root, "projects", "lob", "memory");
+  const memDir = path.join(root, "projects", "tagteam", "memory");
   fs.mkdirSync(memDir, { recursive: true });
   const readme = path.join(memDir, "README.md");
   if (!fs.existsSync(readme)) {
@@ -95,8 +95,8 @@ _Pending._
 }
 
 function main() {
-  if (process.env.LOB_MEMORY === "0") {
-    console.log(JSON.stringify({ ok: true, skipped: true, reason: "LOB_MEMORY=0" }));
+  if (process.env.TAGTEAM_MEMORY === "0") {
+    console.log(JSON.stringify({ ok: true, skipped: true, reason: "TAGTEAM_MEMORY=0" }));
     return;
   }
 
@@ -115,7 +115,7 @@ function main() {
         ok: false,
         code: "USAGE",
         detail:
-          "lob-memory.mjs --action start|finish|decision --task-id c2c_… [--goal …] [--state DONE|BLOCKED] [--decision …]",
+          "tagteam-memory.mjs --action start|finish|decision --task-id c2c_… [--goal …] [--state DONE|BLOCKED] [--decision …]",
       })
     );
     process.exitCode = 1;

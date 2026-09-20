@@ -2,7 +2,7 @@
 
 ChatGPT **Chat** plans and reviews. **Codex** edits, runs shells, and tests. You (or the keystroke driver) move short `[C2C]` messages between them.
 
-![TagTeamGPT loop](lob-loop-diagram.png)
+![TagTeamGPT loop](tagteam-loop-diagram.png)
 
 *Placeholder diagram.*
 
@@ -17,7 +17,7 @@ INIT → PLAN → EXECUTING → EXECUTED → REVIEW → PLAN | DONE | BLOCKED
 Give a **goal** and a **repo path**. The driver hops those states: Chat plans, Codex edits, Chat reviews.
 
 ```bash
-node tools/lob-loop.mjs --goal "…" --path /path/to/repo --boot
+node tools/tagteam-loop.mjs --goal "…" --path /path/to/repo --boot
 ```
 
 Keep control messages under ~1 KB. Do not dump full diffs into Chat unless Chat asks for one short snippet (or the optional MCP connector can `git_diff` / `read_file`).
@@ -51,17 +51,17 @@ From the repo root:
 
 ```bash
 # Flip modes — macOS Control+1/2/3 · Windows Alt+1/2/3
-node tools/lob-driver.mjs to chat
-node tools/lob-driver.mjs to codex
+node tools/tagteam-driver.mjs to chat
+node tools/tagteam-driver.mjs to codex
 
 # Paste + Enter in the current mode (no mode switch)
-node tools/lob-driver.mjs send "hello"
+node tools/tagteam-driver.mjs send "hello"
 
 # Enter only (composer already focused)
-node tools/lob-driver.mjs enter
+node tools/tagteam-driver.mjs enter
 
 # Switch to Chat, paste a stub, send
-node tools/lob-driver.mjs chat-send "$(cat <<'EOF'
+node tools/tagteam-driver.mjs chat-send "$(cat <<'EOF'
 [C2C]
 STATE: INIT
 TASK_ID: c2c_demo
@@ -73,37 +73,37 @@ EOF
 )"
 ```
 
-On Windows PowerShell you can also: `Get-Content stub.txt -Raw | node tools/lob-driver.mjs chat-send -`
+On Windows PowerShell you can also: `Get-Content stub.txt -Raw | node tools/tagteam-driver.mjs chat-send -`
 
 `chat-send` / `codex-send` require a payload starting with `[C2C]`. The driver sets the clipboard and reads it back before paste. `codex-send` and `send --mode codex` fire Control+3 / Alt+3 and paste in one step — do not `to codex` then `send` later.
 
-`ok: true` means **keys fired**, not “Chat accepted the message.” Confirmation is the next `[C2C]` **STATE** or `.lob/executed.json` (or another expected file side-effect). After send, the driver restores the previous front app (especially on macOS).
+`ok: true` means **keys fired**, not “Chat accepted the message.” Confirmation is the next `[C2C]` **STATE** or `.tagteam/executed.json` (or another expected file side-effect). After send, the driver restores the previous front app (especially on macOS).
 
 Prefer `chat-send` / `codex-send` / `send --mode chat|codex`. **Do not re-press `Control+1` / `Alt+1` when already in Chat** — it can open New chat and abandon your pinned planner thread. Use `--force-mode` only when you mean to fire the Chat hotkey anyway.
 
 Optional `--verify` tries a mode read-back. Electron often hides the mode chip from accessibility; Windows UIA is best-effort. Skip verify on the happy path and confirm the thread by eye.
 
-**Timing** (slow machine? raise these): `LOB_FOCUS_MS=200`, `LOB_MODE_SETTLE_MS=350`, `LOB_PASTE_MS=120`, `LOB_ENTER_MS=250`. Same keys may live in `lob.config.json` or `.lob/config.json`.
+**Timing** (slow machine? raise these): `TAGTEAM_FOCUS_MS=200`, `TAGTEAM_MODE_SETTLE_MS=350`, `TAGTEAM_PASTE_MS=120`, `TAGTEAM_ENTER_MS=250`. Same keys may live in `tagteam.config.json` or `.tagteam/config.json`.
 
-**Vision / OCR is off by default.** Use `LOB_OCR=1` or `--verify-vision` only when `--verify` fails twice or mode is unknown — one crop of the mode chip. If OCR says Work, abort. No nested `chatgpt.com` / CUA on the happy path.
+**Vision / OCR is off by default.** Use `TAGTEAM_OCR=1` or `--verify-vision` only when `--verify` fails twice or mode is unknown — one crop of the mode chip. If OCR says Work, abort. No nested `chatgpt.com` / CUA on the happy path.
 
 ## Auto-loop (macOS + Windows)
 
 ```bash
-node tools/lob-loop.mjs --goal "…" --path /path/to/repo --boot
+node tools/tagteam-loop.mjs --goal "…" --path /path/to/repo --boot
 ```
 
-Give the goal and the folder path once. ChatGPT is brought forward briefly to paste, then given back. On macOS and Windows the driver aborts with `FOCUS_LOST` instead of pasting if ChatGPT is not actually front. Chat and Codex keep writing while you click around. Codex done is a file (`<repo>/.lob/executed.json`) — no focus. Chat’s reply is `.lob/last-reply.json` after Chat calls MCP `submit_c2c` — the loop does not Select-All or scrape the Chat thread.
+Give the goal and the folder path once. ChatGPT is brought forward briefly to paste, then given back. On macOS and Windows the driver aborts with `FOCUS_LOST` instead of pasting if ChatGPT is not actually front. Chat and Codex keep writing while you click around. Codex done is a file (`<repo>/.tagteam/executed.json`) — no focus. Chat’s reply is `.tagteam/last-reply.json` after Chat calls MCP `submit_c2c` — the loop does not Select-All or scrape the Chat thread.
 
-Defaults (see `lob.config.json`): Chat + Codex handoff on; optional mailbox/memory notes.
+Defaults (see `tagteam.config.json`): Chat + Codex handoff on; optional mailbox/memory notes.
 
 If Chat’s `[C2C]` still is not seen, copy it and run:
 
 ```bash
 # macOS
-pbpaste | node tools/lob-write-reply.mjs --from-clipboard
+pbpaste | node tools/tagteam-write-reply.mjs --from-clipboard
 # Windows PowerShell
-Get-Clipboard -Raw | node tools/lob-write-reply.mjs --from-clipboard
+Get-Clipboard -Raw | node tools/tagteam-write-reply.mjs --from-clipboard
 ```
 
 See also: [Loop details](loop.md).
@@ -112,7 +112,7 @@ See also: [Loop details](loop.md).
 
 When Chat must independently check code after `EXECUTED`:
 
-1. `node tools/lob-mcp-up.mjs start`
+1. `node tools/tagteam-mcp-up.mjs start`
 2. Attach it in ChatGPT Developer Mode as connector **`tagteam-workspace`** (rename or replace `codexgpt-workspace`). Enable it on the Chat thread via `+`.
 3. Tell Chat to prefer `git_diff` / `read_file` over asking for pastes.
 
