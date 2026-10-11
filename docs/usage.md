@@ -2,8 +2,6 @@
 
 ChatGPT **Chat** plans and reviews. **Codex** edits, runs shells, and tests. You (or the keystroke driver) move short `[C2C]` messages between them.
 
-![TagTeamGPT loop](tagteam-loop-diagram.png)
-
 *Placeholder diagram.*
 
 `[C2C]` is the Chat-to-Codex handshake tag from upstream, not “clipboard-to-clipboard.”
