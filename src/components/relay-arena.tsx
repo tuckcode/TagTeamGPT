@@ -138,8 +138,9 @@ export function RelayArena() {
             <em>Two corners.</em>
           </h1>
           <p className="hero-lede">
-            Chat calls the play. Codex ships the change. TagTeamGPT keeps the
-            same mission moving between them inside the desktop app.
+            Make your Codex usage go further. Plan and review in Chat.
+            Reserve Codex for edits and tests. Compact handoffs keep repeated
+            context small.
           </p>
           <div className="hero-actions">
             <a className="button-primary" href="#relay">
@@ -156,7 +157,7 @@ export function RelayArena() {
         <div
           className="hero-poster"
           role="img"
-          aria-label="Chat and coding robots tagging hands in a futuristic wrestling ring"
+          aria-label="Screen-printed wrestling poster with two partners tagging hands"
           style={{ "--poster-image": `url(${imageBase}/tagteamgpt-banner.png)` } as CSSProperties & Record<"--poster-image", string>}
         >
           <div className="poster-label">PLAN IN CHAT <span>×</span> BUILD IN CODEX</div>
@@ -165,6 +166,18 @@ export function RelayArena() {
 
       <section className="marquee" aria-label="TagTeamGPT protocol states">
         <div>INIT <span>→</span> PLAN <span>→</span> EXECUTE <span>→</span> REVIEW <span>→</span> DONE <b>✦</b> INIT <span>→</span> PLAN <span>→</span> EXECUTE <span>→</span> REVIEW <span>→</span> DONE</div>
+      </section>
+
+      <section className="feature-section" id="usage">
+        <div className="section-heading">
+          <p className="kicker"><span /> Why this tool exists</p>
+          <h2>Spend less Codex usage on repeated thinking.</h2>
+          <p>Chat plans and reviews. Codex implements and tests. A scoped project brief and saved changes for each turn help avoid repeated repository dumps.</p>
+          <p>This is the intended benefit. We have no published savings percentage. Extra handoffs and retries also consume resources.</p>
+          <p>OpenAI recommends focused prompts and relevant source files. Actual usage also depends on the model, context, reasoning, tools, and caching.</p>
+          <p><a href="https://learn.chatgpt.com/docs/pricing#what-can-i-do-to-make-my-usage-limits-last-longer">OpenAI usage guidance</a>{" · "}<a href="https://learn.chatgpt.com/docs/use-chatgpt">Chat, Work, and Codex</a>{" · "}<a href="https://github.com/tuckcode/TagTeamGPT/blob/main/docs/usage-savings.md">Rationale and measurement plan</a></p>
+          <p>Work and Codex share usage limits. Use ordinary Chat for planning. Billing rules vary by plan and workspace.</p>
+        </div>
       </section>
 
       <section className="relay-section" id="relay">

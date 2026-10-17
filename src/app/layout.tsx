@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "TagTeamGPT — Plan in Chat. Build in Codex.",
   description:
-    "A desktop-native Chat-to-Codex relay. Plan, execute, review, and keep the same goal moving.",
+    "Make your Codex usage go further. Plan and review in Chat, keep Codex focused on edits and tests, and exchange compact handoffs.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
