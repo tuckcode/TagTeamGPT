@@ -818,6 +818,7 @@ export function searchWorkspace(root, query, page = 0, pageSize = 30, opts = {})
     "!.git",
     "-m",
     "200",
+    "--",
     query,
     ".",
   ];
