@@ -105,7 +105,7 @@ Mode shortcuts switch the active surface; they do not select a Codex project. Al
 | Layer | Status | Purpose |
 | --- | --- | --- |
 | `$tagteam` skill + protocol | **Shipped** | Manual, reliable Chat ↔ Codex handoffs |
-| Guarded driver + auto-loop | **Mac guard added** | Live interruption and guarded-send checks passed. The complete planner and executor cycle still needs validation. Windows uses manual handoffs. |
+| Guarded driver + auto-loop | **Mac guard added** | Live interruption, guarded-send, and setup-click interruption checks passed. Setup warns for 15 seconds and preserves drafts. The complete planner and executor cycle still needs validation. Windows uses manual handoffs. |
 | Mailbox and memory helpers | **In progress** | Durable receipts and goal notes |
 | Read-only workspace MCP | **Optional** | Selective repo visibility for Chat |
 

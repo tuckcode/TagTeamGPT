@@ -79,6 +79,9 @@ Remappable in Settings → Keyboard Shortcuts. If flaky, tell the user to remap.
 ## Guarded desktop driver
 
 Before a live desktop handoff, read `references/keyboard.md` and `docs/desktop-control.md` in the TagTeamGPT clone.
+Use guarded setup commands for mode selection, project removal, and message-box focus.
+Use read-only screen inspection to prepare one setup step at a time.
+Require its exact expected result before continuing.
 Bind the intended named Chat and Codex conversations before starting the loop.
 Use separate windows so the driver can verify each target without navigating between conversations.
 Require visible control, interruption monitoring, and verified conversation identity for every send.

@@ -85,4 +85,89 @@ for (const command of [["enter"], ["to", "chat"], ["to", "codex", "--force-mode"
   assert.equal(guardedControl({ action: "send", mode: "chat", text: "[C2C]" }, f.deps).code, "CONTROL_UNSUPPORTED");
   assert.equal(f.calls.length, 0);
 }
-console.log("ok: guarded handoffs pause, require identity, and never replay");
+
+const setupTarget = { ...target, mode: "setup", title: "ChatGPT" };
+const setupStep = { control: { role: "AXCheckBox", label: "Chat", selected: false },
+  after: { role: "AXTextArea", label: "Message ChatGPT" } };
+function setupFixture() {
+  const f = fixture({ ok: true, verified: true, target: setupTarget });
+  assert.equal(guardedControl({ action: "setup-bind" }, f.deps).ok, true);
+  f.calls.length = 0;
+  return f;
+}
+{
+  const f = setupFixture();
+  f.deps.native = request => {
+    f.calls.push(request);
+    return { ok: false, code: "USER_INTERRUPTED", click_performed: false };
+  };
+  assert.equal(guardedControl({ action: "setup", setup: setupStep }, f.deps).ok, false);
+  assert.equal(f.state().phase, "paused");
+  assert.equal(guardedControl({ action: "setup", setup: setupStep }, f.deps).code, "CONTROL_PAUSED");
+  assert.equal(f.calls.length, 1, "A setup interruption must cancel subsequent clicks.");
+}
+for (const code of ["TARGET_CHANGED", "SETUP_AMBIGUOUS", "SETUP_POSTCONDITION_FAILED", "MONITOR_UNAVAILABLE"]) {
+  const f = setupFixture();
+  f.deps.native = () => ({ ok: false, code, click_performed: code === "SETUP_POSTCONDITION_FAILED" });
+  assert.equal(guardedControl({ action: "setup", setup: setupStep }, f.deps).ok, false);
+  assert.equal(f.state().phase, "paused");
+}
+{
+  const f = setupFixture();
+  f.deps.native = () => ({ ok: true, verified: true, click_performed: true, postcondition_verified: true, target: setupTarget });
+  assert.equal(guardedControl({ action: "setup", setup: setupStep }, f.deps).ok, true);
+  assert.deepEqual(f.state().setup_target, setupTarget);
+  assert.deepEqual(f.state().targets.chat, target, "Setup must not replace the handoff binding.");
+}
+{
+  const f = setupFixture();
+  assert.equal(guardedControl({ action: "setup", setup: { ...setupStep, control: { role: "AXButton", label: "Send" } } }, f.deps).code, "SETUP_INVALID");
+  assert.equal(f.calls.length, 0);
+  assert.equal(guardedControl({ action: "setup", setup: { control: setupStep.control } }, f.deps).code, "SETUP_INVALID");
+}
+{
+  const f = setupFixture();
+  f.deps.native = () => ({ ok: true, verified: true, click_performed: true, target: setupTarget });
+  assert.equal(guardedControl({ action: "setup", setup: setupStep }, f.deps).ok, false,
+    "A click without a verified outcome is a paused failure.");
+}
+for (const flag of ["keys_fired", "paste_sent", "enter_sent"]) {
+  const f = setupFixture();
+  f.deps.native = () => ({ ok: true, verified: true, click_performed: true, postcondition_verified: true,
+    target: setupTarget, [flag]: true });
+  assert.equal(guardedControl({ action: "setup", setup: setupStep }, f.deps).ok, false);
+  assert.equal(f.state().phase, "paused");
+}
+{
+  const f = setupFixture();
+  f.deps.native = () => ({ ok: true, verified: true, target: { ...setupTarget, window_id: 999 } });
+  assert.equal(guardedControl({ action: "setup-resume" }, f.deps).ok, false);
+  assert.equal(f.state().phase, "paused");
+}
+{
+  const f = setupFixture();
+  f.deps.native = () => ({ ok: false, code: "USER_INTERRUPTED", click_attempted: true, click_performed: true });
+  guardedControl({ action: "setup", setup: setupStep }, f.deps);
+  assert.equal(f.state().click_attempted, true);
+  assert.equal(f.state().click_performed, true);
+  f.deps.native = request => { f.calls.push(request); return { ok: true, verified: true, target: setupTarget }; };
+  assert.equal(guardedControl({ action: "setup-resume" }, f.deps).ok, true);
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0].action, "setup-resume", "Setup resume must only verify the screen.");
+}
+{
+  const f = setupFixture();
+  const next = { ...setupTarget, title: "Expected new title" };
+  f.deps.native = () => ({ ok: true, verified: true, target: next, click_performed: true, postcondition_verified: true });
+  assert.equal(guardedControl({ action: "setup", setup: setupStep }, f.deps).ok, false, "Undeclared title changes must pause.");
+  f.deps.native = () => ({ ok: true, verified: true, target: setupTarget });
+  guardedControl({ action: "setup-resume" }, f.deps);
+  f.deps.native = () => ({ ok: true, verified: true, target: next, click_performed: true, postcondition_verified: true });
+  assert.equal(guardedControl({ action: "setup", setup: { ...setupStep, window_title_after: next.title } }, f.deps).ok, true);
+}
+for (const extra of [{ x: 10, y: 10 }, { steps: [setupStep] }, { force: true }]) {
+  const f = setupFixture();
+  assert.equal(guardedControl({ action: "setup", setup: { ...setupStep, ...extra } }, f.deps).code, "SETUP_INVALID");
+  assert.equal(f.calls.length, 0);
+}
+console.log("ok: guarded handoffs and setup clicks pause, verify identity, and never replay");

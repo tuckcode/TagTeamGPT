@@ -18,7 +18,13 @@ If verification fails, use a manual handoff.
 After an interruption, inspect the conversation and draft before explicit resume.
 Resume does not replay a message.
 Standalone mode changes and Enter retries are disabled.
-Use the guarded driver for live handoffs. Do not replace it with raw keystrokes or CUA input.
+Use `control setup-bind`, `control setup -`, and `control setup-resume` for setup UI changes.
+Read the current screen before preparing each exact control and expected result.
+Require a verified result after each action. An interruption cancels further steps.
+Keep setup bindings separate from message handoff bindings.
+Use read-only snapshots for discovery.
+Use the guarded driver for all setup and handoff input.
+Do not bypass it with raw CUA clicks, keystrokes, or direct UI navigation APIs.
 
 The manual mode shortcuts remain macOS Control+1/2/3 and Windows Alt+1/2/3.
 They select Chat, Work, and Codex in app versions that support those shortcuts.

@@ -32,11 +32,81 @@ func composerLabel(_ label: String, _ mode: String) -> Bool {
     let labels = mode == "chat" ? ["message chatgpt", "message", "work with chatgpt"] : mode == "codex" ? ["work with codex"] : []
     return labels.contains(label.lowercased())
 }
+struct PlaceholderNode {
+    let role: String
+    let classes: [String]
+    let value: String
+    let count: Int?
+    let children: [PlaceholderNode]
+}
+func suggestionOnly(_ raw: String, classes: [String], children: [PlaceholderNode]) -> Bool {
+    guard classes.contains("ProseMirror"), children.count == 1 else { return false }
+    let outer = children[0]
+    guard outer.role == "AXGroup", outer.classes == ["placeholder"], outer.value.isEmpty,
+          outer.count == 0, outer.children.count == 1 else { return false }
+    let inner = outer.children[0]
+    guard inner.role == "AXGroup", inner.classes.isEmpty, inner.value.isEmpty,
+          inner.count == 0, inner.children.count == 1 else { return false }
+    let text = inner.children[0]
+    guard text.role == "AXStaticText", text.classes.isEmpty, !text.value.isEmpty,
+          text.count == 0, text.children.isEmpty else { return false }
+    return draftMatches(raw, text.value)
+}
+func emptyComposer(_ raw: String, placeholder: String?, count: Int?) -> Bool {
+    if draftMatches(raw, nil) { return true }
+    guard count == 0, let placeholder = placeholder, !placeholder.isEmpty else { return false }
+    return draftMatches(raw, placeholder)
+}
 func draftMatches(_ raw: String, _ expected: String?) -> Bool {
     let content = raw.replacingOccurrences(of: "\r\n", with: "\n")
     guard let expected = expected else { return content.isEmpty || content == "\n" }
     let payload = expected.replacingOccurrences(of: "\r\n", with: "\n")
     return content == payload || content == payload + "\n"
+}
+struct SetupSelector: Decodable {
+    let role: String
+    let label: String
+    let selected: Bool?
+    let enabled: Bool?
+    let focused: Bool?
+    var valid: Bool { role.hasPrefix("AX") && !label.isEmpty && label.count <= 256 }
+}
+struct SetupStep: Decodable {
+    let control: SetupSelector
+    let after: SetupSelector
+    let window_title_after: String?
+    var valid: Bool {
+        return control.valid && after.valid && setupAllowed(control.role, control.label) &&
+            (window_title_after == nil || !window_title_after!.isEmpty && window_title_after!.count <= 256)
+    }
+}
+func setupAllowed(_ role: String, _ label: String) -> Bool {
+    let allowed: [String: [String]] = [
+        "AXButton": ["New chat", "Don't work in a project", "Show sidebar", "Hide sidebar"],
+        "AXCheckBox": ["Chat"],
+        "AXPopUpButton": ["Switch mode, current mode: ChatGPT", "Switch mode, current mode: Codex", "Choose project", "Work in", "Choose where to run this chat"],
+        "AXMenuItem": ["ChatGPT Create, learn, and explore", "Codex Build, debug, and ship"],
+        "AXTextArea": ["Message ChatGPT", "Message", "Work with ChatGPT", "Work with Codex", "Do anything"]
+    ]
+    return allowed[role]?.contains(label) == true
+}
+func guardedSetupAction<T>(check: () throws -> Void, perform: () throws -> Void, confirm: () throws -> T) rethrows -> T {
+    try check()
+    try perform()
+    try check()
+    return try confirm()
+}
+func setupFrame(_ node: AXUIElement) -> CGRect? {
+    guard let position = attribute(node, kAXPositionAttribute), CFGetTypeID(position) == AXValueGetTypeID(),
+          let dimensions = attribute(node, kAXSizeAttribute), CFGetTypeID(dimensions) == AXValueGetTypeID() else { return nil }
+    var point = CGPoint.zero
+    var size = CGSize.zero
+    guard AXValueGetValue(position as! AXValue, .cgPoint, &point),
+          AXValueGetValue(dimensions as! AXValue, .cgSize, &size) else { return nil }
+    return CGRect(origin: point, size: size)
+}
+func setupVisible(_ frame: CGRect, _ window: CGRect) -> Bool {
+    return frame.width >= 2 && frame.height >= 2 && window.contains(CGPoint(x: frame.midX, y: frame.midY))
 }
 
 final class Handoff {
@@ -47,6 +117,8 @@ final class Handoff {
     var observers: [NSObjectProtocol] = []
     var pasteSent = false
     var enterSent = false
+    var clickAttempted = false
+    var clickPerformed = false
     var interruptionSource: String?
     var applicationChangeObserved = false
     var draftEvidence: [String: Any] = [:]
@@ -146,13 +218,15 @@ final class Handoff {
             windows.first(where: { string($0, kAXTitleAttribute) == expected?["title"] as? String })
         guard let window = selected else { try reject("TARGET_UNVERIFIED") }
         let title = string(window, kAXTitleAttribute)
-        guard !title.isEmpty, !["ChatGPT", "Chat", "Codex", "New chat", "New tab"].contains(title) else { try reject("CONVERSATION_UNNAMED") }
+        let setup = ["setup-bind", "setup-resume", "setup"].contains(request["action"] as? String ?? "")
+        guard !title.isEmpty, setup || !["ChatGPT", "Chat", "Codex", "New chat", "New tab"].contains(title) else { try reject("CONVERSATION_UNNAMED") }
         guard windows.filter({ string($0, kAXTitleAttribute) == title }).count == 1 else { try reject("TARGET_AMBIGUOUS") }
         let list = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
         let matches = list.filter { ($0[kCGWindowOwnerPID as String] as? Int) == Int(app.processIdentifier) &&
                                     ($0[kCGWindowName as String] as? String) == title &&
                                     ($0[kCGWindowLayer as String] as? Int) == 0 }
         guard matches.count == 1, let windowID = matches.first?[kCGWindowNumber as String] as? Int else { try reject("WINDOW_ID_UNVERIFIED") }
+        guard matches.first?[kCGWindowIsOnscreen as String] as? Bool == true else { try reject("WINDOW_UNVERIFIED") }
         let target: [String: Any] = ["pid": Int(app.processIdentifier), "bundle": bundle, "title": title,
                                      "window_id": windowID, "mode": request["mode"] as? String ?? ""]
         if let expected = expected {
@@ -187,6 +261,33 @@ final class Handoff {
         guard fields.count == 1 else { try reject("COMPOSER_UNVERIFIED") }
         return fields[0]
     }
+    func placeholderNode(_ node: AXUIElement, depth: Int = 0) -> PlaceholderNode? {
+        guard depth <= 3,
+              let classes = attribute(node, "AXDOMClassList") as? [String],
+              let value = attribute(node, kAXValueAttribute) as? String,
+              let count = attribute(node, kAXNumberOfCharactersAttribute) as? NSNumber,
+              let children = attribute(node, kAXChildrenAttribute) as? [AXUIElement] else { return nil }
+        let nested = children.compactMap { placeholderNode($0, depth: depth + 1) }
+        guard nested.count == children.count else { return nil }
+        return PlaceholderNode(role: string(node, kAXRoleAttribute), classes: classes,
+                               value: value, count: count.intValue, children: nested)
+    }
+    func emptyField(_ field: AXUIElement, _ content: String) -> Bool {
+        let placeholder = attribute(field, kAXPlaceholderValueAttribute) as? String
+        let count = (attribute(field, kAXNumberOfCharactersAttribute) as? NSNumber)?.intValue
+        draftEvidence = ["length": content.utf8.count,
+                         "character_count": count ?? -1,
+                         "placeholder_available": placeholder != nil,
+                         "equals_placeholder": placeholder.map { draftMatches(content, $0) } ?? false]
+        if emptyComposer(content, placeholder: placeholder, count: count) { return true }
+        guard let classes = attribute(field, "AXDOMClassList") as? [String],
+              let children = attribute(field, kAXChildrenAttribute) as? [AXUIElement] else { return false }
+        let nodes = children.compactMap { placeholderNode($0) }
+        guard nodes.count == children.count else { return false }
+        let suggestion = suggestionOnly(content, classes: classes, children: nodes)
+        draftEvidence["suggestion_only"] = suggestion
+        return suggestion
+    }
     func verify(_ target: [String: Any], _ payload: String? = nil, requireFocus: Bool = true) throws -> AXUIElement {
         try check()
         let (_, process, window) = try snapshot(target)
@@ -198,12 +299,7 @@ final class Handoff {
             guard let focused = element(process, kAXFocusedUIElementAttribute), CFEqual(focused, field) else { try reject("COMPOSER_UNVERIFIED") }
         }
         let content = string(field, kAXValueAttribute).replacingOccurrences(of: "\r\n", with: "\n")
-        draftEvidence = ["length": content.utf8.count,
-                         "empty_line_sentinel": content == "\n",
-                         "only_whitespace": content.unicodeScalars.allSatisfy { CharacterSet.whitespacesAndNewlines.contains($0) },
-                         "equals_description": content == string(field, kAXDescriptionAttribute),
-                         "equals_placeholder": content == string(field, kAXPlaceholderValueAttribute)]
-        guard draftMatches(content, payload) else {
+        guard payload == nil ? emptyField(field, content) : draftMatches(content, payload) else {
             try reject(payload == nil ? "COMPOSER_NOT_EMPTY" : "DRAFT_CHANGED")
         }
         try check()
@@ -220,8 +316,98 @@ final class Handoff {
             event.post(tap: .cgSessionEventTap)
         }
     }
+    func setupNodes(_ window: AXUIElement) throws -> [AXUIElement] {
+        var queue = [window]
+        var nodes: [AXUIElement] = []
+        while let item = queue.popLast() {
+            guard nodes.count < 6000, !string(item, kAXRoleAttribute).isEmpty else { try reject("SETUP_UNVERIFIED") }
+            nodes.append(item)
+            var children: CFTypeRef?
+            let status = AXUIElementCopyAttributeValue(item, kAXChildrenAttribute as CFString, &children)
+            guard [.success, .attributeUnsupported, .noValue].contains(status) else { try reject("SETUP_UNVERIFIED") }
+            queue.append(contentsOf: children as? [AXUIElement] ?? [])
+        }
+        return nodes
+    }
+    func setupMatches(_ node: AXUIElement, _ selector: SetupSelector, _ window: AXUIElement) -> Bool {
+        guard string(node, kAXRoleAttribute) == selector.role,
+              [string(node, kAXTitleAttribute), string(node, kAXDescriptionAttribute)].contains(selector.label),
+              let frame = setupFrame(node), let bounds = setupFrame(window), setupVisible(frame, bounds) else { return false }
+        if let selected = selector.selected {
+            guard let value = attribute(node, kAXValueAttribute) as? NSNumber,
+                  [0, 1].contains(value.intValue), (value.intValue == 1) == selected else { return false }
+        }
+        if let enabled = selector.enabled, (attribute(node, kAXEnabledAttribute) as? Bool) != enabled { return false }
+        if let focused = selector.focused, (attribute(node, kAXFocusedAttribute) as? Bool) != focused { return false }
+        return true
+    }
+    func preserveSetupDrafts(_ nodes: [AXUIElement]) throws {
+        for node in nodes where string(node, kAXRoleAttribute) == kAXTextAreaRole {
+            let labels = [string(node, kAXTitleAttribute), string(node, kAXDescriptionAttribute)]
+            guard labels.contains(where: { setupAllowed("AXTextArea", $0) }),
+                  let content = attribute(node, kAXValueAttribute) as? String else { try reject("SETUP_DRAFT_UNVERIFIED") }
+            guard emptyField(node, content) else { try reject("COMPOSER_NOT_EMPTY") }
+        }
+    }
+    func setupScreen(_ expected: [String: Any]? = nil) throws -> ([String: Any], AXUIElement, [AXUIElement]) {
+        try check()
+        let (target, process, window) = try snapshot(expected)
+        guard Int(NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1) == target["pid"] as? Int,
+              let focused = element(process, kAXFocusedWindowAttribute), CFEqual(focused, window),
+              (attribute(window, kAXMinimizedAttribute) as? Bool) == false else { try reject("TARGET_CHANGED") }
+        let nodes = try setupNodes(window)
+        try preserveSetupDrafts(nodes)
+        try check()
+        return (target, window, nodes)
+    }
+    func setupRun(_ action: String) throws -> [String: Any] {
+        let expected = request["target"] as? [String: Any]
+        if action != "setup-bind" && expected == nil { try reject("TARGET_UNVERIFIED") }
+        let (target, window, nodes) = try setupScreen(action == "setup-bind" ? nil : expected)
+        if action != "setup" { return ["ok": true, "verified": true, "target": target] }
+        guard let input = request["setup"],
+              let step = try? JSONDecoder().decode(SetupStep.self, from: JSONSerialization.data(withJSONObject: input)),
+              step.valid else { try reject("SETUP_INVALID") }
+        let finalTitle = step.window_title_after ?? target["title"] as! String
+        guard finalTitle != target["title"] as? String || !nodes.contains(where: { setupMatches($0, step.after, window) }) else { try reject("SETUP_NO_CHANGE_REQUIRED") }
+        guard nodes.filter({ setupMatches($0, step.control, window) }).count == 1 else { try reject("SETUP_AMBIGUOUS") }
+        watchedPID = pid_t(target["pid"] as! Int)
+        try monitor()
+        banner("TagTeamGPT SETUP CONTROL: \(target["title"]!).\nOne setup action in 15 seconds. Click, type, or switch apps to pause.")
+        pump(15)
+        let (_, freshWindow, fresh) = try setupScreen(target)
+        let controls = fresh.filter { setupMatches($0, step.control, freshWindow) }
+        guard controls.count == 1, let control = controls.first,
+              (attribute(control, kAXEnabledAttribute) as? Bool) == true else { try reject("SETUP_AMBIGUOUS") }
+        return try guardedSetupAction(check: { try self.check() }, perform: {
+            clickAttempted = true
+            let status = step.control.role == "AXTextArea"
+                ? AXUIElementSetAttributeValue(control, kAXFocusedAttribute as CFString, kCFBooleanTrue)
+                : AXUIElementPerformAction(control, kAXPressAction as CFString)
+            guard status == .success else { try reject("SETUP_ACTION_FAILED") }
+            clickPerformed = true
+        }, confirm: {
+            let deadline = Date().addingTimeInterval(1)
+            repeat {
+                pump(0.05)
+                let (observed, afterWindow, after) = try setupScreen()
+                guard ["pid", "bundle", "window_id", "mode"].allSatisfy({ String(describing: observed[$0]!) == String(describing: target[$0]!) }),
+                      [target["title"] as! String, finalTitle].contains(observed["title"] as! String) else { try reject("TARGET_CHANGED") }
+                let matches = after.filter { setupMatches($0, step.after, afterWindow) }
+                guard matches.count <= 1 else { try reject("SETUP_AMBIGUOUS") }
+                if observed["title"] as? String == finalTitle && matches.count == 1 {
+                    try check()
+                    return ["ok": true, "verified": true, "target": observed, "click_performed": true,
+                            "click_attempted": true, "postcondition_verified": true, "keys_fired": false,
+                            "paste_sent": false, "enter_sent": false]
+                }
+            } while Date() < deadline
+            try reject("SETUP_POSTCONDITION_FAILED")
+        })
+    }
     func run() throws -> [String: Any] {
         let action = request["action"] as? String ?? ""
+        if ["setup-bind", "setup-resume", "setup"].contains(action) { return try setupRun(action) }
         if action == "test" {
             watchedPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
             try monitor()
@@ -313,6 +499,24 @@ if CommandLine.arguments.contains("--self-test") {
     precondition(composerLabel("Work with Codex", "codex"))
     precondition(!composerLabel("Do anything", "chat"))
     precondition(!composerLabel("Message ChatGPT", "work"))
+    let hintText = PlaceholderNode(role: "AXStaticText", classes: [], value: "Work with Codex", count: 0, children: [])
+    let hintGroup = PlaceholderNode(role: "AXGroup", classes: [], value: "", count: 0, children: [hintText])
+    let hint = PlaceholderNode(role: "AXGroup", classes: ["placeholder"], value: "", count: 0, children: [hintGroup])
+    precondition(suggestionOnly("Work with Codex\n", classes: ["ProseMirror"], children: [hint]))
+    precondition(!suggestionOnly("typed draft\n", classes: ["ProseMirror"], children: [hint]))
+    precondition(!suggestionOnly("Work with Codex\n", classes: ["ProseMirror"], children: [hint, hintText]))
+    precondition(!suggestionOnly("Work with Codex\n", classes: [], children: [hint]))
+    let typed = PlaceholderNode(role: "AXGroup", classes: [], value: "", count: 0, children: [hintGroup])
+    precondition(!suggestionOnly("Work with Codex\n", classes: ["ProseMirror"], children: [typed]))
+    let unknown = PlaceholderNode(role: "AXGroup", classes: ["placeholder"], value: "", count: nil, children: [hintGroup])
+    precondition(!suggestionOnly("Work with Codex\n", classes: ["ProseMirror"], children: [unknown]))
+    precondition(emptyComposer("Work with ChatGPT\n", placeholder: "Work with ChatGPT", count: 0))
+    precondition(!emptyComposer("Work with ChatGPT\n", placeholder: "Work with ChatGPT", count: 18))
+    precondition(!emptyComposer("Work with ChatGPT\n", placeholder: nil, count: 18))
+    precondition(!emptyComposer("Work with ChatGPT\n", placeholder: "Work with ChatGPT", count: nil))
+    precondition(!emptyComposer("Work with ChatGPT\n", placeholder: "Work with ChatGPT", count: -1))
+    precondition(!emptyComposer("real draft", placeholder: "Work with ChatGPT", count: 0))
+    precondition(!emptyComposer("Work with ChatGPT", placeholder: nil, count: 0))
     precondition(draftMatches("", nil))
     precondition(draftMatches("\n", nil))
     precondition(!draftMatches(" ", nil))
@@ -341,6 +545,35 @@ if CommandLine.arguments.contains("--self-test") {
     let unavailable = Handoff([:])
     unavailable.observeInput(.tapDisabledByTimeout, ownEventTag)
     precondition(unavailable.interrupted == "MONITOR_UNAVAILABLE")
+    precondition(setupAllowed("AXCheckBox", "Chat"))
+    precondition(setupAllowed("AXButton", "Don't work in a project"))
+    precondition(!setupAllowed("AXButton", "Send"))
+    precondition(!setupAllowed("AXButton", "Delete app"))
+    precondition(!setupAllowed("AXCheckBox", "Work"))
+    let bounds = CGRect(x: 0, y: 0, width: 800, height: 600)
+    precondition(setupVisible(CGRect(x: 20, y: 20, width: 100, height: 40), bounds))
+    precondition(!setupVisible(CGRect(x: 20, y: 20, width: 100, height: 1), bounds))
+    precondition(!setupVisible(CGRect(x: 900, y: 20, width: 100, height: 40), bounds))
+    var order: [String] = []
+    let result = guardedSetupAction(check: { order.append("check") }, perform: { order.append("click") }, confirm: { order.append("confirm"); return true })
+    precondition(result && order == ["check", "click", "check", "confirm"])
+    for before in [true, false] {
+        var paused = before
+        var clicks = 0
+        var confirmed = false
+        do {
+            _ = try guardedSetupAction(check: { if paused { try reject("USER_INTERRUPTED") } }, perform: {
+                clicks += 1
+                paused = true
+            }, confirm: { confirmed = true })
+            preconditionFailure("An interrupted setup action must stop.")
+        } catch { precondition((error as? ControlError)?.code == "USER_INTERRUPTED") }
+        precondition(clicks == (before ? 0 : 1) && !confirmed)
+        do {
+            _ = try guardedSetupAction(check: { if paused { try reject("USER_INTERRUPTED") } }, perform: { clicks += 1 }, confirm: {})
+            preconditionFailure("A paused setup must not click again.")
+        } catch { precondition(clicks == (before ? 0 : 1)) }
+    }
     print("ok: native input classification, conversation identity, and composer identity")
 } else {
     let input = FileHandle.standardInput.readDataToEndOfFile()
@@ -363,6 +596,7 @@ if CommandLine.arguments.contains("--self-test") {
             }
             result = ["ok": false, "code": code, "verified": false, "keys_fired": handoff.pasteSent || handoff.enterSent,
                       "paste_sent": handoff.pasteSent, "enter_sent": handoff.enterSent,
+                      "click_attempted": handoff.clickAttempted, "click_performed": handoff.clickPerformed,
                       "interruption_source": handoff.interruptionSource ?? "none",
                       "application_change_observed": handoff.applicationChangeObserved,
                       "draft_evidence": handoff.draftEvidence]
