@@ -98,4 +98,5 @@ Restart the local server after installing this update.
 Keep the private tunnel running.
 Select **Refresh tools** in **TagTeamGPT Private** settings.
 Select the plugin in the Chat thread and confirm `turn_review` is available.
+If the chat still lists the previous tools, select **@TagTeamGPT Private** again and send a new message.
 See [private connector setup](private-connector.md) for restart instructions.
