@@ -45,7 +45,7 @@ export function replyMatches(last, want, taskId) {
   return (
     last?.ok &&
     states.has(String(last.state).toUpperCase()) &&
-    (!taskId || !last.task_id || last.task_id === taskId)
+    (!taskId || last.task_id === taskId)
   );
 }
 

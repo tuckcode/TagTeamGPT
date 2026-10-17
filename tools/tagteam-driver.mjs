@@ -32,6 +32,7 @@ import os from "node:os";
 import path from "node:path";
 import { stdin as input } from "node:process";
 import { loadConfig, readSession, writeSession } from "./lib/tagteam-config.mjs";
+import { control } from "./lib/tagteam-control.mjs";
 import {
   resolveTiming,
   hasC2CPrefix,
@@ -119,7 +120,6 @@ function runInChatGPTMac(inner) {
     }
     const win = pickWindow();
     if (!win) throw new Error('APP_NOT_RUNNING');
-    try { if (win.miniaturized()) win.miniaturized = false; } catch (e) {}
     function prevApp() {
       try {
         const fp = se.applicationProcesses.whose({ frontmost: true });
@@ -1328,6 +1328,30 @@ async function main() {
   const [cmd, arg, ...rest] = pos;
   let text = [arg, ...rest].filter(Boolean).join(" ");
   if (arg === "-") text = await readStdin();
+
+  if (cmd === "mode" && PLATFORM === "win32") {
+    print({ ok: false, code: "CONTROL_UNSUPPORTED", detail: "Windows desktop control is disabled until interruption monitoring is available." });
+    process.exitCode = 1;
+    return;
+  }
+
+  // All public input commands pass through the guarded controller.
+  if (cmd === "control" || ["send", "chat-send", "codex-send", "to", "enter"].includes(cmd)) {
+    let result;
+    if (["to", "enter"].includes(cmd)) {
+      result = { ok: false, code: "CONTROL_UNSAFE_ACTION", accepted: false,
+        detail: "Blind mode changes and standalone Enter are disabled. Bind the conversation and use a guarded send." };
+    } else {
+      const mode = cmd === "chat-send" ? "chat" : cmd === "codex-send" ? "codex" : requireMode;
+      console.error(cmd === "control"
+        ? "TagTeamGPT control check. This command does not send a message."
+        : "TagTeamGPT requests desktop control. The on-screen banner appears before any keyboard input. Click or type to pause.");
+      result = control({ action: cmd === "control" ? arg || "status" : "send", mode, text });
+    }
+    print({ ...result, platform: PLATFORM });
+    process.exitCode = result.ok ? 0 : 1;
+    return;
+  }
 
   switch (cmd) {
     case "mode": {

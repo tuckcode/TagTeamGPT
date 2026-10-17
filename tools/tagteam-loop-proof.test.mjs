@@ -53,7 +53,8 @@ assert.ok(paths.includes(path.join("/tmp/goal-repo", ".tagteam", "last-reply.jso
 assert.equal(chatReplyPaths(stateReply, "/tmp/tagteam-tool").length, 1);
 
 assert.equal(replyMatches({ ok: true, state: "PLAN" }, ["PLAN"], null), true);
-assert.equal(replyMatches({ ok: true, state: "DONE" }, ["PLAN", "DONE"], "c2c_ab"), true);
+assert.equal(replyMatches({ ok: true, state: "DONE" }, ["PLAN", "DONE"], "c2c_ab"), false);
+assert.equal(replyMatches({ ok: true, state: "DONE", task_id: "c2c_ab" }, ["PLAN", "DONE"], "c2c_ab"), true);
 assert.equal(replyMatches({ ok: true, state: "PLAN", task_id: "c2c_zz" }, ["PLAN"], "c2c_ab"), false);
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tagteam-proof-"));

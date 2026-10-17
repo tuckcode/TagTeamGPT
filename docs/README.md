@@ -15,5 +15,6 @@ Invoke in Codex with `$tagteam`. GitHub: `tuckcode/TagTeamGPT`.
 | [MCP connector](../mcp/README.md) | Optional read-only repo eyes for Chat |
 | [Private connector](private-connector.md) | Verified private tunnel setup and restart instructions |
 | [Turn reviews](turn-reviews.md) | Saved evidence for the changes in one Codex turn |
+| [Desktop control](desktop-control.md) | Visible control, conversation binding, interruption, and explicit resume |
 
 Start with the root [README](../README.md) if you just want the short path.

@@ -32,7 +32,7 @@
 
 **Cause:** Chat’s mode hotkey can create a new chat when already in Chat.
 
-**Fix:** Stay on the pinned planner thread. Paste with `send` / `chat-send` without `--force-mode` unless you intend to fire the Chat hotkey (New chat risk).
+**Fix:** Use the guarded driver with a bound planner conversation. Follow [desktop control](desktop-control.md) for binding and resume. Mode shortcuts and force flags do not bypass verification.
 
 ## Driver reports `ok: true` but nothing happened in ChatGPT
 
