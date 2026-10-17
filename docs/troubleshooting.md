@@ -67,10 +67,13 @@ Get-Clipboard -Raw | node tools/tagteam-write-reply.mjs --from-clipboard
 
 **Checks:**
 
-1. Tunnel process still running (`node tools/tagteam-mcp-up.mjs status`).
-2. Connector URL matches the **current** tunnel (pasting a URL into chat does not rebind settings).
-3. You are in a **Chat** cloud thread with the **tagteam-workspace** connector enabled in the `+` menu (an old `codexgpt-workspace` name will not match).
+1. Check the local root with `curl --fail --silent http://127.0.0.1:8743/health`.
+2. Check the private tunnel with `curl --fail --silent http://127.0.0.1:8080/readyz`. Expect `ready`.
+3. Select **TagTeamGPT Private** with `@` in the Chat thread. The old Cloudflare plugin uses a separate connection.
 4. Ask Chat to call `workspace_info` first.
+
+Use the [private connector instructions](private-connector.md) to restart the connection.
+If the private plugin does not appear in a chat, select it before testing its tools.
 
 ## Thin PLAN (ACTIONS-only checklist)
 

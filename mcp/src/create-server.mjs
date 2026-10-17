@@ -11,11 +11,13 @@ import {
   gitStatus,
   gitDiff,
   writeC2cReply,
+  resolveLimits,
 } from "./workspace.mjs";
 
 export const MCP_SERVER_NAME = "tagteam-workspace";
 
-export function createServer(root = resolveRoot()) {
+export function createServer(root = resolveRoot(), limits = resolveLimits()) {
+  const errorBudget = Math.min(...Object.values(limits.delivery));
   const server = new McpServer({
     name: MCP_SERVER_NAME,
     version: "0.1.0",
@@ -28,6 +30,7 @@ export function createServer(root = resolveRoot()) {
 • Always reply with structured [C2C] STATE headers only for state changes. Keep messages tiny (~1KB). No full file dumps.
 • After every PLAN, DONE, BLOCKED, or READY, call submit_c2c with the full [C2C] message so the auto-loop can read .tagteam/last-reply.json. Do not wait for a human to copy.
 • After EXECUTED: prefer these tools (git_diff, read_file, git_status, workspace_info) over asking Codex to paste. Keep pulls small and paginated.
+• A truncated result includes reason and cursor. Pass that cursor to resume. reason stale_cursor means the source changed. Start that read again.
 • Trust keystroke send (clipboard+Enter); do not require screenshots/CUA for the happy path.`,
 
   });
@@ -42,9 +45,9 @@ export function createServer(root = resolveRoot()) {
     },
     async () => {
       try {
-        return textResult(workspaceInfo(root));
+        return textResult(workspaceInfo(root, { limits }));
       } catch (e) {
-        return errorResult(e);
+        return errorResult(e, errorBudget);
       }
     }
   );
@@ -58,14 +61,15 @@ export function createServer(root = resolveRoot()) {
         path: z.string().optional().describe("Relative path inside the workspace"),
         page: z.number().int().min(0).optional(),
         page_size: z.number().int().min(1).max(200).optional(),
+        cursor: z.string().optional().describe("Continuation cursor from a truncated listing"),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ path: rel, page, page_size }) => {
+    async ({ path: rel, page, page_size, cursor }) => {
       try {
-        return textResult(listDirectory(root, rel || ".", page || 0, page_size || 50));
+        return textResult(listDirectory(root, rel || ".", page || 0, page_size || 50, { cursor, limits }));
       } catch (e) {
-        return errorResult(e);
+        return errorResult(e, errorBudget);
       }
     }
   );
@@ -77,16 +81,17 @@ export function createServer(root = resolveRoot()) {
       description: "Paginated file read. Sensitive files (.env, keys) are denied.",
       inputSchema: {
         path: z.string().describe("Relative file path"),
-        offset: z.number().int().min(0).optional().describe("Line offset"),
+        offset: z.number().int().min(0).optional().describe("Line offset. A cursor resumes inside a long line."),
         limit: z.number().int().min(1).max(500).optional().describe("Max lines"),
+        cursor: z.string().optional().describe("Continuation cursor from a truncated read"),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ path: rel, offset, limit }) => {
+    async ({ path: rel, offset, limit, cursor }) => {
       try {
-        return textResult(readFilePaged(root, rel, offset || 0, limit || 200));
+        return textResult(readFilePaged(root, rel, offset || 0, limit || 200, { cursor, limits }));
       } catch (e) {
-        return errorResult(e);
+        return errorResult(e, errorBudget);
       }
     }
   );
@@ -100,14 +105,15 @@ export function createServer(root = resolveRoot()) {
         query: z.string().min(2),
         page: z.number().int().min(0).optional(),
         page_size: z.number().int().min(1).max(100).optional(),
+        cursor: z.string().optional().describe("Continuation cursor from a truncated search"),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ query, page, page_size }) => {
+    async ({ query, page, page_size, cursor }) => {
       try {
-        return textResult(searchWorkspace(root, query, page || 0, page_size || 30));
+        return textResult(searchWorkspace(root, query, page || 0, page_size || 30, { cursor, limits }));
       } catch (e) {
-        return errorResult(e);
+        return errorResult(e, errorBudget);
       }
     }
   );
@@ -117,14 +123,16 @@ export function createServer(root = resolveRoot()) {
     {
       title: "Git status",
       description: "Branch plus staged, unstaged, and untracked files.",
-      inputSchema: {},
+      inputSchema: {
+        cursor: z.string().optional().describe("Continuation cursor from a truncated status"),
+      },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async () => {
+    async ({ cursor } = {}) => {
       try {
-        return textResult(gitStatus(root));
+        return textResult(gitStatus(root, { cursor, limits }));
       } catch (e) {
-        return errorResult(e);
+        return errorResult(e, errorBudget);
       }
     }
   );
@@ -139,14 +147,15 @@ export function createServer(root = resolveRoot()) {
         path: z.string().optional().describe("Limit diff to one relative path"),
         offset: z.number().int().min(0).optional(),
         limit: z.number().int().min(1).max(1000).optional(),
+        cursor: z.string().optional().describe("Continuation cursor from a truncated diff"),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async (args) => {
       try {
-        return textResult(gitDiff(root, args || {}));
+        return textResult(gitDiff(root, { ...(args || {}), limits }));
       } catch (e) {
-        return errorResult(e);
+        return errorResult(e, errorBudget);
       }
     }
   );
@@ -166,7 +175,7 @@ export function createServer(root = resolveRoot()) {
       try {
         return textResult(writeC2cReply(root, message));
       } catch (e) {
-        return errorResult(e);
+        return errorResult(e, errorBudget);
       }
     }
   );

@@ -51,8 +51,11 @@ Same desktop app + keybinds either way. Decide at start (or when review gets thi
 
 **Use connector** when Chat must independently check real code after `EXECUTED`
 (multi-file edits, risky logic, SUCCESS_CRITERIA that need `git_diff` /
-`read_file`). Then: ensure MCP + HTTPS tunnel are up, connector attached in
-Chat Developer Mode, connector name **`tagteam-workspace`**, and tell Chat to prefer those tools over asking for pastes.
+`read_file`). For connector installation, restart, or recovery, read
+`docs/private-connector.md` in the TagTeamGPT clone. Use **TagTeamGPT Private**
+through OpenAI Secure MCP Tunnel. Confirm the root with `workspace_info` through
+the selected Chat plugin before review. Keep local Bearer authentication enabled.
+If this skill is installed globally, locate the TagTeamGPT clone before reading its setup guide.
 
 **Skip connector** when short `RESULT` / `CHANGED_FILES` / `TESTS` stubs are
 enough, or the user does not want background MCP/tunnel processes.
@@ -115,8 +118,9 @@ Polls `.tagteam/last-reply.json` (Chat MCP `submit_c2c`) for PLAN / DONE / BLOCK
 and (by default) pastes into **Codex**. Waits for `.tagteam/executed.json`,
 then EXECUTED back to the **same** Chat. DONE/BLOCKED → vault mailbox + memory.
 
-MCP tunnel helper: `node tools/tagteam-mcp-up.mjs start|stop|status`
-(idle auto-stop after `mcp_idle_minutes`, default 60). Mailbox skim nudge after
+The public Cloudflare helper `node tools/tagteam-mcp-up.mjs start|stop|status`
+does not manage the private tunnel. Use `docs/private-connector.md` for that connection.
+Mailbox skim nudge after
 DONE when 10 new notes **or** 14 days: `node tools/tagteam-mailbox-nudge.mjs`
 (`--ack` after you skim).
 

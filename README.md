@@ -120,9 +120,12 @@ node tools/tagteam-driver.mjs to chat
 # Start the automated relay
 node tools/tagteam-loop.mjs --goal "…" --path /path/to/your/repo --boot
 
-# Start the optional read-only workspace connector
-node tools/tagteam-mcp-up.mjs start
+# Run the local server for the optional private connector
+node mcp/src/http.mjs
 ```
+
+Follow the [private connector guide](docs/private-connector.md) to configure the tunnel and select the plugin in Chat.
+The guide includes first installation, restart steps, and a prompt you can copy to an agent.
 
 ## Documentation
 
@@ -135,6 +138,7 @@ node tools/tagteam-mcp-up.mjs start
 | [Approach](docs/approach.md) | Design decisions and architecture |
 | [Input hardening](docs/hardening.md) | Windows and macOS focus and key injection |
 | [MCP](mcp/README.md) | Optional read-only workspace connector |
+| [Private connector](docs/private-connector.md) | Private tunnel setup and copyable agent instructions |
 
 ## Explainer site
 
