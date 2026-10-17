@@ -52,6 +52,9 @@ Rules:
    SUCCESS_CRITERIA. Never reply with a bare one-liner or ACTIONS-only list.
 8. After every PLAN, DONE, BLOCKED, or READY, call the workspace tool
    `submit_c2c` with your full [C2C] message so the auto-loop can proceed.
+9. Before planning, call project_brief with relevant project paths when available.
+   Confirm its root matches the requested repository. Read partial sources separately.
+   If no connector or brief is available, reply BLOCKED requesting a compact brief from Codex.
 ```
 
 ## INIT (Codex → Chat)
@@ -66,6 +69,8 @@ GOAL:
 <one paragraph goal>
 
 INSTRUCTION:
+Before planning, call project_brief and confirm the workspace root.
+If no connector or brief is available, reply BLOCKED requesting a compact brief from Codex.
 Create an implementation PLAN for Codex. Keep it finite and executable.
 Reply with a C2C PLAN message.
 ```

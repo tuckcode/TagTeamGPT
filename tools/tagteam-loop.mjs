@@ -208,7 +208,12 @@ Rules:
    SUCCESS_CRITERIA. Never reply with a bare one-liner or ACTIONS-only list.
 8. After every PLAN, DONE, BLOCKED, or READY, call the workspace tool submit_c2c
    with your full [C2C] message so the auto-loop can proceed. Do not wait for a
-   human to copy.`;
+   human to copy.
+9. Before planning, call project_brief with the relevant project paths when the
+   connector is available. Confirm its root matches REPO. Read partial sources
+   separately. If the connector is unavailable, request a compact brief from
+   Codex with applicable rules, declared test commands, commit, and local changes.
+   Reply BLOCKED when that information is unavailable.`;
 
 function buildInit(taskId, goal, repoPath) {
   return `[C2C]
@@ -223,6 +228,8 @@ REPO:
 ${repoPath}
 
 INSTRUCTION:
+Before planning, call project_brief and confirm its root matches REPO. Read partial sources separately.
+If that tool is unavailable and no brief was supplied, reply BLOCKED requesting a compact brief from Codex.
 Create an implementation PLAN for Codex to run in that repo path. Keep it finite and executable.
 Reply with a C2C PLAN message, then call submit_c2c with that full PLAN text.`;
 }

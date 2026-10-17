@@ -511,6 +511,80 @@ export function workspaceInfo(root, opts = {}) {
   return packed.obj;
 }
 
+export function projectBrief(root, paths = [], opts = {}) {
+  root = path.resolve(root);
+  const realRoot = fs.realpathSync(root);
+  const limits = limitsOf(opts);
+  const budget = limits.delivery.status;
+  const sources = new Set(["AGENTS.md", "CLAUDE.md", "package.json"]);
+  for (const rel of paths) {
+    const abs = assertSafeRel(root, rel);
+    let dir = fs.existsSync(abs) && fs.statSync(abs).isDirectory() ? abs : path.dirname(abs);
+    const parents = [];
+    while (dir !== root) {
+      parents.unshift(path.relative(root, dir));
+      dir = path.dirname(dir);
+    }
+    for (const parent of parents) {
+      sources.add(path.join(parent, "AGENTS.md"));
+      sources.add(path.join(parent, "CLAUDE.md"));
+      sources.add(path.join(parent, "package.json"));
+    }
+  }
+  const info = workspaceInfo(root, { limits });
+  const head = gitText(root, ["rev-parse", "HEAD"], limits);
+  const commit = head.code === 0 ? head.stdout.trim() : null;
+  const sections = [];
+  const commandSections = [];
+  const sourcePaths = [];
+  let remaining = limits.acquire;
+  let incomplete = info.truncated || !!head.reason;
+  for (const rel of sources) {
+    const abs = assertSafeRel(root, rel);
+    if (!fs.existsSync(abs)) continue;
+    // Resolve links before reading project instructions.
+    assertSafeRel(realRoot, path.relative(realRoot, fs.realpathSync(abs)));
+    const stat = fs.statSync(abs);
+    if (!stat.isFile()) continue;
+    sourcePaths.push(rel);
+    if (sourcePaths.length > 32) throw new Error("Scope too broad. Request fewer project paths.");
+    const buf = readWindow(abs, 0, Math.min(8192, remaining), stat.size);
+    remaining -= buf.length;
+    const shortened = buf.length < stat.size;
+    incomplete ||= shortened;
+    let body = decodeUtf8Prefix(buf, !shortened).text;
+    if (path.basename(rel) === "package.json") {
+      try {
+        const pkg = JSON.parse(body);
+        const scripts = Object.fromEntries(Object.entries(pkg.scripts || {}).filter(([name, value]) =>
+          /^(test|lint|build|check|typecheck)(:|$)/.test(name) && typeof value === "string"
+        ));
+        body = JSON.stringify({ name: pkg.name, version: pkg.version, packageManager: pkg.packageManager, scripts });
+      } catch {
+        body = "Read this package file separately. Its commands could not be extracted.";
+        incomplete = true;
+      }
+    }
+    const section = `Source: ${rel}${shortened ? " (partial; read_file required)" : ""}\n${body}`;
+    if (path.basename(rel) === "package.json") commandSections.push(section);
+    else sections.push(section);
+  }
+  const allSections = [...commandSections, ...sections];
+  const content = allSections.length ? allSections.join("\n\n") : "No AGENTS.md, CLAUDE.md, or package.json exists in the requested scope.";
+  return fitTextPayload((slice) => ({
+    root,
+    git_branch: info.git_branch,
+    commit,
+    dirty: info.dirty,
+    source_paths: sourcePaths,
+    content: slice,
+    truncated: incomplete || slice.length < content.length,
+    reason: slice.length < content.length ? "delivery_budget" : incomplete ? "source_incomplete" : null,
+    cursor: null,
+    guidance: "Confirm root. Read omitted or partial sources with read_file before planning. Package scripts are declarations, not test results.",
+  }), budget, content);
+}
+
 function readEntries(abs, acquire) {
   const dir = fs.opendirSync(abs);
   const entries = [];

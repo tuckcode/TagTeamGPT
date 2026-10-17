@@ -170,6 +170,7 @@ async function main() {
     "read_file",
     "search_workspace",
     "workspace_info",
+    "project_brief",
   ];
   mark(
     listed.ok && expected.every((n) => names.includes(n)),
@@ -193,6 +194,20 @@ async function main() {
     mark(r.ok && /tagteam|branch|dirty/i.test(text), "workspace_info", {
       ms: r.ms,
       preview: text.slice(0, 200),
+      error: r.error,
+    });
+  }
+
+  // 6) list_directory
+  {
+    const r = await callTool(18, "project_brief", { paths: ["mcp/src/workspace.mjs"] });
+    let brief;
+    try { brief = JSON.parse(toolText(r.msg)); } catch { /* The check reports invalid responses below. */ }
+    mark(r.ok && !r.msg?.result?.isError && brief?.root === ROOT && Array.isArray(brief?.source_paths), "project_brief", {
+      ms: r.ms,
+      root: brief?.root,
+      commit: brief?.commit,
+      truncated: brief?.truncated,
       error: r.error,
     });
   }

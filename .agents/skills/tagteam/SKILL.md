@@ -56,6 +56,10 @@ Same desktop app + keybinds either way. Decide at start (or when review gets thi
 through OpenAI Secure MCP Tunnel. Confirm the root with `workspace_info` through
 the selected Chat plugin before review. Keep local Bearer authentication enabled.
 If this skill is installed globally, locate the TagTeamGPT clone before reading its setup guide.
+Before planning, have Chat call `project_brief` with relevant paths and confirm the root.
+If the brief is truncated, have Chat read the omitted source files before planning.
+If the connector is unavailable, supply a compact factual brief or report BLOCKED.
+Read `mcp/README.md` for the brief fields and limits.
 
 **Skip connector** when short `RESULT` / `CHANGED_FILES` / `TESTS` stubs are
 enough, or the user does not want background MCP/tunnel processes.
