@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
  * TagTeamGPT auto-loop (macOS + Windows): Chat plans → Codex executes → Chat reviews.
- * Mode hotkeys via driver: macOS Control+1/2/3, Windows Alt+1/2/3.
+ * Guarded sends require bound conversations. Read docs/desktop-control.md.
  *
  *   node tools/tagteam-loop.mjs --goal "…" [--path /path/to/repo] [--boot]
  *
  * You give the goal and the folder path once. The loop hops Chat ↔ Codex
- * after that. ChatGPT is stolen for ~1s per paste, then given back.
- * Chat/Codex keep generating while you click around. Codex done = <repo>/.tagteam/executed.json
- * (no focus). Chat reply = poll .tagteam/last-reply.json (submit_c2c). One Enter on timeout,
- * then NO_REPLY — never Select All, never invent a PLAN.
+ * after that. The driver shows a banner before each send and pauses on user input.
+ * Codex completion requires <repo>/.tagteam/executed.json.
+ * Chat completion requires .tagteam/last-reply.json from submit_c2c.
+ * A timeout returns NO_REPLY without another Enter.
  *
  * Defaults (tagteam.config.json / .tagteam/config.json):
  *   codex: true   — paste PLAN into Codex (⌃3 / Alt+3)
@@ -70,7 +70,12 @@ function runNode(script, args = []) {
 }
 
 function driver(...args) {
-  const out = runNode(DRIVER, args);
+  let out;
+  try { out = runNode(DRIVER, args); }
+  catch (error) {
+    out = String(error.stdout || "").trim();
+    if (!out) return { ok: false, code: "DRIVER_FAILED", accepted: false };
+  }
   try {
     return JSON.parse(out);
   } catch {
@@ -84,12 +89,12 @@ function waitOpts(extra = {}) {
     replyPaths: chatReplyPaths(REPLY_PATH, extra.repoPath),
     timeoutMs: extra.timeoutMs ?? loadConfig().chat_wait_ms ?? 10_000,
     taskId: extra.taskId,
-    enterOnce: () => driver("enter"),
+    // A missing reply does not prove that Enter was missed. Never resubmit.
     log: (obj) => console.error(JSON.stringify(obj)),
   };
 }
 
-/** Chat wait + at most one Enter retry. Never scrapes the thread. */
+/** Wait for a filed Chat reply without resubmitting the message. */
 async function waitForChatState(wanted, opts = {}) {
   return waitForChatStateWithRetry(wanted, waitOpts(opts));
 }
@@ -323,15 +328,16 @@ export async function onPlan(planText, taskId, iteration, useCodex, repoPath, pl
         accepted: false,
         ...r,
         repo: repoPath,
-        note:
-          r.verified === false
-            ? "paste fired; mode unverified — confirm live Codex project thread by eye"
-            : r.skipped_hotkey
-              ? "already in Codex — pasted without mode-hotkey thrash"
-              : "switched to Codex then pasted — confirm live project thread, not empty Continue stub",
+        note: r.ok
+          ? "The guarded send verified the bound Codex conversation. Execution still requires its receipt."
+          : "The handoff stopped. Inspect the conversation and draft before explicit resume.",
       })
     );
-    if (!r.ok) return null;
+    if (!r.ok) {
+      const error = new Error(r.detail || r.code || "Desktop control paused.");
+      error.code = r.code;
+      throw error;
+    }
   }
 
   const hook = process.env.TAGTEAM_ON_PLAN;
@@ -436,8 +442,10 @@ async function main() {
   if (useBoot) {
     const b = driver("send", "--mode", "chat", BOOT);
     console.error(JSON.stringify({ phase: "boot", keys_fired: !!b.ok, accepted: false, ...b }));
+    if (!b.ok) { process.exitCode = 1; return; }
     const ready = await waitForChatState(["READY"], { timeoutMs: 20_000, repoPath });
     console.error(JSON.stringify({ phase: "boot-wait", keys_fired: true, accepted: !!ready.ok, state: ready.state, code: ready.code }));
+    if (!ready.ok) { process.exitCode = 1; return; }
   }
 
   let iteration = 0;
@@ -529,7 +537,7 @@ async function main() {
     try {
       execPayload = await onPlan(reply.snippet, taskId, iteration, useCodex, repoPath);
     } catch (error) {
-      console.log(JSON.stringify({ ok: false, code: "TURN_REVIEW_FAILED", task_id: taskId, iteration, detail: error.message }));
+      console.log(JSON.stringify({ ok: false, code: error.code || "TURN_REVIEW_FAILED", task_id: taskId, iteration, detail: error.message }));
       process.exitCode = 1;
       return;
     }

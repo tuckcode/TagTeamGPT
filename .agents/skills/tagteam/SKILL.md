@@ -19,9 +19,9 @@ Invoke in ChatGPT desktop **Codex** with **`$tagteam`** — not Cursor’s `/` p
 
 ## Golden rules
 
-1. Prefer the **v1 driver** when available (macOS + Windows): hotkeys + clipboard
-   + Enter, no screenshots. macOS uses Control+1/2/3; Windows uses Alt+1/2/3.
-   Fall back to v0 paste-back if the driver fails or OS blocks keystrokes.
+1. Use the guarded driver after binding the intended conversations.
+   Read `references/keyboard.md` before live control.
+   Use manual handoffs if the guard cannot verify the target or monitor interruption.
 2. **Never** open nested `chatgpt.com`, hunt connector settings, or mouse-hunt
    the web ChatGPT UI. That is upstream C2C’s path, not this skill.
 3. **Connector is optional for review.** The auto-loop needs Chat to call
@@ -76,39 +76,18 @@ Chat needs evidence, paste one short targeted snippet only.
 
 Remappable in Settings → Keyboard Shortcuts. If flaky, tell the user to remap.
 
-## v1 driver (macOS + Windows)
+## Guarded desktop driver
 
-From the repo root (ChatGPT desktop running). macOS needs Accessibility for the
-shell; Windows verifies ChatGPT HWND focus, then STA PowerShell `SendInput`.
+Before a live desktop handoff, read `references/keyboard.md` and `docs/desktop-control.md` in the TagTeamGPT clone.
+Bind the intended named Chat and Codex conversations before starting the loop.
+Use separate windows so the driver can verify each target without navigating between conversations.
+Require visible control, interruption monitoring, and verified conversation identity for every send.
+If a guard fails, stop and preserve the draft.
+Resume only after the user inspects the conversation and explicitly authorizes continuation.
+Use a manual handoff when the app or platform cannot supply the required evidence.
+Windows automated sends are currently disabled.
 
-```bash
-node tools/tagteam-driver.mjs chat-send "$(cat <<'EOF'
-[C2C]
-STATE: INIT
-...
-EOF
-)"
-node tools/tagteam-driver.mjs send --mode codex "execute this PLAN"
-```
-
-`codex-send` / `send --mode codex` fire Control+3 / Alt+3 and paste in **one**
-step. Do not `to codex` then `send` later — that restores Cursor in between and
-can paste into Chat. `chat-send` / `codex-send` require a payload starting with
-`[C2C]`; clipboard is set then read back before paste. `ok: true` = keys fired,
-not accepted (next `[C2C]` STATE or `.tagteam/executed.json`). After send the driver
-restores the previous front app. Do not re-press ⌃1 / Alt+1 when already in
-Chat; `--force-mode` only when you mean it (New chat risk).
-
-Timing defaults: `TAGTEAM_FOCUS_MS=200`, `TAGTEAM_MODE_SETTLE_MS=350`,
-`TAGTEAM_PASTE_MS=120`, `TAGTEAM_ENTER_MS=250` (or `tagteam.config.json` /
-`.tagteam/config.json`).
-
-Add `--verify` only for optional mode read-back (Electron often opaque; Windows
-UIA best-effort). OCR/vision off by default — `TAGTEAM_OCR=1` or
-`--verify-vision` only when `--verify` fails twice / mode unknown; abort if OCR
-says Work. No nested `chatgpt.com` / CUA on the happy path.
-
-## Auto-loop (macOS + Windows)
+## Auto-loop
 
 ```bash
 node tools/tagteam-loop.mjs --goal "…" --path /path/to/repo --boot
@@ -130,7 +109,7 @@ DONE when 10 new notes **or** 14 days: `node tools/tagteam-mailbox-nudge.mjs`
 
 Do **not** open New chat between turns — one thread per goal.
 
-On Chat wait miss the loop tries one extra Enter, then `NO_REPLY`. If
+On a missing Chat reply, the loop returns `NO_REPLY` without another Enter. If
 `.tagteam/last-reply.json` never appears, dump the reply yourself:
 
 ```bash

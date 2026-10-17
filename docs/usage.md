@@ -43,55 +43,38 @@ Chat should return reasoning first, checklist second:
 
 Thin ACTIONS-only lists are weak plans — ask Chat to revise before Codex runs.
 
-## Keystroke driver (macOS + Windows)
+## Guarded desktop driver
 
-From the repo root:
+Read [desktop control](desktop-control.md) before running the driver.
+Bind separate named Chat and Codex windows first.
+The Mac helper shows a control banner and pauses when the user interacts.
+Every send verifies the conversation and message box.
+Windows currently requires manual handoffs.
 
-```bash
-# Flip modes — macOS Control+1/2/3 · Windows Alt+1/2/3
-node tools/tagteam-driver.mjs to chat
-node tools/tagteam-driver.mjs to codex
-
-# Paste + Enter in the current mode (no mode switch)
-node tools/tagteam-driver.mjs send "hello"
-
-# Enter only (composer already focused)
-node tools/tagteam-driver.mjs enter
-
-# Switch to Chat, paste a stub, send
-node tools/tagteam-driver.mjs chat-send "$(cat <<'EOF'
-[C2C]
-STATE: INIT
-TASK_ID: c2c_demo
-ITERATION: 0
-
-GOAL:
-…
-EOF
-)"
+```sh
+node tools/tagteam-driver.mjs control bind --mode chat
+node tools/tagteam-driver.mjs control bind --mode codex
+node tools/tagteam-driver.mjs control status
 ```
 
-On Windows PowerShell you can also: `Get-Content stub.txt -Raw | node tools/tagteam-driver.mjs chat-send -`
+Run each binding command while its intended conversation has focus and an empty message box.
+Use `chat-send`, `codex-send`, or `send --mode chat|codex` for a guarded `[C2C]` message.
+The driver disables standalone `to` and `enter` commands.
+A paused handoff requires inspection and an explicit `control resume --mode chat|codex` command.
+Resume never replays a message.
 
-`chat-send` / `codex-send` require a payload starting with `[C2C]`. The driver sets the clipboard and reads it back before paste. `codex-send` and `send --mode codex` fire Control+3 / Alt+3 and paste in one step — do not `to codex` then `send` later.
-
-`ok: true` means **keys fired**, not “Chat accepted the message.” Confirmation is the next `[C2C]` **STATE** or `.tagteam/executed.json` (or another expected file side-effect). After send, the driver restores the previous front app (especially on macOS).
-
-Prefer `chat-send` / `codex-send` / `send --mode chat|codex`. **Do not re-press `Control+1` / `Alt+1` when already in Chat** — it can open New chat and abandon your pinned planner thread. Use `--force-mode` only when you mean to fire the Chat hotkey anyway.
-
-Optional `--verify` tries a mode read-back. Electron often hides the mode chip from accessibility; Windows UIA is best-effort. Skip verify on the happy path and confirm the thread by eye.
-
-**Timing** (slow machine? raise these): `TAGTEAM_FOCUS_MS=200`, `TAGTEAM_MODE_SETTLE_MS=350`, `TAGTEAM_PASTE_MS=120`, `TAGTEAM_ENTER_MS=250`. Same keys may live in `tagteam.config.json` or `.tagteam/config.json`.
-
-**Vision / OCR is off by default.** Use `TAGTEAM_OCR=1` or `--verify-vision` only when `--verify` fails twice or mode is unknown — one crop of the mode chip. If OCR says Work, abort. No nested `chatgpt.com` / CUA on the happy path.
-
-## Auto-loop (macOS + Windows)
+## Auto-loop
 
 ```bash
 node tools/tagteam-loop.mjs --goal "…" --path /path/to/repo --boot
 ```
 
-Give the goal and the folder path once. ChatGPT is brought forward briefly to paste, then given back. On macOS and Windows the driver aborts with `FOCUS_LOST` instead of pasting if ChatGPT is not actually front. Chat and Codex keep writing while you click around. Codex done is a file (`<repo>/.tagteam/executed.json`) — no focus. Chat’s reply is `.tagteam/last-reply.json` after Chat calls MCP `submit_c2c` — the loop does not Select-All or scrape the Chat thread.
+Give the goal and folder path after binding the two conversations.
+The guarded helper shows a banner before each handoff.
+It stops the loop if the user interrupts or the target cannot be verified.
+The loop does not press Enter again when a reply is late.
+Codex completion requires `<repo>/.tagteam/executed.json`.
+Chat completion requires `.tagteam/last-reply.json` after Chat calls `submit_c2c`.
 
 Defaults (see `tagteam.config.json`): Chat + Codex handoff on; optional mailbox/memory notes.
 

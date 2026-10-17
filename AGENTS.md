@@ -10,11 +10,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Learned User Preferences
 
+- Before any live desktop handoff, read `docs/desktop-control.md`. Use the guarded driver with bound conversations. If a guard fails, stop and preserve the draft. Resume only after the user explicitly authorizes continuation. Do not substitute raw CUA input or unguarded keystrokes.
+
 - Prefer ChatGPT desktop Chat↔Codex via mode keybinds and clipboard paste over nested `chatgpt.com` mouse Computer Use; prefer keystrokes over vision/CUA screenshots when driving that loop.
 - Prefer the agent to verify or drive desktop workflows when possible instead of asking the user to try them manually (user should not become the copy-paster); auto-loop must not reconstruct Chat PLANs, Cmd+A the Chat thread, or ask the user to copy; during live loop tests, check Chat status promptly instead of sitting the full chat_wait once Chat has clearly replied or `submit_c2c` failed; driver `ok: true` means keys fired, not accepted — do not report Codex as executing from paste/mode alone; confirm the intended named Chat/Codex session is focused and working.
 - For TagTeamGPT, keep planning in the Chat tab only — never use Work as the planner or executor (“Continued in Work” after a handoff is a failure).
 - Prefer continuing the same ChatGPT Chat thread across C2C loop turns instead of opening a new chat each iteration; name planner/executor threads distinctly (e.g. ChatGPT-PLANNER vs CODEX) so paste targets stay obvious.
-- Never re-press Chat’s mode hotkey (macOS ⌃1, Windows/Linux Alt+1) when already in Chat — it can open New chat. Codex paste always fires ⌃3 / Alt+3 in the same step as paste (`send --mode codex` / `codex-send`); never `to codex` then a later `send`, which restores Cursor and can land in Chat.
+- For manual navigation, never repeat Chat's mode shortcut when Chat is already selected. Automated handoffs require a verified conversation binding. The guarded driver does not use mode shortcuts or standalone Enter.
 - Prefer keyboard UI flows (filter/search, Tab, arrows) and a simple hotkey→paste→wait loop with short (~0.25s) buffers over mouse clicks; warn before focusing/pasting into ChatGPT so the user can select the right session; do not steal ChatGPT focus or paste while the user is typing — only send keys when they say to run.
 - Prefer lazy in-flow mailbox nudges (note/time thresholds) over cron or scheduled jobs.
 - For TagTeamGPT, the product loop runs in ChatGPT desktop (they switch, the goal doesn't); Cursor/this agent is build-chat only (driver/loop/MCP tooling) — not product glue — and must not “prove” the loop by writing kata files here. Do not describe paste landing in Cursor; `FOCUS_LOST` means abort rather than paste into whatever was front.

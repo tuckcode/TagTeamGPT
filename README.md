@@ -48,7 +48,7 @@ Under the hood, the loop uses a small state protocol:
 INIT → PLAN → EXECUTING → EXECUTED → REVIEW → PLAN | DONE | BLOCKED
 ```
 
-The default transport is deliberately simple: ChatGPT desktop mode keybinds plus clipboard handoffs. The optional driver automates those brief switches, and `.tagteam/executed.json` provides a durable signal that Codex finished its turn.
+Manual handoffs use ChatGPT desktop mode shortcuts and the clipboard. The guarded Mac driver verifies bound conversations before sending. `.tagteam/executed.json` records Codex completion.
 
 ## Quick start
 
@@ -105,7 +105,7 @@ Mode shortcuts switch the active surface; they do not select a Codex project. Al
 | Layer | Status | Purpose |
 | --- | --- | --- |
 | `$tagteam` skill + protocol | **Shipped** | Manual, reliable Chat ↔ Codex handoffs |
-| Keystroke driver + auto-loop | **Shipped** | Automated desktop switching on macOS and Windows |
+| Guarded driver + auto-loop | **Mac guard added** | Live interruption and guarded-send checks passed. The complete planner and executor cycle still needs validation. Windows uses manual handoffs. |
 | Mailbox and memory helpers | **In progress** | Durable receipts and goal notes |
 | Read-only workspace MCP | **Optional** | Selective repo visibility for Chat |
 
@@ -114,8 +114,11 @@ The manual copy-and-paste workflow remains available even when the driver or MCP
 ## Optional tooling
 
 ```bash
-# Switch to Chat with the desktop driver
-node tools/tagteam-driver.mjs to chat
+# Bind the focused Chat conversation with an empty message box
+node tools/tagteam-driver.mjs control bind --mode chat
+
+# Bind the focused Codex conversation in its separate window
+node tools/tagteam-driver.mjs control bind --mode codex
 
 # Start the automated relay
 node tools/tagteam-loop.mjs --goal "…" --path /path/to/your/repo --boot
@@ -126,6 +129,7 @@ node mcp/src/http.mjs
 
 Follow the [private connector guide](docs/private-connector.md) to configure the tunnel and select the plugin in Chat.
 The guide includes first installation, restart steps, and a prompt you can copy to an agent.
+Read [desktop control](docs/desktop-control.md) before binding or sending.
 
 ## Documentation
 

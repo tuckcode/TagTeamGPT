@@ -1,5 +1,18 @@
 # Desktop input hardening
 
+## Current guarded driver
+
+Read [guarded desktop control](desktop-control.md) before any live handoff.
+The public driver now requires conversation binding and native interruption monitoring.
+It refuses blind mode changes, standalone Enter, and unverified sends.
+The loop no longer retries Enter after a missing reply.
+Windows automated sends remain disabled until equivalent guards are available.
+
+The material below records the older injector design and supporting research.
+Its unguarded command descriptions are historical.
+
+## Historical injector research
+
 How TagTeamGPT gets keys into **ChatGPT desktop** (Chat / Codex tabs), and
 what still flakes. The loop lives in that app. Cursor is only where this
 driver is built.
