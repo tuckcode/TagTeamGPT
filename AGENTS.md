@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Learned User Preferences
 
-- Before any live desktop handoff, read `docs/desktop-control.md`. Use the guarded driver with bound conversations. If a guard fails, stop and preserve the draft. Resume only after the user explicitly authorizes continuation. Do not substitute raw CUA input or unguarded keystrokes.
+- Before any live desktop setup or handoff, read `docs/desktop-control.md`. Use guarded setup commands for UI changes and bound conversations for sends. Read-only snapshots may guide setup. If a guard fails, stop and preserve the draft. Resume only after the user explicitly authorizes continuation. Do not substitute raw CUA input, unguarded keystrokes, or direct UI navigation APIs during automated setup.
 
 - Prefer ChatGPT desktop Chat↔Codex via mode keybinds and clipboard paste over nested `chatgpt.com` mouse Computer Use; prefer keystrokes over vision/CUA screenshots when driving that loop.
 - Prefer the agent to verify or drive desktop workflows when possible instead of asking the user to try them manually (user should not become the copy-paster); auto-loop must not reconstruct Chat PLANs, Cmd+A the Chat thread, or ask the user to copy; during live loop tests, check Chat status promptly instead of sitting the full chat_wait once Chat has clearly replied or `submit_c2c` failed; driver `ok: true` means keys fired, not accepted — do not report Codex as executing from paste/mode alone; confirm the intended named Chat/Codex session is focused and working.

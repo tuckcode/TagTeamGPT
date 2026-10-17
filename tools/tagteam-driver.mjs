@@ -1343,10 +1343,23 @@ async function main() {
         detail: "Blind mode changes and standalone Enter are disabled. Bind the conversation and use a guarded send." };
     } else {
       const mode = cmd === "chat-send" ? "chat" : cmd === "codex-send" ? "codex" : requireMode;
+      let setup;
+      if (cmd === "control" && arg === "setup") {
+        try {
+          if (rest.length !== 1 || rest[0] !== "-") throw new Error("Expected stdin.");
+          const body = await readStdin();
+          if (body.length > 8192) throw new Error("Setup input exceeds 8192 characters.");
+          setup = JSON.parse(body);
+        } catch {
+          print({ ok: false, code: "SETUP_INVALID", detail: "Use control setup - with one JSON setup step on stdin." });
+          process.exitCode = 1;
+          return;
+        }
+      }
       console.error(cmd === "control"
         ? "TagTeamGPT control check. This command does not send a message."
         : "TagTeamGPT requests desktop control. The on-screen banner appears before any keyboard input. Click or type to pause.");
-      result = control({ action: cmd === "control" ? arg || "status" : "send", mode, text });
+      result = control({ action: cmd === "control" ? arg || "status" : "send", mode, text, setup });
     }
     print({ ...result, platform: PLATFORM });
     process.exitCode = result.ok ? 0 : 1;
