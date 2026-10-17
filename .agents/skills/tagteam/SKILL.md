@@ -187,6 +187,10 @@ Parse the pasted text for `STATE:`:
 
 ### 4. Execute
 
+The auto-loop captures the turn baseline and receipt itself.
+For manual execution, use `tools/tagteam-turn.mjs begin` before editing and `finish` after testing.
+Read `docs/turn-reviews.md` for commands, scope, and failure handling.
+
 1. Set mental state `EXECUTING`. Increment `ITERATION` when starting a PLAN.
 2. Implement the plan yourself with your Codex harness (your tools, your judgment).
    Chat does not micro-manage tool calls.
@@ -196,7 +200,7 @@ Parse the pasted text for `STATE:`:
 ### 5. Send EXECUTED
 
 1. Build an `EXECUTED` stub: `TASK_ID`, `ITERATION`, short `RESULT`,
-   `CHANGED_FILES` count, `TESTS` one-line summary. No diffs.
+   `CHANGED_FILES` count, `TESTS` one-line summary, and a `REVIEW` reference with the task ID and iteration. No diffs.
 2. Show it in a fenced code block.
 3. Cue the user: copy → Chat → paste → send → paste the next reply here.
 4. Wait.

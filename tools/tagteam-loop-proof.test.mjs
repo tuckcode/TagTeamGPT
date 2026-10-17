@@ -198,6 +198,12 @@ const execPath = executedJsonPath(dir);
   assert.equal(fs.existsSync(execPath), false, "executed.json is consumed after proof");
 }
 
+{
+  fs.writeFileSync(execPath, JSON.stringify({ result: "fast execution" }));
+  const payload = await waitForExecutedFile(execPath, { clearExisting: false, timeoutMs: 100 });
+  assert.equal(payload.result, "fast execution");
+}
+
 const noState = spawnSync(
   process.execPath,
   [WRITE_REPLY, "--from-text", "hello no headers"],

@@ -9,6 +9,7 @@ don’t paste them into the composer. Control plane stays keybinds + `[C2C]`.
 | --- | --- |
 | `workspace_info` | Root, branch, dirty |
 | `project_brief` | Scoped rules, declared test commands, saved revision, and local-change status before planning |
+| `turn_review` | One turn's saved change list and per-file patches |
 | `list_directory` | Paginated listing |
 | `read_file` | Paginated read (denies `.env` / keys) |
 | `search_workspace` | ripgrep or fallback |
@@ -84,6 +85,10 @@ If the connector is unavailable, Codex can supply a compact factual brief.
 If neither source is available, Chat reports BLOCKED and requests the missing context.
 
 ## Response limits
+
+For review after execution, use [saved turn reviews](../docs/turn-reviews.md).
+They compare the turn's initial working files with its final working files.
+The general `git_diff` tool still compares against Git's saved version.
 
 The server limits each tool response by its serialized UTF-8 size, including the MCP content wrapper.
 These limits measure bytes. They do not measure model tokens or account usage.

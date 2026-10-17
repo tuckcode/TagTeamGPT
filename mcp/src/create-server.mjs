@@ -6,6 +6,7 @@ import {
   errorResult,
   workspaceInfo,
   projectBrief,
+  turnReview,
   listDirectory,
   readFilePaged,
   searchWorkspace,
@@ -32,6 +33,7 @@ export function createServer(root = resolveRoot(), limits = resolveLimits()) {
 • Always reply with structured [C2C] STATE headers only for state changes. Keep messages tiny (~1KB). No full file dumps.
 • After every PLAN, DONE, BLOCKED, or READY, call submit_c2c with the full [C2C] message so the auto-loop can read .tagteam/last-reply.json. Do not wait for a human to copy.
 • After EXECUTED: prefer these tools (git_diff, read_file, git_status, workspace_info) over asking Codex to paste. Keep pulls small and paginated.
+• If EXECUTED includes REVIEW, call turn_review with that task and iteration. Request each changed path to inspect its saved patch.
 • A truncated result includes reason and cursor. Pass that cursor to resume. reason stale_cursor means the source changed. Start that read again.
 • Trust keystroke send (clipboard+Enter); do not require screenshots/CUA for the happy path.`,
 
@@ -67,6 +69,28 @@ export function createServer(root = resolveRoot(), limits = resolveLimits()) {
     async ({ paths } = {}) => {
       try {
         return textResult(projectBrief(root, paths || [], { limits }));
+      } catch (e) {
+        return errorResult(e, errorBudget);
+      }
+    }
+  );
+
+  server.registerTool(
+    "turn_review",
+    {
+      title: "Review one Codex turn",
+      description: "Read the saved changes from one Codex turn. Omit path for the receipt. Supply a changed path for its patch.",
+      inputSchema: {
+        task_id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/),
+        iteration: z.number().int().min(1),
+        path: z.string().max(4096).optional(),
+        cursor: z.string().optional().describe("Continue the same saved receipt or patch."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ task_id, iteration, path: rel, cursor }) => {
+      try {
+        return textResult(turnReview(root, task_id, iteration, { path: rel, cursor, limits }));
       } catch (e) {
         return errorResult(e, errorBudget);
       }
