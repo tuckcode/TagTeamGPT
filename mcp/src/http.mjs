@@ -24,9 +24,25 @@ const defaultRoot = path.resolve(__dirname, "../..");
 const PORT = Number(process.env.PORT || process.env.TAGTEAM_MCP_PORT || 8743);
 const HOST = process.env.TAGTEAM_MCP_HOST || "127.0.0.1";
 const ROOT = resolveRoot(process.env.TAGTEAM_ROOT || defaultRoot);
+// .tagteam/mcp.token is the canonical token; tagteam-mcp-up.mjs writes it and
+// exports it. Read it directly so the server can also be started on its own
+// (launchd, systemd, a bare `node src/http.mjs`) and still agree with whatever
+// already holds that token. Without this, a standalone start mints a random
+// token no client knows, and every request fails 401 with no obvious cause.
+function tokenFromFile() {
+  try {
+    const t = fs.readFileSync(path.join(ROOT, ".tagteam", "mcp.token"), "utf8").trim();
+    return t || null;
+  } catch {
+    return null;
+  }
+}
+
+const savedToken = tokenFromFile();
 const TOKEN =
   process.env.TAGTEAM_MCP_TOKEN ||
   process.env.MCP_BEARER_TOKEN ||
+  savedToken ||
   randomBytes(24).toString("hex");
 
 const ACTIVITY = path.join(ROOT, ".tagteam", "mcp.last-activity");
@@ -129,15 +145,14 @@ app.listen(PORT, HOST, () => {
       health: `http://${HOST}:${PORT}/health`,
       root: ROOT,
       token_set: true,
-      token_preview: `${TOKEN.slice(0, 4)}…${TOKEN.slice(-4)}`,
-      hint: "Tunnel this URL over HTTPS, then add as a ChatGPT custom MCP connector (Developer Mode). Send Authorization: Bearer <token>.",
+      hint: "Use docs/private-connector.md to connect through OpenAI Secure MCP Tunnel.",
     })
   );
-  if (!process.env.TAGTEAM_MCP_TOKEN && !process.env.MCP_BEARER_TOKEN) {
+  if (!process.env.TAGTEAM_MCP_TOKEN && !process.env.MCP_BEARER_TOKEN && !savedToken) {
     console.error(
       JSON.stringify({
         warning:
-          "TAGTEAM_MCP_TOKEN was not set; generated an ephemeral token for this process (not printed — read .tagteam/mcp.token or set the env)",
+          "No saved access key exists. Set TAGTEAM_MCP_TOKEN before connecting. This process uses an ephemeral key.",
         token_set: true,
       })
     );

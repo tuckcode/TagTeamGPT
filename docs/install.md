@@ -104,9 +104,12 @@ Manual copy/paste always works without the driver.
 
 Default loop does **not** need MCP. Add it only when Chat should pull diffs/files itself.
 
-See [mcp/README.md](../mcp/README.md) and `node tools/tagteam-mcp-up.mjs start`.
-Name the ChatGPT connector **`tagteam-workspace`** (rename or replace an old
-`codexgpt-workspace` entry). Enable it on the Chat thread via the `+` menu.
+Use the [private connector setup](private-connector.md) for first installation and restarts.
+That guide includes a request that you can copy to an agent.
+Select **TagTeamGPT Private** with `@` in the Chat thread.
+Confirm the folder with `workspace_info` before review.
+The local server keeps its access key. The private tunnel supplies it locally.
+The public Cloudflare helper does not manage this private connection.
 
 ## Sanity check
 

@@ -110,11 +110,14 @@ See also: [Loop details](loop.md).
 
 When Chat must independently check code after `EXECUTED`:
 
-1. `node tools/tagteam-mcp-up.mjs start`
-2. Attach it in ChatGPT Developer Mode as connector **`tagteam-workspace`** (rename or replace `codexgpt-workspace`). Enable it on the Chat thread via `+`.
+1. Start the local server and private tunnel with the [saved setup instructions](private-connector.md).
+2. Select **TagTeamGPT Private** with `@` in the Chat thread.
 3. Tell Chat to prefer `git_diff` / `read_file` over asking for pastes.
 
-A new tunnel URL pasted into a `[C2C]` message does **not** rebind the connector — edit connector settings when the URL changes.
+Call `workspace_info` to confirm the folder before review.
+The private tunnel uses its saved tunnel ID across restarts.
+The `tagteam-mcp-up.mjs` helper starts a separate public Cloudflare tunnel.
+It does not manage the private connection.
 
 Details: [mcp/README.md](../mcp/README.md).
 
