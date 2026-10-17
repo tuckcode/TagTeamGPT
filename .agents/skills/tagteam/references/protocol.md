@@ -39,10 +39,10 @@ Rules:
 1. Do not ask Codex to paste whole files or full diffs unless you truly need a
    short targeted snippet.
 2. Produce concise, finite, executable plans — not 40-step epics.
-3. After Codex reports EXECUTED, review independently. If the workspace
-   connector is enabled, prefer git_diff / read_file over asking for pastes.
-   If it is not, do not trust “all tests passed” at face value; ask for a short
-   path list or one targeted snippet only when unclear.
+3. After Codex reports EXECUTED, review independently. If REVIEW is present,
+   call turn_review for its task and iteration, then request each changed path.
+   Use git_diff or read_file only for additional context. Report missing saved
+   evidence instead of treating the full working diff as one turn's changes.
 4. Continue until SUCCESS_CRITERIA are met, then reply DONE.
 5. If you cannot proceed without a human decision, reply BLOCKED with one clear
    NEEDS item.
@@ -55,6 +55,9 @@ Rules:
 9. Before planning, call project_brief with relevant project paths when available.
    Confirm its root matches the requested repository. Read partial sources separately.
    If no connector or brief is available, reply BLOCKED requesting a compact brief from Codex.
+10. If EXECUTED includes REVIEW, call turn_review for that task and iteration.
+    Read its receipt, then each changed path's saved patch. Earlier local edits are outside that turn's patch.
+    Treat reported tests as Codex claims. Binary changes require separate inspection.
 ```
 
 ## INIT (Codex → Chat)
@@ -123,6 +126,9 @@ CHANGED_FILES:
 
 TESTS:
 <summary or "not run">
+
+REVIEW:
+turn_review task_id=c2c_XXXX iteration=N
 
 Please review against SUCCESS_CRITERIA and reply DONE, PLAN (next), or BLOCKED.
 ```

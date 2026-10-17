@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
@@ -7,6 +7,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
 import { once } from "node:events";
+import { beginTurn, finishTurn } from "../../tools/lib/tagteam-turn-review.mjs";
+import { assertSafeRel } from "./workspace.mjs";
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "tagteam-http-"));
 const listener = net.createServer();
@@ -22,6 +24,10 @@ fs.writeFileSync(path.join(root, "AGENTS.md"), "Use the local project rules.\n")
 fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ version: "2.0.0", scripts: { test: "node --test" } }));
 fs.mkdirSync(path.join(root, ".tagteam"));
 fs.writeFileSync(path.join(root, ".tagteam/mcp.token"), token);
+execFileSync("git", ["init", "-q", "-b", "main"], { cwd: root });
+beginTurn(root, "c2c_http", 1, assertSafeRel);
+fs.writeFileSync(path.join(root, "turn.txt"), "saved turn content\n");
+finishTurn(root, "c2c_http", 1, { task_id: "c2c_http", iteration: 1, tests: "not run" }, assertSafeRel);
 const child = spawn(process.execPath, [fileURLToPath(new URL("./http.mjs", import.meta.url))], {
   env: {
     ...process.env,
@@ -83,6 +89,16 @@ try {
   assert.ok(brief.content.includes('"test":"node --test"'));
   assert.equal(brief.commit, null);
   assert.equal(brief.returned_bytes, Buffer.byteLength(JSON.stringify(briefResponse.result)));
+  const turnResponse = await call({ task_id: "c2c_http", iteration: 1 }, token, "turn_review");
+  assert.ok(!turnResponse.result.isError);
+  const turn = JSON.parse(JSON.parse(turnResponse.result.content[0].text).content);
+  assert.equal(turn.files.length, 1);
+  assert.equal(turn.files[0].path, "turn.txt");
+  fs.writeFileSync(path.join(root, "turn.txt"), "later content\n");
+  const patchResponse = await call({ task_id: "c2c_http", iteration: 1, path: "turn.txt" }, token, "turn_review");
+  const patch = JSON.parse(patchResponse.result.content[0].text);
+  assert.ok(patch.content.includes("+saved turn content"));
+  assert.ok(!patch.content.includes("+later content"));
   let cursor;
   let received = "";
   let pages = 0;

@@ -29,6 +29,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
 import { loadConfig, flagOrConfig, readSession, writeSession, ROOT, STATE_DIR } from "./lib/tagteam-config.mjs";
+import { beginTurn, finishTurn } from "./lib/tagteam-turn-review.mjs";
+import { assertSafeRel } from "../mcp/src/workspace.mjs";
 import {
   chatReplyPaths,
   executedJsonPath,
@@ -179,6 +181,10 @@ HARD PREFLIGHT (do this first):
 
 Do only the ACTIONS. Change only the listed files. When finished, stop and wait — do not invent a Chat reply.
 
+After execution, write ${executedJsonPath(repoPath)} with JSON fields:
+task_id: "${taskId}", iteration: ${iteration}, result: a short summary, tests: the actual test results.
+The loop captures this turn's changes independently. Do not replace its review baseline.
+
 ${planText}`;
 }
 
@@ -196,9 +202,10 @@ Rules:
 1. Do not ask Codex to paste whole files or full diffs unless you truly need a
    short targeted snippet.
 2. Produce concise, finite, executable plans — not 40-step epics.
-3. After Codex reports EXECUTED, review independently. If the workspace
-   connector is enabled, prefer git_diff / read_file over pastes; otherwise
-   ask only for a short path list or one targeted snippet when unclear.
+3. After Codex reports EXECUTED, review independently. If REVIEW is present,
+   call turn_review for its task and iteration, then request each changed path.
+   Use git_diff or read_file only for additional context. Report missing saved
+   evidence instead of treating the full working diff as one turn's changes.
 4. Continue until SUCCESS_CRITERIA are met, then reply DONE.
 5. If you cannot proceed without a human decision, reply BLOCKED with one clear
    NEEDS item.
@@ -252,7 +259,11 @@ ${changed}
 TESTS:
 ${tests}
 
-Please review against SUCCESS_CRITERIA and reply DONE, PLAN (next), or BLOCKED.`;
+REVIEW:
+turn_review task_id=${taskId} iteration=${iteration}
+
+Read that saved receipt, then request each changed path through turn_review.
+Review against SUCCESS_CRITERIA and reply DONE, PLAN (next), or BLOCKED.`;
 }
 
 /** Hard-reject checklist-only / empty PLAN before any Codex handoff. */
@@ -295,10 +306,12 @@ Previous PLAN was rejected (${detail}). Reply again with a full C2C PLAN:
 GOAL, RATIONALE as prose (not a restatement of ACTIONS), ACTIONS, FILES_LIKELY_INVOLVED, TESTS, SUCCESS_CRITERIA.`;
 }
 
-async function onPlan(planText, taskId, iteration, useCodex, repoPath) {
-  fs.mkdirSync(STATE_DIR, { recursive: true });
-  fs.writeFileSync(PLAN_PATH, planText, "utf8");
+export async function onPlan(planText, taskId, iteration, useCodex, repoPath, planPath = PLAN_PATH) {
+  fs.mkdirSync(path.dirname(planPath), { recursive: true });
+  fs.writeFileSync(planPath, planText, "utf8");
   const execPath = executedJsonPath(repoPath);
+  beginTurn(repoPath, taskId, iteration, assertSafeRel);
+  fs.rmSync(execPath, { force: true });
 
   if (useCodex) {
     const handoff = buildCodexHandoff(planText, taskId, iteration, repoPath);
@@ -323,17 +336,17 @@ async function onPlan(planText, taskId, iteration, useCodex, repoPath) {
 
   const hook = process.env.TAGTEAM_ON_PLAN;
   if (hook) {
-    execFileSync(hook, [PLAN_PATH, taskId, String(iteration)], {
+    execFileSync(hook, [planPath, taskId, String(iteration)], {
       cwd: repoPath,
       stdio: "inherit",
       shell: true,
-      env: { ...process.env, TAGTEAM_PLAN: PLAN_PATH, TAGTEAM_TASK_ID: taskId, TAGTEAM_REPO: repoPath },
+      env: { ...process.env, TAGTEAM_PLAN: planPath, TAGTEAM_TASK_ID: taskId, TAGTEAM_REPO: repoPath },
     });
     if (fs.existsSync(execPath)) {
       const raw = fs.readFileSync(execPath, "utf8");
       fs.unlinkSync(execPath);
       console.error(JSON.stringify({ phase: "codex-accepted", via: "hook", accepted: true, keys_fired: true }));
-      return JSON.parse(raw);
+      return finishTurn(repoPath, taskId, iteration, JSON.parse(raw), assertSafeRel);
     }
   }
   console.error(
@@ -343,14 +356,14 @@ async function onPlan(planText, taskId, iteration, useCodex, repoPath) {
       write: execPath,
       keys_fired: true,
       accepted: false,
-      example: { result: "…", changed_files: 1, tests: "not run" },
+      example: { task_id: taskId, iteration, result: "…", tests: "not run" },
     })
   );
-  const payload = await waitForExecutedFile(execPath);
+  const payload = await waitForExecutedFile(execPath, { clearExisting: false });
   if (payload) {
     console.error(JSON.stringify({ phase: "codex-accepted", via: "executed.json", accepted: true, keys_fired: true }));
   }
-  return payload;
+  return payload ? finishTurn(repoPath, taskId, iteration, payload, assertSafeRel) : null;
 }
 
 async function main() {
@@ -512,7 +525,14 @@ async function main() {
     }
 
     iteration += 1;
-    const execPayload = await onPlan(reply.snippet, taskId, iteration, useCodex, repoPath);
+    let execPayload;
+    try {
+      execPayload = await onPlan(reply.snippet, taskId, iteration, useCodex, repoPath);
+    } catch (error) {
+      console.log(JSON.stringify({ ok: false, code: "TURN_REVIEW_FAILED", task_id: taskId, iteration, detail: error.message }));
+      process.exitCode = 1;
+      return;
+    }
     if (!execPayload) {
       console.log(
         JSON.stringify({
@@ -539,4 +559,4 @@ async function main() {
   process.exitCode = 1;
 }
 
-main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

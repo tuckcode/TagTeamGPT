@@ -143,7 +143,7 @@ export async function waitForExecutedFile(execPath, opts = {}) {
   const now = opts.now ?? (() => Date.now());
   const start = now();
   fs.mkdirSync(path.dirname(execPath), { recursive: true });
-  if (fs.existsSync(execPath)) fs.unlinkSync(execPath);
+  if (opts.clearExisting !== false && fs.existsSync(execPath)) fs.unlinkSync(execPath);
   while (now() - start < timeoutMs) {
     if (fs.existsSync(execPath)) {
       const raw = fs.readFileSync(execPath, "utf8");

@@ -14,5 +14,6 @@ Invoke in Codex with `$tagteam`. GitHub: `tuckcode/TagTeamGPT`.
 | [Input hardening](hardening.md) | Windows + macOS focus/key research — keep the macro, fix the injector |
 | [MCP connector](../mcp/README.md) | Optional read-only repo eyes for Chat |
 | [Private connector](private-connector.md) | Verified private tunnel setup and restart instructions |
+| [Turn reviews](turn-reviews.md) | Saved evidence for the changes in one Codex turn |
 
 Start with the root [README](../README.md) if you just want the short path.

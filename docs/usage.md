@@ -108,6 +108,8 @@ See also: [Loop details](loop.md).
 
 ## Optional MCP review
 
+The loop records each execution separately. See [turn reviews](turn-reviews.md) for saved change lists and patches.
+
 When Chat must independently check code after `EXECUTED`:
 
 1. Start the local server and private tunnel with the [saved setup instructions](private-connector.md).

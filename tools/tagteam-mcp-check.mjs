@@ -171,6 +171,7 @@ async function main() {
     "search_workspace",
     "workspace_info",
     "project_brief",
+    "turn_review",
   ];
   mark(
     listed.ok && expected.every((n) => names.includes(n)),

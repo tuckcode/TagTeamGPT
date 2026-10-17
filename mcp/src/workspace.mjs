@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { parseC2C } from "../../tools/lib/tagteam-driver-helpers.mjs";
+import { loadTurn } from "../../tools/lib/tagteam-turn-review.mjs";
 
 const DENY_NAME = new Set([
   ".env",
@@ -583,6 +584,54 @@ export function projectBrief(root, paths = [], opts = {}) {
     cursor: null,
     guidance: "Confirm root. Read omitted or partial sources with read_file before planning. Package scripts are declarations, not test results.",
   }), budget, content);
+}
+
+export function turnReview(root, taskId, iteration, opts = {}) {
+  const limits = limitsOf(opts);
+  const { dir, record } = loadTurn(root, taskId, iteration, limits.acquire);
+  let buf;
+  let rev;
+  let size;
+  const cursor = unpackCursor(opts.cursor);
+  const pos = cursor ? cursor.pos : 0;
+  const rel = opts.path;
+  if (rel != null) {
+    assertSafeRel(root, rel);
+    const file = record.files.find((file) => file.path === rel);
+    if (!file) throw new Error("This path did not change in the requested turn.");
+    const patchName = crypto.createHash("sha256").update(rel).digest("hex") + ".patch";
+    if (file.patch !== patchName) throw new Error("Invalid saved patch reference.");
+    const patchFile = path.join(dir, patchName);
+    const stat = fs.lstatSync(patchFile);
+    if (!stat.isFile() || `${stat.size}:${stat.mtimeMs}:${stat.ino}` !== file.patch_revision) {
+      throw new Error("The saved turn patch changed after capture.");
+    }
+    rev = hashRev(record.before_tree + record.after_tree + rel + file.patch_revision);
+    size = stat.size;
+    if (pos > size) throw new Error("invalid cursor");
+    buf = readWindow(patchFile, pos, limits.acquire, size);
+  } else {
+    const { files, ...summary } = record;
+    const content = JSON.stringify({ ...summary, files: files.map((file) => {
+      const publicFile = { ...file };
+      delete publicFile.patch;
+      delete publicFile.patch_revision;
+      return publicFile;
+    }) }, null, 2);
+    const full = Buffer.from(content);
+    rev = hashRev(content);
+    size = full.length;
+    if (pos > size) throw new Error("invalid cursor");
+    buf = full.subarray(pos, pos + limits.acquire);
+  }
+  return pageText({
+    kind: "turn-review", field: "content", emptyValue: "", buf, baseOffset: pos, end: size,
+    eof: pos + buf.length >= size, rev, budget: rel == null ? limits.delivery.status : limits.delivery.diff,
+    cursor: opts.cursor,
+    base: { root: path.resolve(root), task_id: taskId, iteration, path: rel ?? null, changed_files: record.files.length,
+      guidance: "Review this saved turn. Earlier local edits are excluded. Tests are Codex reports. Binary changes need separate inspection." },
+    acquireReason: null, skipLines: 0, maxLines: null, decorate: (obj) => obj,
+  });
 }
 
 function readEntries(abs, acquire) {
