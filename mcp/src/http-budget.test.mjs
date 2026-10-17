@@ -18,6 +18,8 @@ const url = `http://127.0.0.1:${port}`;
 const token = "local-test-key";
 const expected = '😀 quotes " backslash \\ text\n'.repeat(100);
 fs.writeFileSync(path.join(root, "wide.txt"), expected);
+fs.writeFileSync(path.join(root, "AGENTS.md"), "Use the local project rules.\n");
+fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ version: "2.0.0", scripts: { test: "node --test" } }));
 fs.mkdirSync(path.join(root, ".tagteam"));
 fs.writeFileSync(path.join(root, ".tagteam/mcp.token"), token);
 const child = spawn(process.execPath, [fileURLToPath(new URL("./http.mjs", import.meta.url))], {
@@ -73,6 +75,14 @@ try {
   const oversizedError = await call({ path: "x".repeat(10000) }, token, "list_directory");
   assert.equal(oversizedError.result.isError, true);
   assert.ok(Buffer.byteLength(JSON.stringify(oversizedError.result)) <= 1024);
+  const briefResponse = await call({}, token, "project_brief");
+  assert.ok(!briefResponse.result.isError);
+  const brief = JSON.parse(briefResponse.result.content[0].text);
+  assert.equal(brief.root, root);
+  assert.ok(brief.content.includes("Use the local project rules."));
+  assert.ok(brief.content.includes('"test":"node --test"'));
+  assert.equal(brief.commit, null);
+  assert.equal(brief.returned_bytes, Buffer.byteLength(JSON.stringify(briefResponse.result)));
   let cursor;
   let received = "";
   let pages = 0;

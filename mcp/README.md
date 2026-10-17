@@ -8,6 +8,7 @@ don’t paste them into the composer. Control plane stays keybinds + `[C2C]`.
 | Tool | Purpose |
 | --- | --- |
 | `workspace_info` | Root, branch, dirty |
+| `project_brief` | Scoped rules, declared test commands, saved revision, and local-change status before planning |
 | `list_directory` | Paginated listing |
 | `read_file` | Paginated read (denies `.env` / keys) |
 | `search_workspace` | ripgrep or fallback |
@@ -51,6 +52,36 @@ Do not disable server authentication to make that form connect.
 
 In a Chat thread, select the installed plugin with `@`.
 Call `workspace_info` to confirm the folder before you read project files.
+
+## Project brief before planning
+
+Chat calls `project_brief` before it creates a plan.
+Pass up to eight relevant file or folder paths in `paths`.
+The brief includes root `AGENTS.md`, `CLAUDE.md`, and `package.json` files when they exist.
+It also includes these files from the requested paths' ancestor folders inside the workspace.
+Rules from deeper folders apply to those folders and their descendants.
+Sources outside the workspace are rejected, including links to external files.
+
+The brief reports `root`, `git_branch`, the full saved `commit`, and `dirty`.
+`dirty` describes local changes. It does not alter the saved commit identifier.
+If the workspace has no saved Git revision, `commit` is null.
+The brief extracts package version, package manager, and scripts named `test`, `lint`, `build`, `check`, or `typecheck`.
+Names with a colon suffix, such as `test:unit`, also match.
+The server does not execute package scripts.
+It places command declarations before rule excerpts so they remain visible in a short response.
+
+The brief uses `TAGTEAM_BUDGET_STATUS`, which defaults to 8 KiB.
+Each source read acquires at most 8 KiB within the shared acquisition limit.
+`source_paths` identifies the included source files, including files whose text could not fit.
+The server rejects scopes with more than 32 source files.
+Request fewer paths if the source catalog cannot fit in the response limit.
+If `truncated` is true, Chat must read partial or omitted sources with `read_file` before planning.
+The brief has no continuation cursor. Follow-up reads use the source paths.
+Malformed package files are marked incomplete without inferred commands.
+
+The loop INIT message, boot prompt, and skill protocol request this brief before planning.
+If the connector is unavailable, Codex can supply a compact factual brief.
+If neither source is available, Chat reports BLOCKED and requests the missing context.
 
 ## Response limits
 

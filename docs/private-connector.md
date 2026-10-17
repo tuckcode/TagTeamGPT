@@ -148,6 +148,14 @@ The tunnel controls remote access through OpenAI permissions.
 The local MCP server still requires its access key.
 Do not set `TAGTEAM_MCP_ALLOW_NO_AUTH`.
 
+## Refresh tools after a server update
+
+If the server adds a tool, restart the local server with the updated code.
+Keep the existing private tunnel running.
+Open **TagTeamGPT Private** in ChatGPT plugin settings and select **Refresh tools**.
+Select the plugin again in the chat if its new tools remain unavailable.
+For the planning brief, confirm that `project_brief` appears before starting the loop.
+
 ## Verification recorded on October 17, 2026
 
 The installed private plugin reported the correct workspace root.
@@ -180,6 +188,7 @@ Help me create or select TagTeamGPT Private using Connection: Tunnel.
 Select No authentication only for the private plugin. Keep the local server authenticated.
 Ask me to select the plugin with @ if its tools are unavailable in this chat.
 Use that plugin to call workspace_info and read README.md.
+Before Chat plans, call project_brief with relevant paths and read any partial sources.
 Verify a read across multiple response sections when the file is large enough.
 Report success only after the ChatGPT tool calls succeed against the exact folder.
 Save restart instructions without credentials. Report any remaining blocker precisely.

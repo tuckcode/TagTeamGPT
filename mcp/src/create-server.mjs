@@ -5,6 +5,7 @@ import {
   textResult,
   errorResult,
   workspaceInfo,
+  projectBrief,
   listDirectory,
   readFilePaged,
   searchWorkspace,
@@ -24,6 +25,7 @@ export function createServer(root = resolveRoot(), limits = resolveLimits()) {
     instructions: `TagTeamGPT control plane (keyboard, not mouse hunting):
 
 • One pinned Chat thread per goal — never New chat mid-loop; never use Work as planner.
+• Before planning, call project_brief with the relevant project paths. Confirm its root matches the requested repo. Read partial sources separately.
 • Local folder projects do not support Chat — keep Chat as a cloud thread (no local folder); mount the repo only in Codex.
 • Modes (macOS): Control+1 Chat, Control+2 Work (avoid), Control+3 Codex. Win/Linux: Alt+1/2/3.
 • Loop: Chat receives [C2C] INIT → reply PLAN → human/driver Control+3 pastes PLAN into Codex → Codex works → Control+1 pastes [C2C] EXECUTED back into the same Chat → you reply DONE, PLAN, or BLOCKED.
@@ -46,6 +48,25 @@ export function createServer(root = resolveRoot(), limits = resolveLimits()) {
     async () => {
       try {
         return textResult(workspaceInfo(root, { limits }));
+      } catch (e) {
+        return errorResult(e, errorBudget);
+      }
+    }
+  );
+
+  server.registerTool(
+    "project_brief",
+    {
+      title: "Project brief",
+      description: "Read the workspace rules, declared test commands, and saved revision before planning. Confirm the root matches the requested project.",
+      inputSchema: {
+        paths: z.array(z.string().min(1).max(512)).max(8).optional().describe("Relevant files or folders. Includes their ancestor instructions and package scripts."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ paths } = {}) => {
+      try {
+        return textResult(projectBrief(root, paths || [], { limits }));
       } catch (e) {
         return errorResult(e, errorBudget);
       }
