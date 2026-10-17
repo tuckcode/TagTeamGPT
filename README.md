@@ -6,7 +6,7 @@
 
 ### Plan in Chat. Build in Codex.
 
-**A desktop-native Chat ↔ Codex relay for one goal, one repo, and far less tab wrangling.**
+**Make your Codex usage go further. Plan and review in Chat. Keep Codex focused on edits and tests.**
 
 [Get started](#quick-start) · [See the workflow](#how-it-works) · [Read the docs](#documentation)
 
@@ -24,6 +24,25 @@ No nested `chatgpt.com` session. No full-diff clipboard dumps. No hunting throug
 
 > [!NOTE]
 > TagTeamGPT is an independent open-source project inspired by [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-with-chatgpt). It is not affiliated with OpenAI.
+
+## The point: save Codex usage
+
+TagTeamGPT aims to reduce the Codex allowance spent on planning, repeated explanations, and broad reviews.
+Chat handles planning and independent review. Codex handles implementation and verification.
+Compact handoffs, a scoped project brief, and saved patches for each turn limit repeated context.
+
+This is a usage-saving strategy, not a measured savings guarantee.
+The relay itself uses resources, and repeated retries can erase its benefit.
+We have not published a controlled usage benchmark or a savings percentage.
+
+OpenAI recommends focused prompts and relevant source files to extend usage limits.
+Usage also depends on the model, context, reasoning, tools, and caching.
+See [OpenAI usage guidance](https://learn.chatgpt.com/docs/pricing#what-can-i-do-to-make-my-usage-limits-last-longer).
+Work and Codex share usage limits. Keep the planner in ordinary **Chat**.
+See [OpenAI surface guidance](https://learn.chatgpt.com/docs/use-chatgpt).
+Plan and workspace billing rules can differ, so this project does not promise separate billing pools for every account.
+
+Read [the savings rationale, sources, and measurement plan](docs/usage-savings.md).
 
 ## Why TagTeamGPT?
 
