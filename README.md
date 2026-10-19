@@ -1,77 +1,21 @@
 # TagTeamGPT
 
-![TagTeamGPT — Plan in Chat. Build in Codex.](docs/tagteamgpt-banner.png)
+TagTeamGPT relays a coding goal between Chat and Codex in the existing ChatGPT desktop app: Chat plans and reviews, while Codex edits files and runs tests.
 
-<div align="center">
+Its purpose is to reduce Codex usage spent on planning and repeated review.
+The project has no published savings benchmark or verified savings percentage.
+Read the [usage rationale and measurement plan](docs/usage-savings.md).
 
-### Plan in Chat. Build in Codex.
+This is an experimental skill and a set of local tools.
+The macOS helper displays a warning before desktop control and a pause banner after interruption.
+The repository also includes an explainer website. That website is separate from the desktop workflow.
+TagTeamGPT is an independent project inspired by [codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-with-chatgpt).
 
-**Make your Codex usage go further. Plan and review in Chat. Keep Codex focused on edits and tests.**
-
-[Get started](#quick-start) · [See the workflow](#how-it-works) · [Read the docs](#documentation)
-
-</div>
-
----
-
-TagTeamGPT pairs the two sides of the ChatGPT desktop app around a clean division of labor:
-
-- **Chat** plans, reasons, and reviews.
-- **Codex** edits files, runs commands, and tests the result.
-- **TagTeamGPT** carries the goal between them with small `[C2C]` handoff messages.
-
-No nested `chatgpt.com` session. No full-diff clipboard dumps. No hunting through tabs on every turn.
-
-> [!NOTE]
-> TagTeamGPT is an independent open-source project inspired by [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-with-chatgpt). It is not affiliated with OpenAI.
-
-## The point: save Codex usage
-
-TagTeamGPT aims to reduce the Codex allowance spent on planning, repeated explanations, and broad reviews.
-Chat handles planning and independent review. Codex handles implementation and verification.
-Compact handoffs, a scoped project brief, and saved patches for each turn limit repeated context.
-
-This is a usage-saving strategy, not a measured savings guarantee.
-The relay itself uses resources, and repeated retries can erase its benefit.
-We have not published a controlled usage benchmark or a savings percentage.
-
-OpenAI recommends focused prompts and relevant source files to extend usage limits.
-Usage also depends on the model, context, reasoning, tools, and caching.
-See [OpenAI usage guidance](https://learn.chatgpt.com/docs/pricing#what-can-i-do-to-make-my-usage-limits-last-longer).
-Work and Codex share usage limits. Keep the planner in ordinary **Chat**.
-See [OpenAI surface guidance](https://learn.chatgpt.com/docs/use-chatgpt).
-Plan and workspace billing rules can differ, so this project does not promise separate billing pools for every account.
-
-Read [the savings rationale, sources, and measurement plan](docs/usage-savings.md).
-
-## Why TagTeamGPT?
-
-| Without the relay | With TagTeamGPT |
-| --- | --- |
-| Planning and implementation compete for the same context | Chat owns the plan; Codex owns execution |
-| Large diffs are pasted back and forth | Compact state messages keep the loop moving |
-| Every handoff means finding the right window and project | Desktop mode shortcuts handle the switch |
-| The planner is blind to the repo unless you paste everything | An optional read-only MCP lets Chat inspect selected files and diffs |
-
-## How it works
-
-```text
-You → Chat plans → Codex executes → Chat reviews
-         ↑                            │
-         └──── revise or finish ──────┘
-```
-
-Under the hood, the loop uses a small state protocol:
-
-```text
-INIT → PLAN → EXECUTING → EXECUTED → REVIEW → PLAN | DONE | BLOCKED
-```
-
-Manual handoffs use ChatGPT desktop mode shortcuts and the clipboard. The guarded Mac driver verifies bound conversations before sending. `.tagteam/executed.json` records Codex completion.
+![TagTeamGPT wrestling banner](docs/tagteamgpt-banner.png)
 
 ## Quick start
 
-### 1. Install the skill
+Install the skill from this repository:
 
 ```bash
 git clone https://github.com/tuckcode/TagTeamGPT.git
@@ -80,92 +24,73 @@ mkdir -p ~/.agents/skills
 cp -R .agents/skills/tagteam ~/.agents/skills/tagteam
 ```
 
-Then invoke it from a **Codex** composer:
+Open your target coding project in desktop Codex.
+Invoke the skill in its message box:
 
 ```text
 $tagteam
 ```
 
-You can also say `Use TagTeamGPT to …` and provide the goal plus the path to your repo.
+Provide the goal and the target project path.
+Keep the planner in an ordinary cloud Chat conversation.
+Keep the target project attached to Codex.
+Use manual handoffs when desktop control is unavailable.
+Read the [installation guide](docs/install.md) for the manual workflow.
 
-### 2. Set up the desktop modes
+## How the relay works
 
-| Mode | Role | Setup |
-| --- | --- | --- |
-| **Chat** | Planner and reviewer | Use a plain cloud thread with no local folder |
-| **Codex** | Executor | Mount the repo you want to change |
-| **Work** | Not part of the loop | Keep planning in Chat |
+1. Chat receives the goal and prepares a plan.
+2. Codex implements the plan in the target project and records the result.
+3. Chat reviews the evidence and requests changes or completes the task.
 
-> [!IMPORTANT]
-> Local folder projects do not support Chat. Keep the planner in a cloud Chat thread and mount the target folder in Codex.
+Small `[C2C]` messages identify the task, iteration, and state.
+The automated loop receives Chat replies through `submit_c2c`, a connector tool that saves the reply locally.
+Codex completion is recorded in `.tagteam/executed.json` inside the target project.
+The loop also saves changes for each turn so Chat can review that turn independently.
+See the [loop guide](docs/loop.md) and [review evidence guide](docs/turn-reviews.md).
 
-### 3. Run the loop
+## Desktop control and current limits
 
-```bash
-node tools/tagteam-loop.mjs \
-  --goal "Describe the outcome you want" \
-  --path /path/to/your/repo \
-  --boot
-```
+The guarded macOS driver verifies the named conversation and checks for an empty message box before sending.
+It shows a blue warning for two seconds before a send. Setup actions use a 15-second warning.
+Clicks, typing, scrolling, and application changes interrupt control.
+An interruption preserves the paused state and requires inspection and explicit authorization before continuation.
+The driver never automatically retries an interrupted send.
 
-The loop hands the goal to Chat, sends the resulting plan to Codex, and returns execution results for review until Chat responds with `DONE` or `BLOCKED`.
+The helper requires the Swift compiler and macOS permissions for Accessibility and input observation.
+Windows automated sends are disabled. Use manual handoffs on Windows.
+Live checks proved interruption protection and one guarded message delivery.
+A complete Chat planning, Codex execution, and Chat review cycle still needs live validation.
 
-## Desktop shortcuts
+Read [desktop control](docs/desktop-control.md) before binding conversations or starting the loop.
+That guide defines the current control behavior.
 
-| Platform | Chat | Work | Codex |
-| --- | --- | --- | --- |
-| macOS | `Control+1` | `Control+2` | `Control+3` |
-| Windows / Linux | `Alt+1` | `Alt+2` | `Alt+3` |
+## Optional workspace connector
 
-Mode shortcuts switch the active surface; they do not select a Codex project. Always pass `--path` and confirm that Codex is operating in the intended git root.
+MCP, a protocol that connects AI tools to local data, lets Chat inspect selected files and changes.
+Repository inspection tools are read-only.
+The `submit_c2c` tool writes the relay reply to `.tagteam/last-reply.json`.
+The automated loop requires that reply mechanism. Manual handoffs can work without the connector.
 
-## What ships today
+The private connection uses **TagTeamGPT Private** through OpenAI Secure MCP Tunnel.
+Follow the [private connector guide](docs/private-connector.md) and confirm the target folder before review.
+The public Cloudflare helper manages a separate connection.
 
-| Layer | Status | Purpose |
-| --- | --- | --- |
-| `$tagteam` skill + protocol | **Shipped** | Manual, reliable Chat ↔ Codex handoffs |
-| Guarded driver + auto-loop | **Mac guard added** | Live interruption, guarded-send, and setup-click interruption checks passed. Setup warns for 15 seconds and preserves drafts. The complete planner and executor cycle still needs validation. Windows uses manual handoffs. |
-| Mailbox and memory helpers | **In progress** | Durable receipts and goal notes |
-| Read-only workspace MCP | **Optional** | Selective repo visibility for Chat |
+## Documentation and help
 
-The manual copy-and-paste workflow remains available even when the driver or MCP is not configured.
+- [Install](docs/install.md): skill installation and manual setup.
+- [Desktop control](docs/desktop-control.md): warnings, binding, interruption, and recovery.
+- [Usage](docs/usage.md): handoffs and optional tools.
+- [Troubleshooting](docs/troubleshooting.md): common failures.
+- [Source of truth](docs/source-of-truth.md): the authoritative local copy and older copies.
 
-## Optional tooling
+Report project problems through [GitHub issues](https://github.com/tuckcode/TagTeamGPT/issues).
+This repository does not identify an individual maintainer or include a contributing guide.
 
-```bash
-# Bind the focused Chat conversation with an empty message box
-node tools/tagteam-driver.mjs control bind --mode chat
+## Explainer website
 
-# Bind the focused Codex conversation in its separate window
-node tools/tagteam-driver.mjs control bind --mode codex
-
-# Start the automated relay
-node tools/tagteam-loop.mjs --goal "…" --path /path/to/your/repo --boot
-
-# Run the local server for the optional private connector
-node mcp/src/http.mjs
-```
-
-Follow the [private connector guide](docs/private-connector.md) to configure the tunnel and select the plugin in Chat.
-The guide includes first installation, restart steps, and a prompt you can copy to an agent.
-Read [desktop control](docs/desktop-control.md) before binding or sending.
-
-## Documentation
-
-| Guide | What it covers |
-| --- | --- |
-| [Install](docs/install.md) | Skill installation and desktop setup |
-| [Usage](docs/usage.md) | Manual handoffs, driver, auto-loop, and MCP |
-| [Loop](docs/loop.md) | The complete state loop |
-| [Troubleshooting](docs/troubleshooting.md) | Folder banner, Work mode, and working-directory traps |
-| [Approach](docs/approach.md) | Design decisions and architecture |
-| [Input hardening](docs/hardening.md) | Windows and macOS focus and key injection |
-| [MCP](mcp/README.md) | Optional read-only workspace connector |
-| [Private connector](docs/private-connector.md) | Private tunnel setup and copyable agent instructions |
-
-## Explainer site
-
-This repository also includes a Next.js explainer site:
+The website explains the project. It does not start the relay.
+To run it locally:
 
 ```bash
 pnpm install
@@ -174,14 +99,7 @@ pnpm dev
 
 Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
-## Project principles
+## License and credit
 
-1. Chat owns planning and independent review; Codex owns implementation and verification.
-2. Handoffs stay compact—send state and intent, not an entire diff.
-3. The core loop works without MCP or browser automation.
-4. Human attention is required whenever the loop reaches `BLOCKED`.
-5. The workspace connector stays read-only.
-
-## Credit
-
-Inspired by the MIT-licensed [XiaoDuoYa/codex-with-chatgpt](https://github.com/XiaoDuoYa/codex-with-chatgpt). TagTeamGPT is a separate desktop-keybind and clipboard implementation.
+This repository does not include a license file.
+The upstream inspiration is MIT-licensed. That license does not establish a license for this repository.
