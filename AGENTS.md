@@ -1,3 +1,9 @@
+## TagTeamGPT working directory
+
+Use `/Users/dtc/Documents/ChatGPT/TagTeamGPT` for TagTeamGPT product work on this machine.
+Before editing or running tools, confirm that `git rev-parse --show-toplevel` returns that folder.
+Read `docs/source-of-truth.md` there when comparing or retiring older copies.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
